@@ -1,0 +1,38 @@
+﻿@inherits R3E.YaHud.Client.Widget.HudWidgetBase
+@implements IDisposable
+
+<div id=@ElementId class="clock-widget" >
+    <span class="time-text">@currentTime.ToString("HH:mm:ss")</span>
+    <br />
+    <small class="lock-status">@(Locked ? "Locked" : "Unlocked")</small>
+    <button @onclick="ResetPosition">Reset</button>
+</div>
+
+@code {
+    private DateTime currentTime = DateTime.Now;
+
+    private DotNetObjectReference<Clock>? objRef;
+    private Timer? timer;
+
+    protected override string ElementId { get => "clockWidget"; }
+    public override string Name { get => "Clock"; }
+    protected override double DefaultYPercent { get => 20; } // center vertically    
+    protected override double DefaultXPercent { get => 50; } // center horizontally
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        timer = new Timer(_ => { InvokeUpdate(); }, null, 0, 1000);
+    }
+
+    protected override void Update()
+    {
+        currentTime = DateTime.Now;
+    }
+
+    public override void Dispose()
+    {
+        timer?.Dispose();
+        base.Dispose();
+    }
+}

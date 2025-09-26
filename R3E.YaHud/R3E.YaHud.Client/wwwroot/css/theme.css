@@ -1,0 +1,11 @@
+﻿.font-sans {
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.font-mono {
+    font-family: monospace, monospace;
+}
+
+.font-digital {
+    font-family: 'Orbitron', monospace; /* Example: add Orbitron from Google Fonts */
+}
