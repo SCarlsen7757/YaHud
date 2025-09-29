@@ -1,4 +1,5 @@
 using R3E.API;
+using R3E.YaHud;
 using R3E.YaHud.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,9 @@ if (OperatingSystem.IsWindows())
 
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Add this line before building the app to register SignalR services
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -32,5 +36,12 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(R3E.YaHud.Client._Imports).Assembly);
+
+app.MapGet("/api/shared", (SharedMemoryService service) =>
+{
+    return Results.Ok(service.Data);
+});
+
+app.MapHub<SharedMemoryHub>("/sharedmemoryhub");
 
 app.Run();

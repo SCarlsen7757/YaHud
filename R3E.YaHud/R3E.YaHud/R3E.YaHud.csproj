@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\R3E\R3E.csproj" />
     <ProjectReference Include="..\R3E.YaHud.Client\R3E.YaHud.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
