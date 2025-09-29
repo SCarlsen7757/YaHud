@@ -6,33 +6,38 @@
     <p>@Gear</p>
     <p>@Speed</p>
     <p>@RPM</p>
-
+    <br />
+    <small class="lock-status">@(Locked ? "Locked" : "Unlocked")</small>
+    <button @onclick="ResetPosition">Reset</button>
 </div>
 @code {
     public string Gear { get; private set; } = "N";
     public float Speed { get; private set; } = 0.0f;
     public float RPM { get; private set; } = 0.0f;
 
-    public override string Name { get => "MoTec"; }
+    public override string Name => "MoTec";
+    public override string Catagory => "Telemetry";
     protected override string ElementId { get => "motecWidget"; }
     protected override double DefaultYPercent { get => 10; } // top
     protected override double DefaultXPercent { get => 90; } // right
 
     protected override void OnInitialized()
     {
+        base.OnInitialized();
         SharedMemoryService.DataUpdated += OnDataUpdated;
     }
 
     protected override void Update()
     {
+        var data = SharedMemoryService.Data!.Value;
+        Gear = data.Gear == 0 ? "N" : data.Gear.ToString();
+        Speed = data.CarSpeed;
+        RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
     }
 
     private void OnDataUpdated(R3E.Data.Shared newData)
     {
-        Gear = newData.Gear == 0 ? "N" : newData.Gear.ToString();
-        Speed = newData.CarSpeed;
-        RPM = R3E.Utilities.RpsToRpm(newData.EngineRps);
-        InvokeAsync(StateHasChanged);
+        InvokeUpdate();
     }
 
     public override void Dispose()

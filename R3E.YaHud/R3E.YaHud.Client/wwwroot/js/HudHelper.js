@@ -38,6 +38,29 @@
             }
         });
 
+        function applyPosition(xPercent, yPercent) {
+            const widgetWidth = el.offsetWidth;
+            const widgetHeight = el.offsetHeight;
+
+            let left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2);
+            let top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2);
+
+            // bounds check: if widget is fully outside, reset to center
+            if (left + widgetWidth < 0 || left > window.innerWidth ||
+                top + widgetHeight < 0 || top > window.innerHeight) {
+                left = (window.innerWidth / 2) - (widgetWidth / 2);
+                top = (window.innerHeight / 2) - (widgetHeight / 2);
+
+                // also reset saved values
+                localStorage.removeItem(elementId + "_leftPercent");
+                localStorage.removeItem(elementId + "_topPercent");
+            }
+
+            el.style.position = "absolute";
+            el.style.left = left + "px";
+            el.style.top = top + "px";
+        }
+
         // Restore position from localStorage
         const savedX = localStorage.getItem(elementId + "_leftPercent");
         const savedY = localStorage.getItem(elementId + "_topPercent");
@@ -45,13 +68,13 @@
         const xPercent = savedX !== null ? parseFloat(savedX) : 50;
         const yPercent = savedY !== null ? parseFloat(savedY) : 50;
 
-        requestAnimationFrame(() => {
-            const widgetWidth = el.offsetWidth;
-            const widgetHeight = el.offsetHeight;
+        requestAnimationFrame(() => applyPosition(xPercent, yPercent));
 
-            el.style.position = "absolute";
-            el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-            el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+        // Also re-check on window resize
+        window.addEventListener("resize", () => {
+            const savedX = localStorage.getItem(elementId + "_leftPercent") || 50;
+            const savedY = localStorage.getItem(elementId + "_topPercent") || 50;
+            applyPosition(savedX, savedY);
         });
     },
 

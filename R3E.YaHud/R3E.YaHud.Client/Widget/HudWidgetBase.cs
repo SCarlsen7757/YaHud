@@ -17,6 +17,7 @@ namespace R3E.YaHud.Client.Widget
 
         protected abstract string ElementId { get; }
         public abstract string Name { get; }
+        public abstract string Catagory { get; }
         protected abstract double DefaultXPercent { get; } // center horizontally
         protected abstract double DefaultYPercent { get; } // center vertically
 
@@ -26,7 +27,6 @@ namespace R3E.YaHud.Client.Widget
         {
             LockService.OnLockChanged += OnLockChanged;
         }
-
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -53,7 +53,7 @@ namespace R3E.YaHud.Client.Widget
             InvokeAsync(StateHasChanged);
         }
 
-        protected async Task ResetPosition()
+        public async Task ResetPosition()
         {
             await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
         }
