@@ -9,7 +9,7 @@ namespace R3E.API
     {
         private MemoryMappedFile? file;
         private byte[]? buffer;
-        private Shared data = new();
+        private Shared data;
         private readonly Thread? thread;
         private bool running;
 
@@ -20,10 +20,11 @@ namespace R3E.API
         /// </summary>
         public event Action<Shared>? DataUpdated;
 
-        public Shared? Data => data;
+        public Shared Data => data;
 
         public SharedMemoryService()
         {
+            data = new();
             running = true;
             if (OperatingSystem.IsWindows())
             {

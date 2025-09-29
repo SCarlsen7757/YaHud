@@ -7,11 +7,12 @@ namespace R3E.YaHud.Client
     public class SharedMemoryClientService
     {
         private readonly HubConnection connection;
-        public Shared? Data { get; private set; }
+        public Shared Data { get; private set; }
         public event Action<Shared>? DataUpdated;
 
         public SharedMemoryClientService(NavigationManager nav)
         {
+            Data = new();
             connection = new HubConnectionBuilder()
                 .WithUrl(nav.ToAbsoluteUri("/sharedmemoryhub"))
                 .WithAutomaticReconnect()
