@@ -2,4 +2,19 @@
 @using R3E.YaHud.Client.Widget
 
 <Clock />
-<MoTec />
+<MoTec @ref="motecWidget"/>
+
+@code {
+	private MoTec motecWidget = new();
+
+	protected override void OnInitialized()
+{
+    base.OnInitialized();
+
+    _ = Task.Run(async () =>
+    {
+        await Task.Delay(5000);
+        await motecWidget.ResetPosition();
+    });
+}
+}
