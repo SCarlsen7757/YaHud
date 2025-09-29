@@ -30,9 +30,13 @@ namespace R3E.API
                 thread = new Thread(PollLoop) { IsBackground = true };
                 thread.Start();
             }
+            else if (OperatingSystem.IsBrowser())
+            {
+            }
             else
             {
                 //TODO: Add UPD relying service for Linux
+
                 throw new PlatformNotSupportedException("SharedMemoryService is only supported on Windows.");
             }
         }
