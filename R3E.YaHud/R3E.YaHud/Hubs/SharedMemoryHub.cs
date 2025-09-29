@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace R3E.YaHud
+namespace R3E.YaHud.Hubs
 {
     public class SharedMemoryHub : Hub
     {

@@ -11,6 +11,7 @@
     <ProjectReference Include="..\R3E.YaHud.Client\R3E.YaHud.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="9.0.9" />
   </ItemGroup>
 
 </Project>

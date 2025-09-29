@@ -2,7 +2,7 @@
 @implements IDisposable
 
 <div id=@ElementId class="clock-widget" >
-    <span class="time-text">@currentTime.ToString("HH:mm:ss")</span>
+    <span class="text">@currentTime.ToString("HH:mm:ss")</span>
     <br />
     <small class="lock-status">@(Locked ? "Locked" : "Unlocked")</small>
     <button @onclick="ResetPosition">Reset</button>
