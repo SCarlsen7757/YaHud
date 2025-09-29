@@ -2,23 +2,23 @@
 
 namespace R3E
 {
-    class Constant
+    public class Constant
     {
         public const string SharedMemoryName = "$R3E";
 
-        enum VersionMajor
+        public enum VersionMajor
         {
             // Major version number to test against
             R3E_VERSION_MAJOR = 3
         };
 
-        enum VersionMinor
+        public enum VersionMinor
         {
             // Minor version number to test against
             R3E_VERSION_MINOR = 4
         };
 
-        enum GameMode
+        public enum GameMode
         {
             Unavailable = -1,
             TrackTest = 0,
@@ -31,7 +31,7 @@ namespace R3E
             TryBeforeYouBuy = 7,
         };
 
-        enum Session
+        public enum Session
         {
             Unavailable = -1,
             Practice = 0,
@@ -40,7 +40,7 @@ namespace R3E
             Warmup = 3,
         };
 
-        enum SessionPhase
+        public enum SessionPhase
         {
             Unavailable = -1,
 
@@ -63,7 +63,7 @@ namespace R3E
             Checkered = 6,
         };
 
-        enum Control
+        public enum Control
         {
             Unavailable = -1,
 
@@ -80,7 +80,7 @@ namespace R3E
             Replay = 3,
         };
 
-        enum PitWindow
+        public enum PitWindow
         {
             Unavailable = -1,
 
@@ -100,7 +100,7 @@ namespace R3E
             Completed = 4,
         };
 
-        enum PitStopStatus
+        public enum PitStopStatus
         {
             // No mandatory pitstops
             Unavailable = -1,
@@ -115,7 +115,7 @@ namespace R3E
             Served = 2,
         };
 
-        enum FinishStatus
+        public enum FinishStatus
         {
             // N/A
             Unavailable = -1,
@@ -139,7 +139,7 @@ namespace R3E
             DQ = 5,
         };
 
-        enum SessionLengthFormat
+        public enum SessionLengthFormat
         {
             // N/A
             Unavailable = -1,
@@ -152,7 +152,7 @@ namespace R3E
             TimeAndLapBased = 2
         };
 
-        enum PitMenuSelection
+        public enum PitMenuSelection
         {
             // Pit menu unavailable
             Unavailable = -1,
@@ -179,14 +179,14 @@ namespace R3E
             Max = 12
         };
 
-        enum TireType
+        public enum TireType
         {
             Unavailable = -1,
             Option = 0,
             Prime = 1,
         };
 
-        enum TireSubtype
+        public enum TireSubtype
         {
             Unavailable = -1,
             Primary = 0,
@@ -196,7 +196,7 @@ namespace R3E
             Hard = 4
         };
 
-        enum MtrlType
+        public enum MtrlType
         {
             Unavailable = -1,
             None = 0,
@@ -207,7 +207,7 @@ namespace R3E
             Rumble = 5
         };
 
-        enum EngineType
+        public enum EngineType
         {
             COMBUSTION = 0,
             ELECTRIC = 1,
@@ -218,7 +218,7 @@ namespace R3E
     namespace Data
     {
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct RaceDuration<T>
+        public struct RaceDuration<T>
         {
             public T Race1;
             public T Race2;
@@ -226,7 +226,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Vector3<T>
+        public struct Vector3<T>
         {
             public T X;
             public T Y;
@@ -234,7 +234,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Orientation<T>
+        public struct Orientation<T>
         {
             public T Pitch;
             public T Yaw;
@@ -242,7 +242,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct SectorStarts<T>
+        public struct SectorStarts<T>
         {
             public T Sector1;
             public T Sector2;
@@ -250,7 +250,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PlayerData
+        public struct PlayerData
         {
             // Player user id
             public Int32 UserId;
@@ -341,7 +341,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Flags
+        public struct Flags
         {
             // Whether yellow flag is currently active
             // -1 = no data
@@ -415,7 +415,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct CarDamage
+        public struct CarDamage
         {
             // Range: 0.0 - 1.0
             // Note: -1.0 = N/A
@@ -440,7 +440,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireData<T>
+        public struct TireData<T>
         {
             public T FrontLeft;
             public T FrontRight;
@@ -449,7 +449,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PitMenuState
+        public struct PitMenuState
         {
             // Pit menu preset
             public Int32 Preset;
@@ -471,7 +471,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct CutTrackPenalties
+        public struct CutTrackPenalties
         {
             // -1.0 = none pending, otherwise penalty time dep on penalty type (drive-through active = 0.0, stop-and-go = time to stay, slow-down = time left to give back etc))
             public Single DriveThrough;
@@ -482,7 +482,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DRS
+        public struct DRS
         {
             // If DRS is equipped and allowed
             // 0 = No, 1 = Yes, -1 = N/A
@@ -500,7 +500,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PushToPass
+        public struct PushToPass
         {
             public Int32 Available;
             public Int32 Engaged;
@@ -510,7 +510,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireTempInformation
+        public struct TireTempInformation
         {
             public TireTemperature<Single> CurrentTemp;
             public Single OptimalTemp;
@@ -519,7 +519,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct BrakeTemp
+        public struct BrakeTemp
         {
             public Single CurrentTemp;
             public Single OptimalTemp;
@@ -528,7 +528,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireTemperature<T>
+        public struct TireTemperature<T>
         {
             public T Left;
             public T Center;
@@ -536,7 +536,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct AidSettings
+        public struct AidSettings
         {
             // ABS; -1 = N/A, 0 = off, 1 = on, 5 = currently active
             public Int32 Abs;
@@ -551,7 +551,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Sectors<T>
+        public struct Sectors<T>
         {
             public T Sector1;
             public T Sector2;
@@ -559,7 +559,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DriverInfo
+        public struct DriverInfo
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
             public byte[] Name; // UTF-8
@@ -585,7 +585,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DriverData
+        public struct DriverData
         {
             public DriverInfo DriverInfo;
             // Note: See the R3E.Constant.FinishStatus enum
@@ -701,7 +701,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Shared
+        public struct Shared
         {
             //////////////////////////////////////////////////////////////////////////
             // Version
