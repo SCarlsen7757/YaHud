@@ -4,6 +4,6 @@ namespace R3E.YaHud
 {
     public class SharedMemoryHub : Hub
     {
-        // Server can call Clients.All.SendAsync("UpdateShared", sharedData)
+        // No need to add anything unless you want client-to-server calls
     }
 }

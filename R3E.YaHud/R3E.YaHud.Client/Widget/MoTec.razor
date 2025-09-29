@@ -1,4 +1,4 @@
-﻿@inject SharedMemoryClientService SharedMemoryClientService
+﻿@inject R3E.YaHud.Client.SharedMemoryClientService SharedMemoryClientService
 @inherits R3E.YaHud.Client.Widget.HudWidgetBase
 @implements IDisposable
 
@@ -29,7 +29,7 @@
 
     protected override void Update()
     {
-        var data = SharedMemoryClientService.Data!.Value;
+        R3E.Data.Shared data = SharedMemoryClientService.Data;
         Gear = data.Gear == 0 ? "N" : data.Gear.ToString();
         Speed = data.CarSpeed;
         RPM = R3E.Utilities.RpsToRpm(data.EngineRps);

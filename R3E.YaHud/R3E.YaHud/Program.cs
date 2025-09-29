@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.SignalR;
 using R3E.API;
 using R3E.YaHud;
+using R3E.YaHud.Client;
 using R3E.YaHud.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +12,7 @@ builder.Services.AddSingleton<R3E.YaHud.Client.HudLockService>();
 if (OperatingSystem.IsWindows())
 {
     builder.Services.AddSingleton<SharedMemoryService>();
+    builder.Services.AddScoped<SharedMemoryClientService>();
 }
 
 builder.Services.AddRazorComponents()
@@ -37,11 +40,18 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(R3E.YaHud.Client._Imports).Assembly);
 
-app.MapGet("/api/shared", (SharedMemoryService service) =>
-{
-    return Results.Ok(service.Data);
-});
-
 app.MapHub<SharedMemoryHub>("/sharedmemoryhub");
+
+// Wire up SharedMemoryService to push updates to SignalR clients
+if (OperatingSystem.IsWindows())
+{
+    var sharedMemoryService = app.Services.GetRequiredService<SharedMemoryService>();
+    var hubContext = app.Services.GetRequiredService<IHubContext<SharedMemoryHub>>();
+
+    sharedMemoryService.DataUpdated += async (data) =>
+    {
+        await hubContext.Clients.All.SendAsync("UpdateShared", data);
+    };
+}
 
 app.Run();
