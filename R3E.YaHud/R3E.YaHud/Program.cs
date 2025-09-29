@@ -1,14 +1,18 @@
+using R3E.API;
 using R3E.YaHud.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<R3E.YaHud.Client.HudLockService>();
 
-// Add services to the container.
+// Only add SharedMemoryService if running on Windows
+if (OperatingSystem.IsWindows())
+{
+    builder.Services.AddSingleton<SharedMemoryService>();
+}
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
-
-
 
 var app = builder.Build();
 
@@ -21,7 +25,6 @@ else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
-
 
 app.UseAntiforgery();
 

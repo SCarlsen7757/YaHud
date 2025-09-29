@@ -1,0 +1,43 @@
+﻿@inject R3E.API.SharedMemoryService SharedMemoryService
+@inherits R3E.YaHud.Client.Widget.HudWidgetBase
+@implements IDisposable
+
+<div id=@ElementId class="motec-widget">
+    <p>@Gear</p>
+    <p>@Speed</p>
+    <p>@RPM</p>
+
+</div>
+@code {
+    public string Gear { get; private set; } = "N";
+    public float Speed { get; private set; } = 0.0f;
+    public float RPM { get; private set; } = 0.0f;
+
+    public override string Name { get => "MoTec"; }
+    protected override string ElementId { get => "motecWidget"; }
+    protected override double DefaultYPercent { get => 10; } // top
+    protected override double DefaultXPercent { get => 90; } // right
+
+    protected override void OnInitialized()
+    {
+        SharedMemoryService.DataUpdated += OnDataUpdated;
+    }
+
+    protected override void Update()
+    {
+    }
+
+    private void OnDataUpdated(R3E.Data.Shared newData)
+    {
+        Gear = newData.Gear == 0 ? "N" : newData.Gear.ToString();
+        Speed = newData.CarSpeed;
+        RPM = R3E.Utilities.RpsToRpm(newData.EngineRps);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+        SharedMemoryService.DataUpdated -= OnDataUpdated;
+    }
+}
