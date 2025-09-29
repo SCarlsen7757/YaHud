@@ -2,7 +2,7 @@
 @inherits R3E.YaHud.Client.Widget.HudWidgetBase
 @implements IDisposable
 
-<div id=@ElementId class="motec-widget">
+<div id=@ElementId class="motec-widget text">
     <p>@Gear</p>
     <p>@Speed</p>
     <p>@RPM</p>
@@ -31,7 +31,7 @@
     {
         R3E.Data.Shared data = SharedMemoryClientService.Data;
         Gear = data.Gear == 0 ? "N" : data.Gear.ToString();
-        Speed = data.CarSpeed;
+        Speed = R3E.Utilities.MpsToKph(data.CarSpeed);
         RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
     }
 

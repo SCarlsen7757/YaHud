@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.SignalR;
 using R3E.API;
-using R3E.YaHud;
+using R3E.Data;
 using R3E.YaHud.Client;
 using R3E.YaHud.Components;
+using R3E.YaHud.Hubs;
+using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSignalR()
+       .AddMessagePackProtocol();
 
 builder.Services.AddSingleton<R3E.YaHud.Client.HudLockService>();
 
@@ -17,9 +22,6 @@ if (OperatingSystem.IsWindows())
 
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
-
-// Add this line before building the app to register SignalR services
-builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -50,7 +52,13 @@ if (OperatingSystem.IsWindows())
 
     sharedMemoryService.DataUpdated += async (data) =>
     {
-        await hubContext.Clients.All.SendAsync("UpdateShared", data);
+        var size = Marshal.SizeOf<Shared>();
+        var buffer = new byte[size];
+        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
+        handle.Free();
+
+        await hubContext.Clients.All.SendAsync("UpdateSharedBinary", buffer);
     };
 }
 

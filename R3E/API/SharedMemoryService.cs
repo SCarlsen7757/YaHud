@@ -13,7 +13,7 @@ namespace R3E.API
         private readonly Thread? thread;
         private bool running;
 
-        private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(100);
+        private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(16);
 
         /// <summary>
         /// Raised when new shared memory data is available.

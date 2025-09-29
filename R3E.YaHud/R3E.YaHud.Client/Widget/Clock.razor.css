@@ -8,7 +8,7 @@
     box-sizing: border-box; /* Include padding/border in width */
 }
 
-.time-text {
+.text {
     color: pink;
     font-size: 48px;
 }
