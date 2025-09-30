@@ -6,18 +6,20 @@ namespace R3E.YaHud.Services
 {
     public class ShortcutService : IDisposable
     {
-        private readonly SimpleGlobalHook hook;
+        private readonly SimpleGlobalHook? hook;
         private bool disposed;
 
         public event Action<ShortcutClientService.Shortcut>? ShortcutPressed;
 
         public ShortcutService()
         {
+#if !DEBUG
             hook = new SimpleGlobalHook();
             hook.KeyPressed += OnKeyPressed;
 
             // Run hook safely
             _ = hook.RunAsync();
+#endif
         }
 
         private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
@@ -37,9 +39,11 @@ namespace R3E.YaHud.Services
         {
             if (disposed) return;
             disposed = true;
-
-            hook.KeyPressed -= OnKeyPressed;
-            hook.Dispose();
+            if (hook is not null)
+            {
+                hook.KeyPressed -= OnKeyPressed;
+                hook.Dispose();
+            }
             GC.SuppressFinalize(this);
         }
     }
