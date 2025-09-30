@@ -12,6 +12,8 @@ namespace R3E.YaHud.Client
             this.shortcutService.ToggleLockShortcutReceived += OnLockShortcutReceived;
         }
 
+        public event Action<bool>? OnLockChanged;
+
         public void OnLockShortcutReceived()
         {
             ToggleLock();
@@ -29,7 +31,6 @@ namespace R3E.YaHud.Client
             }
         }
 
-        public event Action<bool>? OnLockChanged;
 
         public void ToggleLock() => Locked = !Locked;
 
