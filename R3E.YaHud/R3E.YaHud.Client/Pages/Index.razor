@@ -1,42 +1,62 @@
 ﻿@page "/"
 @inject SharedMemoryClientService SharedMemoryClientService
 @inject ShortcutClientService ShortcutClientService
+@inject HudLockService HudLockService
 @inject SettingsService SettingsService
 @using R3E.YaHud.Client.Services
 @using R3E.YaHud.Client.Widget
 
-<Clock />
-<MoTec />
-
-<button @onclick="ShowSettings">Show Settings</button>
+@if (!locked)
+{
+    <button @onclick="ShowSettings">Show Settings</button>
+}
 
 @if (showSettings)
 {
     <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings"/>
 }
 
+<Clock />
+<MoTec />
+
 @code {
     private bool showSettings = false;
-
+    private bool locked;
     protected override async Task OnInitializedAsync()
     {
         await SharedMemoryClientService.StartAsync();
         await ShortcutClientService.StartAsync();
+        HudLockService.OnLockChanged += LockChanged;
+        locked = HudLockService.Locked;
+
+        await InvokeAsync(StateHasChanged);
     }
 
     public async Task DisposeAsync()
     {
         await SharedMemoryClientService.StopAsync();
         await ShortcutClientService.StopAsync();
+
     }
 
     private void ShowSettings()
     {
         showSettings = true;
+        InvokeAsync(StateHasChanged);
     }   
 
     private void HideSettings()
     {
         showSettings = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void LockChanged(bool locked)
+    {
+        if(locked){
+            showSettings = false;
+        }
+        this.locked = locked;
+        InvokeAsync(StateHasChanged);
     }
 }
