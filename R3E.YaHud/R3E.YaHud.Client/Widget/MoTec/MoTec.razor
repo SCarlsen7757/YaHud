@@ -1,0 +1,54 @@
+﻿@inherits R3E.YaHud.Client.Widget.HudWidgetBase
+@implements IDisposable
+
+@if (Visible)
+{
+    <div id=@ElementId class="motec-widget text">
+        <p class="gear-text">@Gear</p>
+        <p class="speed-text">@Speed</p>
+        <span class="rpm-component"><R3E.YaHud.Client.Widget.MoTec.Components.HorizontalBar Min="0.0f" Max="@MaxRPM" Value="@RPM" SecondaryValue="@UpshiftRPM" /></span>
+    </div>
+}
+
+@code {
+    public string Gear { get; private set; } = "N";
+    public float Speed { get; private set; } = 0.0f;
+    public float RPM { get; private set; } = 0.0f;
+    public float MaxRPM { get; set; } = 9000;
+    public float UpshiftRPM { get; set; } = 7000;
+
+    public override string ElementId { get => "motecWidget"; }
+    public override string Name => "MoTec";
+    public override string Catagory => "Telemetry";
+
+    public MoTec()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+
+        DefaultXPercent = 90;
+        DefaultYPercent = 90;
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = SharedMemoryClientService.Data;
+        switch (data.Gear)
+        {
+            case -1:
+                Gear = "R";
+                break;
+            case 0:
+                Gear = "N";
+                break;
+            default:
+                Gear = data.Gear.ToString();
+                break;
+        }
+
+        Speed = MathF.Round(R3E.Utilities.MpsToKph(data.CarSpeed),0);
+        RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
+        MaxRPM = Utilities.RpsToRpm(data.MaxEngineRps);
+        UpshiftRPM = Utilities.RpsToRpm(data.UpshiftRps);
+    }
+}
