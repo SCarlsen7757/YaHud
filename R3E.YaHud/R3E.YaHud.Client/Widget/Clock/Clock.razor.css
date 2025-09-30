@@ -1,7 +1,6 @@
 ﻿.clock-widget {
     text-align: center;
     width: 300px;
-    height: 180px;
     position: absolute;
     white-space: nowrap; /* Prevent text wrapping */
     overflow: hidden; /* Prevent scrollbars inside the widget */
