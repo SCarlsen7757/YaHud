@@ -1,27 +1,42 @@
 ﻿@page "/"
 @inject SharedMemoryClientService SharedMemoryClientService
+@inject ShortcutClientService ShortcutClientService
+@inject SettingsService SettingsService
+@using R3E.YaHud.Client.Services
 @using R3E.YaHud.Client.Widget
 
 <Clock />
-<MoTec @ref="motecWidget"/>
+<MoTec />
+
+<button @onclick="ShowSettings">Show Settings</button>
+
+@if (showSettings)
+{
+    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings"/>
+}
 
 @code {
-	private MoTec motecWidget = new();
-
-	protected override void OnInitialized()
-    {
-        base.OnInitialized();
-
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(5000);
-            await motecWidget.ResetPosition();
-        });
-
-    }
+    private bool showSettings = false;
 
     protected override async Task OnInitializedAsync()
     {
         await SharedMemoryClientService.StartAsync();
+        await ShortcutClientService.StartAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await SharedMemoryClientService.StopAsync();
+        await ShortcutClientService.StopAsync();
+    }
+
+    private void ShowSettings()
+    {
+        showSettings = true;
+    }   
+
+    private void HideSettings()
+    {
+        showSettings = false;
     }
 }

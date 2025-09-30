@@ -13,11 +13,16 @@
 
     private Timer? timer;
 
-    protected override string ElementId { get => "clockWidget"; }
+    public override string ElementId { get => "clockWidget"; }
     public override string Name => "Clock"; 
     public override string Catagory => "Utility";
-    protected override double DefaultYPercent { get => 20; } // center vertically    
-    protected override double DefaultXPercent { get => 50; } // center horizontally
+
+    public Clock()
+    {
+        UseR3EData = false;
+        DefaultXPercent = 50;
+        DefaultYPercent = 20;
+    }
 
     protected override void OnInitialized()
     {

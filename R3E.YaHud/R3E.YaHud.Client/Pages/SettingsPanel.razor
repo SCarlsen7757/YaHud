@@ -1,0 +1,45 @@
+@using R3E.YaHud.Client.Widget
+
+<div class="settings-panel">
+    <h3>Widget Settings</h3>
+    <div class="settings-columns" style="display: flex; gap: 2rem;">
+        @foreach (var group in Widgets.GroupBy(w => w.Catagory))
+        {
+            <div class="settings-column" style="min-width: 220px;">
+                <h4>@group.Key</h4>
+                <ul style="list-style: none; padding-left: 0;">
+                    @foreach (var widget in group)
+                    {
+                        <li style="margin-bottom: 1em;">
+                            <strong>@widget.Name</strong>
+                            <div style="display: flex; align-items: center; gap: 0.5em;">
+                                <label>
+                                    <input type="checkbox" checked="@widget.Visible" @onchange="(e) => ToggleVisibility(widget, e)" />
+                                    Visible
+                                </label>
+                                <button @onclick="() => ResetWidgetPosition(widget)">Reset Position</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+    <button @onclick="OnClose">Close</button>
+</div>
+
+@code {
+    [Parameter] public List<HudWidgetBase> Widgets { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private void ToggleVisibility(HudWidgetBase widget, ChangeEventArgs e)
+    {
+        widget.Visible = (bool)e.Value!;
+        widget.InvokeUpdate();
+    }
+
+    private async Task ResetWidgetPosition(HudWidgetBase widget)
+    {
+        await widget.ResetPosition();
+    }
+}
