@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using R3E.Data;
 using System.Runtime.InteropServices;
 
-namespace R3E.YaHud.Client
+namespace R3E.YaHud.Client.Services
 {
     public class SharedMemoryClientService
     {

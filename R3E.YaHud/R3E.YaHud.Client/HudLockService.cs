@@ -1,17 +1,20 @@
-﻿using Microsoft.JSInterop;
+﻿using R3E.YaHud.Client.Services;
 
 namespace R3E.YaHud.Client
 {
     public class HudLockService : IDisposable
     {
-        private IJSRuntime? js;
-        private DotNetObjectReference<HudLockService>? objRef;
+        private readonly ShortcutClientService shortcutService;
 
-        public Task InitializeAsync(IJSRuntime js)
+        public HudLockService(ShortcutClientService shortcutService)
         {
-            this.js = js;
-            objRef = DotNetObjectReference.Create(this);
-            return this.js.InvokeVoidAsync("HudHelper.setupHotkey", objRef).AsTask();
+            this.shortcutService = shortcutService;
+            this.shortcutService.ToggleLockShortcutReceived += OnLockShortcutReceived;
+        }
+
+        public void OnLockShortcutReceived()
+        {
+            ToggleLock();
         }
 
         private bool locked = false;
@@ -28,15 +31,13 @@ namespace R3E.YaHud.Client
 
         public event Action<bool>? OnLockChanged;
 
-        [JSInvokable]
         public void ToggleLock() => Locked = !Locked;
 
-        [JSInvokable]
         public void SetLock(bool locked) => Locked = locked;
 
         public void Dispose()
         {
-            objRef?.Dispose();
+            shortcutService.ToggleLockShortcutReceived -= OnLockShortcutReceived;
             GC.SuppressFinalize(this);
         }
     }

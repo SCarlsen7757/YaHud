@@ -1,30 +1,34 @@
-﻿@inject R3E.YaHud.Client.SharedMemoryClientService SharedMemoryClientService
-@inherits R3E.YaHud.Client.Widget.HudWidgetBase
+﻿@inherits R3E.YaHud.Client.Widget.HudWidgetBase
 @implements IDisposable
 
-<div id=@ElementId class="motec-widget text">
-    <p>@Gear</p>
-    <p>@Speed</p>
-    <p>@RPM</p>
-    <br />
-    <small class="lock-status">@(Locked ? "Locked" : "Unlocked")</small>
-    <button @onclick="ResetPosition">Reset</button>
-</div>
+@if (Visible)
+{
+    <div id=@ElementId class="motec-widget text">
+        <p>@Gear</p>
+        <p>@Speed</p>
+        <p>@RPM</p>
+        <br />
+        <small class="lock-status">@(Locked ? "Locked" : "Unlocked")</small>
+        <button @onclick="ResetPosition">Reset</button>
+    </div>
+}
+
 @code {
     public string Gear { get; private set; } = "N";
     public float Speed { get; private set; } = 0.0f;
     public float RPM { get; private set; } = 0.0f;
 
+    public override string ElementId { get => "motecWidget"; }
     public override string Name => "MoTec";
     public override string Catagory => "Telemetry";
-    protected override string ElementId { get => "motecWidget"; }
-    protected override double DefaultYPercent { get => 10; } // top
-    protected override double DefaultXPercent { get => 90; } // right
 
-    protected override void OnInitialized()
+    public MoTec()
     {
-        base.OnInitialized();
-        SharedMemoryClientService.DataUpdated += OnDataUpdated;
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(50);
+
+        DefaultXPercent = 90;
+        DefaultYPercent = 90;
     }
 
     protected override void Update()
@@ -33,16 +37,5 @@
         Gear = data.Gear == 0 ? "N" : data.Gear.ToString();
         Speed = R3E.Utilities.MpsToKph(data.CarSpeed);
         RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
-    }
-
-    private void OnDataUpdated(R3E.Data.Shared newData)
-    {
-        InvokeUpdate();
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
-        SharedMemoryClientService.DataUpdated -= OnDataUpdated;
     }
 }

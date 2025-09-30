@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.SignalR;
 using R3E.API;
 using R3E.Data;
 using R3E.YaHud.Client;
+using R3E.YaHud.Client.Services;
 using R3E.YaHud.Components;
 using R3E.YaHud.Hubs;
+using R3E.YaHud.Services;
 using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,7 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR()
        .AddMessagePackProtocol();
 
-builder.Services.AddSingleton<R3E.YaHud.Client.HudLockService>();
+builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddScoped<HudLockService>();
+builder.Services.AddSingleton<ShortcutService>();
+builder.Services.AddScoped<ShortcutClientService>();
 
 // Only add SharedMemoryService if running on Windows
 if (OperatingSystem.IsWindows())
@@ -43,8 +48,8 @@ app.MapRazorComponents<App>()
     .AddAdditionalAssemblies(typeof(R3E.YaHud.Client._Imports).Assembly);
 
 app.MapHub<SharedMemoryHub>("/sharedmemoryhub");
+app.MapHub<ShortcutHub>("/shortcuthub");
 
-// Wire up SharedMemoryService to push updates to SignalR clients
 if (OperatingSystem.IsWindows())
 {
     var sharedMemoryService = app.Services.GetRequiredService<SharedMemoryService>();
@@ -61,5 +66,13 @@ if (OperatingSystem.IsWindows())
         await hubContext.Clients.All.SendAsync("UpdateSharedBinary", buffer);
     };
 }
+
+var shortcutService = app.Services.GetRequiredService<ShortcutService>();
+var shortcutHub = app.Services.GetRequiredService<IHubContext<ShortcutHub>>();
+
+shortcutService.ShortcutPressed += async (shortcut) =>
+{
+    await shortcutHub.Clients.All.SendAsync("ShortcutPressed", shortcut);
+};
 
 app.Run();
