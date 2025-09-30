@@ -54,7 +54,7 @@
         const el = document.getElementById(elementId);
         if (!el) return;
 
-        this.clearWidgetSettings(ellementId);
+        this.clearWidgetSettings(elementId);
 
         const widgetWidth = el.offsetWidth;
         const widgetHeight = el.offsetHeight;
