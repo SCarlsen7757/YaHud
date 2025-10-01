@@ -1,7 +1,7 @@
 ﻿<div>
     <div style="width: 95%; background-color: @BackgroundColor; border-radius: 4px; overflow: hidden;">
         <div style="width: @(Math.Clamp((Value - Min) / (Max - Min) * 100, 0, 100))%; 
-                    background-color: @CurrentColor; 
+                    background-color: @PrimaryColor;
                     height: 15px;">
         </div>
     </div>
@@ -11,10 +11,6 @@
     [Parameter] public double Min { get; set; } = 0;
     [Parameter] public double Max { get; set; } = 100;
     [Parameter] public double Value { get; set; } = 50;
-    [Parameter] public double SecondaryValue { get; set; } = 90; 
     [Parameter] public string PrimaryColor { get; set; } = "blue";
-    [Parameter] public string SecondaryColor { get; set; } = "red";
     [Parameter] public string BackgroundColor { get; set; } = "lightgray";
-
-    private string CurrentColor => Value >= SecondaryValue ? SecondaryColor : PrimaryColor;
 }
