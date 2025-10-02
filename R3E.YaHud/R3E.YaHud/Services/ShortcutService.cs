@@ -13,13 +13,13 @@ namespace R3E.YaHud.Services
 
         public ShortcutService()
         {
-#if !DEBUG
+            if (System.Diagnostics.Debugger.IsAttached) return;
+
             hook = new SimpleGlobalHook();
             hook.KeyPressed += OnKeyPressed;
 
             // Run hook safely
             _ = hook.RunAsync();
-#endif
         }
 
         private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
