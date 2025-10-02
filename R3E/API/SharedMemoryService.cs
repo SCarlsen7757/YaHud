@@ -10,8 +10,8 @@ namespace R3E.API
         private MemoryMappedFile? file;
         private byte[]? buffer;
         private Shared data;
-        private readonly Thread? thread;
-        private bool running;
+        private readonly CancellationTokenSource cts = new();
+        private readonly Task? pollingTask;
 
         private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(16);
 
@@ -25,11 +25,9 @@ namespace R3E.API
         public SharedMemoryService()
         {
             data = new();
-            running = true;
             if (OperatingSystem.IsWindows())
             {
-                thread = new Thread(PollLoop) { IsBackground = true };
-                thread.Start();
+                pollingTask = Task.Run(() => PollLoop(cts.Token));
             }
             else
             {
@@ -40,9 +38,9 @@ namespace R3E.API
         }
 
         [SupportedOSPlatform("windows")]
-        private void PollLoop()
+        private async Task PollLoop(CancellationToken token)
         {
-            while (running)
+            while (!token.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
                 {
@@ -81,15 +79,16 @@ namespace R3E.API
                     }
                 }
 
-                Thread.Sleep(timeInterval);
+                await Task.Delay(timeInterval, token).ContinueWith(_ => { }, token);
             }
         }
 
         public void Dispose()
         {
-            running = false;
-            thread?.Join();
+            cts.Cancel();
+            pollingTask?.Wait();
             file?.Dispose();
+            cts.Dispose();
             GC.SuppressFinalize(this);
         }
     }
