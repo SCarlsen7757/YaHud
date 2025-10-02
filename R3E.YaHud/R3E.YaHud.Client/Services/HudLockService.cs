@@ -1,6 +1,4 @@
-﻿using R3E.YaHud.Client.Services;
-
-namespace R3E.YaHud.Client
+﻿namespace R3E.YaHud.Client.Services
 {
     public class HudLockService : IDisposable
     {
@@ -8,6 +6,7 @@ namespace R3E.YaHud.Client
 
         public HudLockService(ShortcutClientService shortcutService)
         {
+            locked = !System.Diagnostics.Debugger.IsAttached;
             this.shortcutService = shortcutService;
             this.shortcutService.ToggleLockShortcutReceived += OnLockShortcutReceived;
         }

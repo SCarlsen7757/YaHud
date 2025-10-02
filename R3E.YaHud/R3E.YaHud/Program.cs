@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using R3E.API;
 using R3E.Data;
-using R3E.YaHud.Client;
 using R3E.YaHud.Client.Services;
 using R3E.YaHud.Components;
 using R3E.YaHud.Hubs;
