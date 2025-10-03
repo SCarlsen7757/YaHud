@@ -4,6 +4,8 @@
 @inject HudLockService HudLockService
 @inject SettingsService SettingsService
 @using R3E.YaHud.Client.Services
+@using R3E.YaHud.Client.Services.Settings
+@using R3E.YaHud.Client.UI.Components
 @using R3E.YaHud.Client.Widget
 
 @if (!locked)
@@ -45,16 +47,17 @@
         InvokeAsync(StateHasChanged);
     }   
 
-    private void HideSettings()
+    private async void HideSettings()
     {
+        await SettingsService.SaveAll();
         showSettings = false;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void LockChanged(bool locked)
     {
         if(locked){
-            showSettings = false;
+            HideSettings();
         }
         this.locked = locked;
         InvokeAsync(StateHasChanged);

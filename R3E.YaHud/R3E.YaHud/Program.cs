@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using R3E.API;
 using R3E.Data;
 using R3E.YaHud.Client.Services;
+using R3E.YaHud.Client.Services.Settings;
 using R3E.YaHud.Components;
 using R3E.YaHud.Hubs;
 using R3E.YaHud.Services;
@@ -12,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR()
        .AddMessagePackProtocol();
 
-builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 builder.Services.AddScoped<ShortcutClientService>();
