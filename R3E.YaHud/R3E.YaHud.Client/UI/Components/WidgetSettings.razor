@@ -7,16 +7,15 @@
 @typeparam TSettings
 
 <div>
-    @foreach (var prop in Settings!.GetType().GetProperties())
+    @foreach (var prop in Settings!.GetType().GetProperties()
+                 .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
+                 .Where(x => x.Attr != null)
+                 .OrderBy(x => x.Attr!.Order))
     {
-        var attr = prop.GetCustomAttribute<SettingTypeAttribute>();
-        if (attr != null)
-        {
-            <div class="form-group mb-2">
-                <label>@attr.DisplayName</label>
-                @RenderInput(prop, attr)
-            </div>
-        }
+        <div class="form-group mb-2">
+            <label>@prop.Attr.DisplayName</label>
+            @RenderInput(prop.Prop, prop.Attr)
+        </div>
     }
 </div>
 
