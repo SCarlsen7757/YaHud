@@ -11,7 +11,8 @@ namespace R3E.YaHud.Client.Widget.Core
 
         private bool visible = true;
 
-        [SettingType("Visible", SettingsTypes.Checkbox, Description = "Show or hide this widget")]
+        [SettingType("Visible", SettingsTypes.Checkbox, 0,
+            Description = "Show or hide this widget")]
         public bool Visible
         {
             get => visible;
