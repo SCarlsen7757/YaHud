@@ -13,7 +13,7 @@
                  .OrderBy(x => x.Attr!.Order))
     {
         <div class="form-group mb-2">
-            <label>@prop.Attr.DisplayName</label>
+            <label>@prop.Attr!.DisplayName</label>
             @RenderInput(prop.Prop, prop.Attr)
         </div>
     }
@@ -35,7 +35,7 @@
                 builder.AddAttribute(seq++, "checked", (bool?)value ?? false);
                 builder.AddAttribute(seq++, "onchange",
                     EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
-                        prop.SetValue(Settings, e.Value is bool b ? b : ((string)e.Value == "on"))
+                        prop.SetValue(Settings, e.Value)
                     ));
                 builder.CloseElement();
                 break;
