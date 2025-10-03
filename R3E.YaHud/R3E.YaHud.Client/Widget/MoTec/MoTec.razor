@@ -1,12 +1,13 @@
-﻿@inherits R3E.YaHud.Client.Widget.HudWidgetBase
-@implements IDisposable
+﻿@using R3E.YaHud.Client.Widget.Core
+@inherits HudWidgetBase<MoTecSettings>
 
-@if (Visible)
+@if (Settings.Visible)
 {
     <div id=@ElementId class="motec-widget text">
         <p class="gear-text">@Gear</p>
         <p class="speed-text">@Speed</p>
-        <div class="rpm-component"><R3E.YaHud.Client.Widget.MoTec.Components.HorizontalBar Min="0.0f" 
+        <div class="rpm-component"><R3E.YaHud.Client.Widget.MoTec.Components.HorizontalBar 
+            Min="0.0f" 
             Max="@MaxRPM" 
             Value="@RPM" 
             PrimaryColor="@RpmCurrentColor" 
@@ -22,13 +23,13 @@
     private float UpshiftRPM { get; set; } = 7000.0f;
 
     private string RpmBarBackgroundColor => "#454545";
-    private string RpmCurrentColor { get; set; } = "#000000";
-    private string RpmBarPrimaryColor => "#0069ff";
-    private string RpmBarSecondaryColor => "#ff006a";
+    private string RpmCurrentColor { get; set; } = "#ffffff";
+    private string RpmBarPrimaryColor => Settings.RpmColor;
+    private string RpmBarSecondaryColor => Settings.RpmUpshiftColor;
 
     public override string ElementId { get => "motecWidget"; }
     public override string Name => "MoTec";
-    public override string Catagory => "Telemetry";
+    public override string Category => "Telemetry";
 
     public MoTec()
     {

@@ -1,10 +1,12 @@
 @using R3E.YaHud.Client.Widget
+@using R3E.YaHud.Client.Widget.Core
+@using R3E.YaHud.Client.UI.Components
 
 <div class="settings-overlay">
     <div class="settings-panel">
         <h3>Widget Settings</h3>
         <div class="settings-columns" style="display: flex; gap: 2rem;">
-            @foreach (var group in Widgets.GroupBy(w => w.Catagory))
+            @foreach (var group in Widgets.GroupBy(w => w.Category))
             {
                 <div class="settings-column" style="min-width: 220px;">
                     <h4>@group.Key</h4>
@@ -13,12 +15,11 @@
                         {
                             <li style="margin-bottom: 1em;">
                                 <strong>@widget.Name</strong>
-                                <div style="display: flex; align-items: center; gap: 0.5em;">
-                                    <label>
-                                        <input type="checkbox" checked="@widget.Visible" @onchange="(e) => ToggleVisibility(widget, e)" />
-                                        Visible
-                                    </label>
-                                    <button @onclick="() => ResetWidgetPosition(widget)">Reset Position</button>
+
+                                <WidgetSettings Settings="widget.Settings" />
+
+                                <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
+                                    <button @onclick="() => widget.ResetPosition()">Reset Position</button>
                                 </div>
                             </li>
                         }
@@ -31,17 +32,6 @@
 </div>
 
 @code {
-    [Parameter] public List<HudWidgetBase> Widgets { get; set; } = [];
+    [Parameter] public List<IWidget> Widgets { get; set; } = [];
     [Parameter] public EventCallback OnClose { get; set; }
-
-    private void ToggleVisibility(HudWidgetBase widget, ChangeEventArgs e)
-    {
-        widget.Visible = (bool)e.Value!;
-        widget.InvokeUpdate();
-    }
-
-    private async Task ResetWidgetPosition(HudWidgetBase widget)
-    {
-        await widget.ResetPosition();
-    }
 }
