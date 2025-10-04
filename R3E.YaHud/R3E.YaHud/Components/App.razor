@@ -21,15 +21,14 @@
         <HeadOutlet @rendermode="InteractiveWebAssembly" />
     </head>
 
-
-
-
-<body class="@CurrentFont no-select">
+    <body class="@CurrentFont no-select">
         <Routes @rendermode="InteractiveWebAssembly" />
         <script src="js/HudHelper.js"></script>
         <script src="_framework/blazor.web.js"></script>
     </body>
 </html>
+
+<script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
 
 @code{
     private string CurrentFont { get; set; } = "font-digital";//"font-sans";

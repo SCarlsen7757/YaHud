@@ -1,0 +1,37 @@
+﻿.icon-button-stack {
+    position: fixed;       /* Fixed relative to viewport */
+    top: 20%;              /* Space from top */
+    left: 20px;            /* Space from left */
+    display: flex;
+    flex-direction: column;   /* Stack vertically */
+    align-items: center;      /* Center horizontally */
+    gap: 10px;                /* Space between buttons */
+    z-index: 900;   
+}
+
+.icon-button {
+    background-color: rgba(24, 24, 24, 0.5);  
+    color: #ffffff;              
+    border: none;
+    border-radius: 50%;         
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.icon-button:hover {
+    background-color: rgba(68, 68, 68, 0.5);
+}
+
+.icon-button:active {
+    transform: scale(0.95);
+}
+
+.icon-button svg {
+    width: 2rem;
+    height: 2rem;
+}

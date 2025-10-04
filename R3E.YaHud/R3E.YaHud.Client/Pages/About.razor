@@ -1,0 +1,39 @@
+﻿<div class="about-overlay">
+    <div class="about-panel">
+        <h1>About This Application</h1>
+
+        <p>
+            <strong>App Name:</strong> YaHud<br />
+            <strong>Version:</strong> 1.0.0<br /> <!-- TODO: Update version number -->
+        </p>
+
+        <hr />
+
+        <h2>Credits</h2>
+
+        <ul>
+            <li>
+                <strong>Font Awesome Free</strong> — Icons by
+                <a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>,
+                used under the
+                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">
+                    Creative Commons Attribution 4.0 License
+                </a>.
+            </li>
+
+            <li>
+                <strong>Blazor</strong> — Powered by
+                <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor" target="_blank" rel="noopener noreferrer">
+                    Microsoft Blazor
+                </a>.
+            </li>
+        </ul>
+
+        <hr />
+        <button @onclick="OnClose">Close</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+}
