@@ -10,12 +10,25 @@
 
 @if (!locked)
 {
-    <button @onclick="ShowSettings">Show Settings</button>
+    <div class="icon-button-stack">
+        <button class="icon-button" @onclick="ShowSettings">
+            <svg class="fa-solid fa-gear"></svg>
+        </button>
+
+        <button class="icon-button" @onclick="ShowAbout">
+            <svg class="fa-solid fa-circle-info"></svg>
+        </button>
+    </div>
 }
 
-@if (showSettings)
+@if(showSettings)
 {
     <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings"/>
+}
+
+@if(showAbout)
+{
+    <About OnClose="HideAbout" />
 }
 
 <R3E.YaHud.Client.Widget.Clock.Clock />
@@ -23,6 +36,7 @@
 
 @code {
     private bool showSettings = false;
+    private bool showAbout = false;
     private bool locked;
     protected override async Task OnInitializedAsync()
     {
@@ -54,10 +68,23 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private void ShowAbout()
+    {
+        showAbout = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void HideAbout()
+    {
+        showAbout = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
     private void LockChanged(bool locked)
     {
         if(locked){
             HideSettings();
+            HideAbout();
         }
         this.locked = locked;
         InvokeAsync(StateHasChanged);
