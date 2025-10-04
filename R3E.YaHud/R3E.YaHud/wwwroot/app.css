@@ -1,15 +1,24 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: white;
 }
 
 a, .btn-link {
     color: #006bb7;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+button {
+    color: #f1f1f1;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 1.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -57,4 +66,27 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+.overlay {
+    position: fixed;     
+    top: 0;
+    left: 0;
+    width: 100vw;         
+    height: 100vh;         
+    background-color: rgba(0, 0, 0, 0.5); 
+    display: flex;         
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;        
+}
+
+.overlay-panel {
+    background-color: rgba(33,33,33,0.9);
+    width: 90%;           
+    height: 90%;          
+    padding: 2rem;
+    border-radius: 8px;
+    overflow: auto;       
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }

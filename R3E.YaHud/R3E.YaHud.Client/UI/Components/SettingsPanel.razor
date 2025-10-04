@@ -2,8 +2,8 @@
 @using R3E.YaHud.Client.Widget.Core
 @using R3E.YaHud.Client.UI.Components
 
-<div class="settings-overlay">
-    <div class="settings-panel">
+<div class="overlay">
+    <div class="overlay-panel">
         <h3>Widget Settings</h3>
         <div class="settings-columns" style="display: flex; gap: 2rem;">
             @foreach (var group in Widgets.GroupBy(w => w.Category))
@@ -19,7 +19,7 @@
                                 <WidgetSettings Settings="widget.Settings" />
 
                                 <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
-                                    <button @onclick="() => widget.ResetPosition()">Reset Position</button>
+                                    <button @onclick="() => widget.ResetPosition()">Reset position</button>
                                 </div>
                             </li>
                         }
