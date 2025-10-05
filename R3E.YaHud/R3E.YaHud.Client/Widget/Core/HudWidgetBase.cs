@@ -12,6 +12,7 @@ namespace R3E.YaHud.Client.Widget.Core
         [Inject] protected SharedMemoryClientService SharedMemoryClientService { get; set; } = default!;
         [Inject] protected SettingsService SettingsService { get; set; } = default!;
 
+
         protected bool Locked => LockService.Locked;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
@@ -21,8 +22,8 @@ namespace R3E.YaHud.Client.Widget.Core
 
         private bool visibleInitialized = false;
 
-        public double DefaultXPercent { get; protected set; }
-        public double DefaultYPercent { get; protected set; }
+        public abstract double DefaultXPercent { get; }
+        public abstract double DefaultYPercent { get; }
 
         BasicSettings IWidget.Settings => Settings;
 
