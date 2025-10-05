@@ -2,8 +2,8 @@
 {
     public enum SettingsViewMode
     {
-        Beginner,
-        Intermediate,
-        Expert
+        Beginner = 0,
+        Intermediate = 1,
+        Expert = 2,
     }
 }

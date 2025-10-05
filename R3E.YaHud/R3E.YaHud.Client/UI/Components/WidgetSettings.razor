@@ -12,6 +12,7 @@
                  .Where(x => x.Attr != null)
                  .OrderBy(x => x.Attr!.Order))
     {
+        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) {continue;}
         <div class="form-group mb-2">
             <label>@prop.Attr!.DisplayName</label>
             @RenderInput(prop.Prop, prop.Attr)
@@ -21,6 +22,8 @@
 
 @code {
     [Parameter] public required TSettings Settings { get; set; }
+
+    [Inject] public SettingsService SettingsService { get; set; } = default!;
 
     private RenderFragment RenderInput(PropertyInfo prop, SettingTypeAttribute attr) => builder =>
     {
