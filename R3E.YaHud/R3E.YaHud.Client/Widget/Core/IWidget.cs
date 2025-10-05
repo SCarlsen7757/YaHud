@@ -12,6 +12,8 @@ namespace R3E.YaHud.Client.Widget.Core
 
         public void InvokeUpdate();
 
-        Task ResetPosition();
+        public Task ResetPosition();
+
+        public Task ClearSettings();
     }
 }
