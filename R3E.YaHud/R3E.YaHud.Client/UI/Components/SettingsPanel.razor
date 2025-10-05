@@ -5,7 +5,8 @@
 
 <div class="overlay">
     <div class="overlay-panel">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Header -->
+        <div class="panel-header">
             <h3>Widget Settings</h3>
 
             <select @bind="CurrentViewMode">
@@ -16,31 +17,36 @@
             </select>
         </div>
 
-        <div class="settings-columns" style="display: flex; gap: 2rem;">
-            @foreach (var group in Widgets.GroupBy(w => w.Category))
-            {
-                <div class="settings-column" style="min-width: 220px;">
-                    <h4>@group.Key</h4>
-                    <ul style="list-style: none; padding-left: 0;">
-                        @foreach (var widget in group)
-                        {
-                            <li style="margin-bottom: 1em;">
-                                <strong>@widget.Name</strong>
+        <!-- Scrollable body -->
+        <div class="panel-body">
+            <div class="settings-columns" style="display: flex; gap: 2rem;">
+                @foreach (var group in Widgets.GroupBy(w => w.Category))
+                {
+                    <div class="settings-column" style="min-width: 220px;">
+                        <h4>@group.Key</h4>
+                        <ul style="list-style: none; padding-left: 0;">
+                            @foreach (var widget in group)
+                            {
+                                <li style="margin-bottom: 1em;">
+                                    <strong>@widget.Name</strong>
 
-                                <WidgetSettings Settings="widget.Settings" />
+                                    <WidgetSettings Settings="widget.Settings" />
 
-                                <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
-                                    <button @onclick="() => widget.ResetPosition()">Reset position</button>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
+                                    <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
+                                        <button @onclick="() => widget.ResetPosition()">Reset position</button>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
         </div>
-        <div class="button-group">
+
+        <!-- Footer -->
+        <div class="panel-footer button-group">
             <button @onclick="OnClose">Close</button>
-            @if(CurrentViewMode == SettingsViewMode.Expert)
+            @if (CurrentViewMode == SettingsViewMode.Expert)
             {
                 <button @onclick="() => SettingsService.ClearAll()">Clear settings</button>
             }

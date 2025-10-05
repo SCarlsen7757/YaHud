@@ -106,7 +106,7 @@ h1:focus {
     width: 100vw;         
     height: 100vh;         
     background-color: rgba(0, 0, 0, 0.5); 
-    display: flex;         
+    display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;        
@@ -118,6 +118,31 @@ h1:focus {
     height: 90%;          
     padding: 2rem;
     border-radius: 8px;
-    overflow: auto;       
+    overflow: auto;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* Header fixed at top */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-bottom: 1rem;
+}
+
+/* Scrollable body */
+.panel-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Footer fixed at bottom */
+.panel-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
