@@ -8,10 +8,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3>Widget Settings</h3>
 
-            <select @bind="CurrentViewMode" style="padding: 0.25rem 0.5rem;">
+            <select @bind="CurrentViewMode">
                 @foreach (var mode in Enum.GetValues<SettingsViewMode>())
                 {
-                    <option value="@mode">@mode</option>
+                    <option value="@mode">@mode.GetDisplayName()</option>
                 }
             </select>
         </div>
