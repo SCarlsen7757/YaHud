@@ -1,9 +1,14 @@
-﻿namespace R3E.YaHud.Client.Services.Settings
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace R3E.YaHud.Client.Services.Settings
 {
     public enum SettingsViewMode
     {
+        [Display(Name = "Easy")]
         Beginner = 0,
+        [Display(Name = "Normal")]
         Intermediate = 1,
+        [Display(Name = "Expert")]
         Expert = 2,
     }
 }
