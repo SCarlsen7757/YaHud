@@ -73,5 +73,34 @@ namespace R3E.YaHud.Client.Services.Settings
                 return null;
             }
         }
+
+        public async Task ClearAll()
+        {
+            await Clear(nameof(GlobalSettings));
+            foreach (var widget in Widgets)
+            {
+                await widget.ClearSettings();
+            }
+            await JS.InvokeVoidAsync("location.reload");
+        }
+
+        public async Task Clear(IWidget widget)
+        {
+            await Clear(widget.ElementId);
+        }
+
+        private async Task Clear(string id)
+        {
+            if (JS is null) return;
+            try
+            {
+                await JS.InvokeVoidAsync("HudHelper.clearWidgetSettings", id);
+            }
+            catch (InvalidOperationException ex)
+                    when (ex.Message.Contains("server-side static rendering"))
+            {
+                // Ignore during server-side prerendering
+            }
+        }
     }
 }

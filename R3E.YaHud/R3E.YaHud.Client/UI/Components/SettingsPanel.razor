@@ -38,7 +38,13 @@
                 </div>
             }
         </div>
-        <button @onclick="OnClose">Close</button>
+        <div class="button-group">
+            <button @onclick="OnClose">Close</button>
+            @if(CurrentViewMode == SettingsViewMode.Expert)
+            {
+                <button @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+            }
+        </div>
     </div>
 </div>
 

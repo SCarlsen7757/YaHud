@@ -102,6 +102,18 @@ namespace R3E.YaHud.Client.Widget.Core
             await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
         }
 
+        public async Task ClearSettings()
+        {
+            Settings.PropertyChanged -= Settings_PropertyChanged;
+
+            Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
+            Settings.PropertyChanged += Settings_PropertyChanged;
+            visibleInitialized = false;
+
+            await SettingsService.Clear(this);
+            await InvokeAsync(StateHasChanged);
+        }
+
         [JSInvokable]
         public async Task UpdateWidgetPosition(double xPercent, double yPercent)
         {
