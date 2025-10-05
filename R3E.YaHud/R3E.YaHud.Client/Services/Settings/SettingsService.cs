@@ -7,6 +7,13 @@ namespace R3E.YaHud.Client.Services.Settings
     {
         private IJSRuntime JS { get; set; } = js;
 
+        private GlobalSettings? globalSettings;
+
+        public GlobalSettings GlobalSettings
+        {
+            get => globalSettings!;
+        }
+
         public List<IWidget> Widgets { get; private set; } = [];
         public void RegisterWidget(IWidget widget)
         {
@@ -22,10 +29,15 @@ namespace R3E.YaHud.Client.Services.Settings
 
         public async Task Save(IWidget widget)
         {
+            await Save(widget.ElementId, widget.Settings);
+        }
+
+        private async Task Save<TSettings>(string id, TSettings settings) where TSettings : new()
+        {
             if (JS is null) return;
             try
             {
-                await JS.InvokeVoidAsync("HudHelper.setWidgetSettings", widget.ElementId, widget.Settings);
+                await JS.InvokeVoidAsync("HudHelper.setWidgetSettings", id, settings);
             }
             catch (InvalidOperationException ex)
                     when (ex.Message.Contains("server-side static rendering"))
@@ -36,13 +48,30 @@ namespace R3E.YaHud.Client.Services.Settings
 
         public async Task SaveAll()
         {
-            if (JS is null) return;
+            await Save(nameof(GlobalSettings), GlobalSettings);
             await Task.WhenAll(Widgets.Select(Save));
         }
 
         public async Task<TSettings?> Load<TSettings>(IWidget widget) where TSettings : BasicSettings, new()
         {
-            return await JS.InvokeAsync<TSettings>("HudHelper.getWidgetSettings", widget.ElementId);
+            globalSettings ??= await Load<GlobalSettings>(nameof(GlobalSettings)) ?? new GlobalSettings();
+
+            return await Load<TSettings>(widget.ElementId);
+        }
+
+        private async Task<TSettings?> Load<TSettings>(string id) where TSettings : class
+        {
+            if (JS is null) return null;
+            try
+            {
+                return await JS.InvokeAsync<TSettings>("HudHelper.getWidgetSettings", id);
+            }
+            catch (InvalidOperationException ex)
+                    when (ex.Message.Contains("server-side static rendering"))
+            {
+                // Ignore during server-side prerendering
+                return null;
+            }
         }
     }
 }

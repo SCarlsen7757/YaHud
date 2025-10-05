@@ -1,10 +1,21 @@
 @using R3E.YaHud.Client.Widget
 @using R3E.YaHud.Client.Widget.Core
 @using R3E.YaHud.Client.UI.Components
+@using R3E.YaHud.Client.Services.Settings
 
 <div class="overlay">
     <div class="overlay-panel">
-        <h3>Widget Settings</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Widget Settings</h3>
+
+            <select @bind="CurrentViewMode" style="padding: 0.25rem 0.5rem;">
+                @foreach (var mode in Enum.GetValues<SettingsViewMode>())
+                {
+                    <option value="@mode">@mode</option>
+                }
+            </select>
+        </div>
+
         <div class="settings-columns" style="display: flex; gap: 2rem;">
             @foreach (var group in Widgets.GroupBy(w => w.Category))
             {
@@ -34,4 +45,20 @@
 @code {
     [Parameter] public List<IWidget> Widgets { get; set; } = [];
     [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] public SettingsService SettingsService { get; set; } = default!;
+
+    private SettingsViewMode CurrentViewMode
+    {
+        get => SettingsService.GlobalSettings.ViewMode;
+        set
+        {
+            if (SettingsService.GlobalSettings.ViewMode != value)
+            {
+                SettingsService.GlobalSettings.ViewMode = value;
+                // Trigger UI update
+                StateHasChanged();
+            }
+        }
+    }
 }
