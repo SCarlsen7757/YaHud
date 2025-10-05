@@ -31,13 +31,13 @@
     public override string Name => "MoTec";
     public override string Category => "Telemetry";
 
+    public override double DefaultXPercent => 90;
+    public override double DefaultYPercent => 90;
+
     public MoTec()
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
-
-        DefaultXPercent = 90;
-        DefaultYPercent = 90;
     }
 
     protected override void Update()

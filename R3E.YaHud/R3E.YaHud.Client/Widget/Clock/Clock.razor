@@ -18,11 +18,12 @@
     public override string Name => "Clock"; 
     public override string Category => "Utility";
 
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 20;
+
     public Clock()
     {
         UseR3EData = false;
-        DefaultXPercent = 50;
-        DefaultYPercent = 20;
     }
 
     protected override void OnInitialized()
