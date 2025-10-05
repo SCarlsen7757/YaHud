@@ -32,8 +32,6 @@ namespace R3E.API
             else
             {
                 //TODO: Add UPD relying service for Linux
-
-                throw new PlatformNotSupportedException("SharedMemoryService is only supported on Windows.");
             }
         }
 
