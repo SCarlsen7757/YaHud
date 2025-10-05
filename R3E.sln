@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R3E.YaHud.Client", "R3E.YaH
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R3E", "R3E\R3E.csproj", "{12ACE437-4DB2-44F8-8F46-EAEC6814EDF2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "R3E.Relay", "R3E.Relay\R3E.Relay.csproj", "{F2EBCBE4-5508-4BD9-BAFA-533886F30697}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{12ACE437-4DB2-44F8-8F46-EAEC6814EDF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12ACE437-4DB2-44F8-8F46-EAEC6814EDF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12ACE437-4DB2-44F8-8F46-EAEC6814EDF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2EBCBE4-5508-4BD9-BAFA-533886F30697}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2EBCBE4-5508-4BD9-BAFA-533886F30697}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2EBCBE4-5508-4BD9-BAFA-533886F30697}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2EBCBE4-5508-4BD9-BAFA-533886F30697}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
