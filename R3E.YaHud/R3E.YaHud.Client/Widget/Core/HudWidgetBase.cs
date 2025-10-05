@@ -122,6 +122,12 @@ namespace R3E.YaHud.Client.Widget.Core
             await SettingsService.Save(this);
         }
 
+        [JSInvokable]
+        public async Task OnWindowResize()
+        {
+            await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
+        }
+
         private bool _disposed;
 
         public void Dispose()

@@ -38,6 +38,11 @@
                 dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent);
             }
         });
+
+        window.addEventListener('resize', () => {
+            // Call C# method to reposition all widgets
+            dotnetHelper.invokeMethodAsync('OnWindowResize');
+        });
     },
 
     setPosition: function (elementId, xPercent, yPercent) {
