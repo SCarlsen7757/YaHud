@@ -18,12 +18,8 @@ builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 builder.Services.AddScoped<ShortcutClientService>();
 
-// Only add SharedMemoryService if running on Windows
-if (OperatingSystem.IsWindows())
-{
-    builder.Services.AddSingleton<SharedMemoryService>();
-    builder.Services.AddScoped<SharedMemoryClientService>();
-}
+builder.Services.AddSingleton<SharedMemoryService>(sp => new(false)); // Set useUdp to true to use UDP shared memory on Windows
+builder.Services.AddScoped<SharedMemoryClientService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -50,22 +46,19 @@ app.MapRazorComponents<App>()
 app.MapHub<SharedMemoryHub>("/sharedmemoryhub");
 app.MapHub<ShortcutHub>("/shortcuthub");
 
-if (OperatingSystem.IsWindows())
+var sharedMemoryService = app.Services.GetRequiredService<SharedMemoryService>();
+var hubContext = app.Services.GetRequiredService<IHubContext<SharedMemoryHub>>();
+
+sharedMemoryService.DataUpdated += async (data) =>
 {
-    var sharedMemoryService = app.Services.GetRequiredService<SharedMemoryService>();
-    var hubContext = app.Services.GetRequiredService<IHubContext<SharedMemoryHub>>();
+    var size = Marshal.SizeOf<Shared>();
+    var buffer = new byte[size];
+    var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+    Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
+    handle.Free();
 
-    sharedMemoryService.DataUpdated += async (data) =>
-    {
-        var size = Marshal.SizeOf<Shared>();
-        var buffer = new byte[size];
-        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
-        handle.Free();
-
-        await hubContext.Clients.All.SendAsync("UpdateSharedBinary", buffer);
-    };
-}
+    await hubContext.Clients.All.SendAsync("UpdateSharedBinary", buffer);
+};
 
 var shortcutService = app.Services.GetRequiredService<ShortcutService>();
 var shortcutHub = app.Services.GetRequiredService<IHubContext<ShortcutHub>>();
