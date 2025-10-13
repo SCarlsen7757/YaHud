@@ -1,0 +1,67 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.MoTec.Components
+@inherits HudWidgetBase<MoTecSettings>
+
+@if (Settings.Visible)
+{
+    <div id=@ElementId class="motec-widget text">
+        <p class="gear-text">@Gear</p>
+        <p class="speed-text">@Speed</p>
+        <div class="rpm-component"><HorizontalBar 
+            Min="0.0f" 
+            Max="@MaxRPM" 
+            Value="@RPM" 
+            PrimaryColor="@RpmCurrentColor" 
+            BackgroundColor="@RpmBarBackgroundColor" /></div>
+    </div>
+}
+
+@code {
+    private string Gear { get; set; } = "N";
+    private float Speed { get;  set; } = 0.0f;
+    private float RPM { get;  set; } = 3000.0f;
+    private float MaxRPM { get; set; } = 9000.0f;
+    private float UpshiftRPM { get; set; } = 7000.0f;
+
+    private string RpmBarBackgroundColor => "#454545";
+    private string RpmCurrentColor { get; set; } = "#ffffff";
+    private string RpmBarPrimaryColor => Settings.RpmColor;
+    private string RpmBarSecondaryColor => Settings.RpmUpshiftColor;
+
+    public override string ElementId { get => "motecWidget"; }
+    public override string Name => "MoTec";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 90;
+    public override double DefaultYPercent => 90;
+
+    public MoTec()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = SharedMemoryService.Data;
+        switch (data.Gear)
+        {
+            case -1:
+                Gear = "R";
+                break;
+            case 0:
+                Gear = "N";
+                break;
+            default:
+                Gear = data.Gear.ToString();
+                break;
+        }
+
+        Speed = MathF.Round(R3E.Utilities.MpsToKph(data.CarSpeed),0);
+        RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
+        MaxRPM = Utilities.RpsToRpm(data.MaxEngineRps);
+        UpshiftRPM = Utilities.RpsToRpm(data.UpshiftRps);
+
+        RpmCurrentColor = RPM >= UpshiftRPM ? RpmBarSecondaryColor : RpmBarPrimaryColor;
+    }
+}
