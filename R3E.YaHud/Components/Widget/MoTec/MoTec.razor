@@ -7,10 +7,11 @@
     <div id=@ElementId class="motec-widget text">
         <p class="gear-text">@Gear</p>
         <p class="speed-text">@Speed</p>
-        <div class="rpm-component"><HorizontalBar 
-            Min="0.0f" 
-            Max="@MaxRPM" 
-            Value="@RPM" 
+        <div class="rpm-component"><HorizontalBar  
+            @key="RPM"
+            Min="0.0d" 
+            Max="@MaxRPM"
+            Value="@RPM"
             PrimaryColor="@RpmCurrentColor" 
             BackgroundColor="@RpmBarBackgroundColor" /></div>
     </div>
@@ -19,9 +20,9 @@
 @code {
     private string Gear { get; set; } = "N";
     private float Speed { get;  set; } = 0.0f;
-    private float RPM { get;  set; } = 3000.0f;
-    private float MaxRPM { get; set; } = 9000.0f;
-    private float UpshiftRPM { get; set; } = 7000.0f;
+    private double RPM { get;  set; } = 3000.0f;
+    private double MaxRPM { get; set; } = 9000.0f;
+    private double UpshiftRPM { get; set; } = 7000.0f;
 
     private string RpmBarBackgroundColor => "#454545";
     private string RpmCurrentColor { get; set; } = "#ffffff";
@@ -39,6 +40,7 @@
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
+        //horizontalBar.SetValue(3000d);
     }
 
     protected override void Update()
@@ -58,9 +60,9 @@
         }
 
         Speed = MathF.Round(R3E.Utilities.MpsToKph(data.CarSpeed),0);
-        RPM = R3E.Utilities.RpsToRpm(data.EngineRps);
-        MaxRPM = Utilities.RpsToRpm(data.MaxEngineRps);
-        UpshiftRPM = Utilities.RpsToRpm(data.UpshiftRps);
+        RPM = (double)R3E.Utilities.RpsToRpm(data.EngineRps);
+        MaxRPM = (double)Utilities.RpsToRpm(data.MaxEngineRps);
+        UpshiftRPM = (double)Utilities.RpsToRpm(data.UpshiftRps);
 
         RpmCurrentColor = RPM >= UpshiftRPM ? RpmBarSecondaryColor : RpmBarPrimaryColor;
     }
