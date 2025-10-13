@@ -1,0 +1,86 @@
+﻿@page "/"
+@inject SharedMemoryService SharedMemoryClientService
+@inject ShortcutService ShortcutClientService
+@inject HudLockService HudLockService
+@inject SettingsService SettingsService
+@using R3E.API
+@using R3E.YaHud.Services
+@using R3E.YaHud.Services.Settings
+@using R3E.YaHud.Components.UI.Components
+@using R3E.YaHud.Components.Widget
+@using R3E.YaHud.Components.Widget.Clock
+@using R3E.YaHud.Components.Widget.MoTec
+
+@if (!locked)
+{
+    <div class="icon-button-stack">
+        <button class="icon-button" @onclick="ShowSettings">
+            <svg class="fa-solid fa-gear"></svg>
+        </button>
+
+        <button class="icon-button" @onclick="ShowAbout">
+            <svg class="fa-solid fa-info"></svg>
+        </button>
+    </div>
+}
+
+@if(showSettings)
+{
+    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings"/>
+}
+
+@if(showAbout)
+{
+    <About OnClose="HideAbout" />
+}
+
+<Clock />
+<MoTec />
+
+@code {
+    private bool showSettings = false;
+    private bool showAbout = false;
+    private bool locked;
+    protected override async Task OnInitializedAsync()
+    {
+        HudLockService.OnLockChanged += LockChanged;
+        locked = HudLockService.Locked;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowSettings()
+    {
+        showSettings = true;
+        InvokeAsync(StateHasChanged);
+    }   
+
+    private async void HideSettings()
+    {
+        await SettingsService.SaveAll();
+        showSettings = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowAbout()
+    {
+        showAbout = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void HideAbout()
+    {
+        showAbout = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void LockChanged(bool locked)
+    {
+        if(locked){
+            HideSettings();
+            HideAbout();
+        }
+        this.locked = locked;
+        InvokeAsync(StateHasChanged);
+    }
+}

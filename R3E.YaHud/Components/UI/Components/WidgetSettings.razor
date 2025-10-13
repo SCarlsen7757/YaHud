@@ -1,0 +1,95 @@
+﻿@using System.Reflection
+@using R3E.YaHud.Services.Settings
+@using R3E.YaHud.Components.Widget
+@using R3E.YaHud.Components.Widget.Core
+
+
+@typeparam TSettings
+
+<div>
+    @foreach (var prop in Settings!.GetType().GetProperties()
+                 .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
+                 .Where(x => x.Attr != null)
+                 .OrderBy(x => x.Attr!.Order))
+    {
+        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) {continue;}
+        <div class="form-group mb-2">
+            <label>@prop.Attr!.DisplayName</label>
+            @RenderInput(prop.Prop, prop.Attr)
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public required TSettings Settings { get; set; }
+
+    [Inject] public SettingsService SettingsService { get; set; } = default!;
+
+    private RenderFragment RenderInput(PropertyInfo prop, SettingTypeAttribute attr) => builder =>
+    {
+        var value = prop.GetValue(Settings);
+        var seq = 0;
+
+        switch (attr.Type)
+        {
+            case SettingsTypes.Checkbox:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "checkbox");
+                builder.AddAttribute(seq++, "checked", (bool?)value ?? false);
+                builder.AddAttribute(seq++, "onchange",
+                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+                        prop.SetValue(Settings, e.Value)
+                    ));
+                builder.CloseElement();
+                break;
+
+            case SettingsTypes.Slider:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "range");
+                builder.AddAttribute(seq++, "min", attr.Min);
+                builder.AddAttribute(seq++, "max", attr.Max);
+                builder.AddAttribute(seq++, "step", attr.Step);
+                builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
+                builder.AddAttribute(seq++, "oninput",
+                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+                    {
+                        var val = Convert.ToDouble(e.Value);
+                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
+                    }));
+                builder.CloseElement();
+
+                // Optional: show current value
+                builder.AddContent(seq++, $" {value}");
+                break;
+
+            case SettingsTypes.Number:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "number");
+                builder.AddAttribute(seq++, "min", attr.Min);
+                builder.AddAttribute(seq++, "max", attr.Max);
+                builder.AddAttribute(seq++, "step", attr.Step);
+                builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
+                builder.AddAttribute(seq++, "onchange",
+                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+                    {
+                        var val = Convert.ToDouble(e.Value);
+                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
+                    }));
+                builder.CloseElement();
+                break;
+
+            case SettingsTypes.ColorPicker:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "color");
+                builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
+                builder.AddAttribute(seq++, "onchange",
+                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+                    {
+                        var val = e.Value?.ToString() ?? "#ffffff";
+                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
+                    }));
+                builder.CloseElement();
+                break;
+        }
+    };
+}
