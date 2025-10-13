@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="R3E.YaHud.Client\**" />
+    <Compile Remove="R3E.YaHud\**" />
+    <Content Remove="R3E.YaHud.Client\**" />
+    <Content Remove="R3E.YaHud\**" />
+    <EmbeddedResource Remove="R3E.YaHud.Client\**" />
+    <EmbeddedResource Remove="R3E.YaHud\**" />
+    <None Remove="R3E.YaHud.Client\**" />
+    <None Remove="R3E.YaHud\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\R3E\R3E.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
