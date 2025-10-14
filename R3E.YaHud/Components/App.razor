@@ -1,35 +1,34 @@
 ﻿<!DOCTYPE html>
-<style>
-    html, body {
-        background: transparent !important;
-    }
-</style>
-
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <base href="/" />
-        <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-        <link rel="stylesheet" href="@Assets["app.css"]" />
-        <link rel="stylesheet" href="@Assets["R3E.YaHud.styles.css"]" />
-        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="css/theme.css" />
-        <link rel="stylesheet" href="css/widget.css" />
-        <ImportMap />
-        <link rel="icon" type="image/png" href="favicon.png" />
-        <HeadOutlet @rendermode="InteractiveServer" />
-    </head>
-
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        html, body {
+            background: transparent !important;
+        }
+    </style>
+    <base href="/" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["R3E.YaHud.styles.css"]" />
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Menbere:wght@400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/widget.css" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
     <body class="@CurrentFont no-select">
         <Routes @rendermode="InteractiveServer" />
         <script src="js/HudHelper.js"></script>
         <script src="_framework/blazor.web.js"></script>
+        <script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
     </body>
 </html>
 
-<script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
-
 @code{
-    private string CurrentFont { get; set; } = "font-digital";//"font-sans";
+    private string CurrentFont { get; set; } = "font-jost";
 }
