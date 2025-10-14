@@ -1,11 +1,11 @@
-﻿.font-sans {
-    font-family: 'Segoe UI', Arial, sans-serif;
+﻿.font-menbere {
+    font-family: 'Menbere'; 
 }
 
-.font-mono {
-    font-family: monospace, monospace;
+.font-jost {
+    font-family: 'Jost'; 
 }
 
-.font-digital {
-    font-family: 'Orbitron', monospace; /* Example: add Orbitron from Google Fonts */
+.font-oswald {
+    font-family: 'Oswald'; 
 }
