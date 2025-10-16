@@ -52,7 +52,8 @@ internal class Program : IDisposable
 
     static async Task Main()
     {
-        Console.WriteLine("Starting R3E API UDP relay.");
+        Console.WriteLine("Starting R3E API UDP relay service");
+        Console.WriteLine("Waiting for R3E to start");
         using var program = new Program();
 
         while (true)
