@@ -65,14 +65,17 @@ namespace R3E.API
             {
                 if (Utilities.IsRrreRunning() && file == null)
                 {
+                    Console.WriteLine("Raceroom game found");
                     try
                     {
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
                         buffer = new byte[Marshal.SizeOf<Shared>()];
+                        Console.WriteLine("SHM file found");
                     }
                     catch (FileNotFoundException)
                     {
                         file = null;
+                        Console.WriteLine("SHM file not found");
                     }
                 }
 
