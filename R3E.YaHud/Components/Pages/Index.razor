@@ -55,17 +55,17 @@
         InvokeAsync(StateHasChanged);
     }   
 
-    private async void HideSettings()
+    private async Task HideSettings()
     {
         await SettingsService.SaveAll();
         showSettings = false;
         await InvokeAsync(StateHasChanged);
     }
 
-    private void ShowAbout()
+    private async Task ShowAbout()
     {
         showAbout = true;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void HideAbout()
@@ -74,13 +74,13 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void LockChanged(bool locked)
+    private async void LockChanged(bool locked)
     {
         if(locked){
-            HideSettings();
+            await HideSettings();
             HideAbout();
         }
         this.locked = locked;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 }
