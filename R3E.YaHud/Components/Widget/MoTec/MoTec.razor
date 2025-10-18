@@ -45,7 +45,7 @@
 
     protected override void Update()
     {
-        R3E.Data.Shared data = SharedMemoryService.Data;
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
         switch (data.Gear)
         {
             case -1:

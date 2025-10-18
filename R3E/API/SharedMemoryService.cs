@@ -26,6 +26,8 @@ namespace R3E.API
 
         private readonly bool useUdp = !OperatingSystem.IsWindows();
 
+        public SharedMemoryService() : this(false) { }
+
         public SharedMemoryService(bool? useUdp)
         {
             if (useUdp is not null)

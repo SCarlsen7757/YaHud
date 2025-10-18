@@ -10,7 +10,7 @@ namespace R3E.YaHud.Components.Widget.Core
     {
         [Inject] protected IJSRuntime JS { get; set; } = default!;
         [Inject] protected HudLockService LockService { get; set; } = default!;
-        [Inject] protected SharedMemoryService SharedMemoryService { get; set; } = default!;
+        [Inject] protected TelemetryService TelemetryService { get; set; } = default!;
         [Inject] protected SettingsService SettingsService { get; set; } = default!;
 
 
@@ -42,7 +42,7 @@ namespace R3E.YaHud.Components.Widget.Core
         {
             SettingsService.RegisterWidget(this);
             LockService.OnLockChanged += OnLockChanged;
-            if (UseR3EData) SharedMemoryService.DataUpdated += OnR3EDataUpdated;
+            if (UseR3EData) TelemetryService.DataUpdated += OnTelemetryDataUpdated;
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -84,7 +84,7 @@ namespace R3E.YaHud.Components.Widget.Core
             InvokeAsync(StateHasChanged);
         }
 
-        protected virtual void OnR3EDataUpdated(Data.Shared newData)
+        protected virtual void OnTelemetryDataUpdated(TelemetryData newData)
         {
             if (DateTime.Now - lastUpdate < UpdateInterval) return;
             lastUpdate = DateTime.Now;
@@ -138,7 +138,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
             SettingsService.UnregisterWidget(this);
             LockService.OnLockChanged -= OnLockChanged;
-            SharedMemoryService.DataUpdated -= OnR3EDataUpdated;
+            TelemetryService.DataUpdated -= OnTelemetryDataUpdated;
             objRef?.Dispose();
             GC.SuppressFinalize(this);
         }
