@@ -1,5 +1,70 @@
-﻿<h3>UserInputs</h3>
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.UserInputs.Components
+@using R3E.API
+@inherits HudWidgetBase<UserInputsSettings>
+
+@if (Settings.Visible)
+{
+    <div id=@ElementId class="user-inputs-widget text">
+    @if (Settings.ShowClutch)
+    {
+        <div class="clutch-component">
+            <VerticalBar  
+                @key="Clutch"
+                Min="0.0d" 
+                Max="1.0d"
+                Value="@Clutch"
+                PrimaryColor="@Settings.ClutchColor" 
+                BackgroundColor="@BarBackgroundColor" />
+        </div>
+    }
+        <div class="throttle-component">
+            <VerticalBar 
+                @key="Throttle"
+                Min="0.0d"
+                Max="1.0d"
+                Value="@Throttle"
+                PrimaryColor="@Settings.ThrottleColor"
+                BackgroundColor="@BarBackgroundColor" />
+        </div>
+        <div class="brake-component">
+            <VerticalBar 
+                @key="Brake"
+                Min="0.0d"
+                Max="1.0d"
+                Value="@Brake"
+                PrimaryColor="@Settings.BrakeColor"
+                BackgroundColor="@BarBackgroundColor" />
+        </div>
+    </div>
+}
 
 @code {
+    private double Clutch { get; set; } = 0.0d;
+    private double Throttle { get; set; } = 0.0d;
+    private double Brake { get; set; } = 0.0d;
 
+    private string BarBackgroundColor => "#454545";
+
+    public override string ElementId { get => "userInputsWidget"; }
+    public override string Name => "User inputs";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 80;
+    public override double DefaultYPercent => 90;
+
+    public UserInputs()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+        
+        Clutch = (double)data.Clutch;
+        Throttle = (double)data.Throttle;
+        Brake = (double)data.Brake;
+    }
 }

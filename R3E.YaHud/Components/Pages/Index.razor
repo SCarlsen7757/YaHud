@@ -9,6 +9,7 @@
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Clock
 @using R3E.YaHud.Components.Widget.MoTec
+@using R3E.YaHud.Components.Widget.UserInputs
 
 @if (!locked)
 {
@@ -35,6 +36,7 @@
 
 <Clock />
 <MoTec />
+<UserInputs />
 
 @code {
     private bool showSettings = false;

@@ -1,5 +1,20 @@
-﻿<h3>VerticalBar</h3>
+﻿<div class="vertical-bar" role="img" aria-label="value: @Percent">
+    <div class="vertical-bar-track" style="background-color:@BackgroundColor">
+        <div class="vertical-bar-fill" style="height:@Percent; background-color:@PrimaryColor"></div>
+    </div>
+</div>
 
 @code {
+    [Parameter] public double Min { get; set; } = 0;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string PrimaryColor { get; set; } = "white";
+    [Parameter] public string BackgroundColor { get; set; } = "darkgray";
 
+    string Percent =>
+        Max == Min
+            ? "0%"
+            : (Math.Clamp((Value - Min) / (Max - Min) * 100.0, 0.0, 100.0)
+                .ToString("0.##")
+                .Replace(",", ".") + "%");
 }

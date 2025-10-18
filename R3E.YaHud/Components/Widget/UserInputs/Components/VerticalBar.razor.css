@@ -1,2 +1,25 @@
-﻿body {
+﻿.vertical-bar {
+    display: inline-flex;
+    align-items: stretch;
+    width: 15px;          /* bar width */
+    height: 120px;        /* available height for the bar */
+    box-sizing: border-box;
+}
+
+.vertical-bar-track {
+    display: flex;
+    flex-direction: column-reverse; /* make fill grow from bottom */
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.vertical-bar-fill {
+    width: 100%;
+    height: 0%;
+    transition: height 120ms linear; /* smooth updates */
+    box-sizing: border-box;
+    align-self: stretch;
 }

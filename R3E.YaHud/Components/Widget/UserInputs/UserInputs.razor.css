@@ -1,0 +1,38 @@
+﻿.user-inputs-widget {
+    display: flex;
+    flex-direction: row;        /* place children side-by-side */
+    align-items: flex-end;     /* align bars to bottom so they look aligned */
+    justify-content: center;
+    gap: 8px;                  /* spacing between bars */
+    text-align: center;
+    border-radius: 4px;
+    width: 150px;              /* fixed width required by Reset position code */
+    height: auto;
+    background-color: rgba(2, 0, 0, 0.5);
+    position: absolute;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 6px;
+}
+
+.clutch-component,
+.throttle-component,
+.brake-component {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 0;              /* evenly divide the fixed 150px width */
+    height: 120px;            /* height available for each vertical bar */
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* small responsive tweak: shrink height on narrow containers */
+@media (max-width: 360px) {
+    .clutch-component,
+    .throttle-component,
+    .brake-component {
+        height: 96px;
+    }
+}
