@@ -7,7 +7,7 @@ namespace R3E.YaHud.Services.Settings
     {
         private IJSRuntime JS { get; set; } = js;
 
-        private GlobalSettings? globalSettings;
+        private GlobalSettings globalSettings = new();
 
         public GlobalSettings GlobalSettings
         {
