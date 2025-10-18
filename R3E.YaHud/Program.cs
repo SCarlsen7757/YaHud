@@ -12,7 +12,7 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 
-builder.Services.AddSingleton<SharedMemoryService>(sp => new(false)); // Set useUdp to true to use UDP shared memory on Windows
+builder.Services.AddSingleton<TelemetryService>(sp => new(new SharedMemoryService(false))); // Set useUdp to true to use UDP shared memory on Windows
 
 var app = builder.Build();
 

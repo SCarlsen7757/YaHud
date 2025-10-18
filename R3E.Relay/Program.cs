@@ -11,7 +11,7 @@ internal class Program : IDisposable
 
     public Program()
     {
-        sharedMemoryService = new SharedMemoryService(false);
+        sharedMemoryService = new SharedMemoryService();
         int sourcePort = GetAvailablePort();
         udpRelayService = new UdpRelayService(sourcePort, "127.0.0.1", 10101);
         sharedMemoryService.DataUpdated += OnDataUpdated;
