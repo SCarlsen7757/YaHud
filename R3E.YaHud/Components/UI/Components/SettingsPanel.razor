@@ -9,12 +9,10 @@
         <div class="panel-header">
             <h3>Widget Settings</h3>
 
-            <select @bind="CurrentViewMode">
-                @foreach (var mode in Enum.GetValues<SettingsViewMode>())
-                {
-                    <option value="@mode">@mode.GetDisplayName()</option>
-                }
-            </select>
+            <EnumSelect TEnum="SettingsViewMode"
+                        Value="@CurrentViewMode"
+                        ValueChanged="OnViewModeChanged"
+                        LabelProvider="@(v => v.GetDisplayName())" />
         </div>
 
         <!-- Scrollable body -->
@@ -72,5 +70,11 @@
                 StateHasChanged();
             }
         }
+    }
+
+    private Task OnViewModeChanged(SettingsViewMode v)
+    {
+        CurrentViewMode = v;
+        return Task.CompletedTask;
     }
 }

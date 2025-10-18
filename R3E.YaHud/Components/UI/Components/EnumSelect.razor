@@ -1,0 +1,104 @@
+﻿@typeparam TEnum where TEnum : struct, System.Enum
+@using System.Linq
+
+<div class="custom-select" tabindex="0" @onblur="OnBlur" @onkeydown="OnKeyDown">
+    <button class="custom-select-toggle" @onclick="Toggle" type="button" aria-haspopup="listbox" aria-expanded="@_open.ToString().ToLower()">
+        @GetLabel(Value)
+        <span class="caret">▾</span>
+    </button>
+
+    @if (_open)
+    {
+        <ul class="custom-select-options" role="listbox" aria-activedescendant="@($"opt-{_highlightedIndex}")">
+            @for (int i = 0; i < _options.Count; i++)
+            {
+                var opt = _options[i];
+                var id = $"opt-{i}";
+                <li id="@id" role="option" class="custom-select-option @(EqualityComparer<TEnum>.Default.Equals(opt, Value) ? "selected" : "") @(i == _highlightedIndex ? "highlighted" : "")">
+                    <button type="button" @onclick="() => Select(opt)" @onmouseover="() => Highlight(i)">
+                        @GetLabel(opt)
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public required TEnum Value { get; set; }
+    [Parameter] public EventCallback<TEnum> ValueChanged { get; set; }
+    [Parameter] public Func<TEnum, string>? LabelProvider { get; set; }
+
+    private List<TEnum> _options = new();
+    private bool _open;
+    private int _highlightedIndex = -1;
+
+    protected override void OnInitialized()
+    {
+        _options = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToList();
+    }
+
+    private string GetLabel(TEnum v) => LabelProvider?.Invoke(v) ?? v!.ToString()!;
+
+    private void Toggle()
+    {
+        _open = !_open;
+        if (_open)
+        {
+            _highlightedIndex = _options.IndexOf(Value);
+            if (_highlightedIndex < 0) _highlightedIndex = 0;
+        }
+    }
+
+    private async Task Select(TEnum selected)
+    {
+        Value = selected;
+        await ValueChanged.InvokeAsync(selected);
+        _open = false;
+        StateHasChanged();
+    }
+
+    private void Highlight(int index)
+    {
+        _highlightedIndex = index;
+    }
+
+    private void OnBlur(FocusEventArgs _)
+    {
+        // close when focus leaves
+        _open = false;
+        StateHasChanged();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (!_open)
+        {
+            if (e.Key == "ArrowDown" || e.Key == "Enter" || e.Key == " ")
+            {
+                Toggle();
+            }
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _highlightedIndex = Math.Min(_highlightedIndex + 1, _options.Count - 1);
+                break;
+            case "ArrowUp":
+                _highlightedIndex = Math.Max(_highlightedIndex - 1, 0);
+                break;
+            case "Enter":
+            case " ":
+                var selected = _options[_highlightedIndex];
+                await Select(selected);
+                break;
+            case "Escape":
+                _open = false;
+                break;
+        }
+
+        StateHasChanged();
+    }
+}
