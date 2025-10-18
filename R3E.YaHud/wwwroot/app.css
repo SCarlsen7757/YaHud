@@ -27,31 +27,6 @@ a, .btn-link {
     gap: 0.5rem;
 }
 
-select {
-    color: #f1f1f1;
-    background-color: rgba(0, 0, 0, 0.8);
-    border-radius: 1.5rem;
-    padding: 0.5rem 2.5rem 0.5rem 1rem; 
-    border: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    appearance: none;     
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease, opacity 0.3s ease;
-}
-
-select:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-}
-
-select {
-    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="%23f1f1f1" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1em;
-}
-
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }

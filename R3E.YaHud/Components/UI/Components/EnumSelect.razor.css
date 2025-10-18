@@ -1,0 +1,103 @@
+﻿.custom-select {
+    position: relative;
+    display: inline-block;
+    min-width: 160px;
+    font-size: 0.95rem;
+    max-width: 100%;
+}
+
+/* Toggle uses the select's look: rounded, padded, shadowed and interactive */
+.custom-select-toggle {
+    position: relative; /* needed so caret can be absolutely positioned */
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #f1f1f1;
+    border: none;
+    border-radius: 1.5rem;
+    /* reduce right padding so caret sits closer to edge */
+    padding: 0.5rem 1.25rem 0.5rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+    text-align: left;
+}
+
+/* Keep only one caret (the span). Hide the pseudo-caret to avoid duplicate arrows. */
+.custom-select-toggle::after {
+    display: none;
+}
+
+/* caret stays visible at the right — absolute positioning to pin it near the right edge */
+.custom-select-toggle .caret {
+    position: absolute;
+    right: 0.9rem; /* distance from right edge; lower value moves it closer */
+    opacity: 0.85;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+/* hover matches native select hover */
+.custom-select-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* focus visual similar to .btn:focus in app.css */
+.custom-select-toggle:focus,
+.custom-select-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* Dropdown options styling kept darker and compact
+   Make dropdown match toggle width and not overflow the panel.
+*/
+.custom-select-options {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    z-index: 3000;
+    background: rgba(33,33,33,0.95);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    padding: 0.35rem;
+    max-height: 240px;
+    overflow: auto;
+
+    /* ensure dropdown width follows toggle width and respects container */
+    min-width: 100%;
+    width: auto;
+    box-sizing: border-box;
+    max-width: calc(100vw - 4rem); /* safety so it never goes off-screen */
+}
+
+/* option button styles */
+.custom-select-option {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.custom-select-option button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #f1f1f1;
+    padding: 0.45rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* option hover / highlighted */
+.custom-select-option button:hover,
+.custom-select-option.highlighted button {
+    background: rgba(255,255,255,0.04);
+}
+
+/* selected option visual */
+.custom-select-option.selected button {
+    background: rgba(37,140,251,0.12);
+    outline: 1px solid rgba(37,140,251,0.2);
+}
