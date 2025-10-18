@@ -1,5 +1,6 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
+@using R3E.API
 @inherits HudWidgetBase<MoTecSettings>
 
 @if (Settings.Visible)
@@ -8,26 +9,23 @@
         <p class="gear-text">@Gear</p>
         <p class="speed-text">@Speed</p>
         <div class="rpm-component"><HorizontalBar  
-            @key="RPM"
+                @key="Rps"
             Min="0.0d" 
-            Max="@MaxRPM"
-            Value="@RPM"
-            PrimaryColor="@RpmCurrentColor" 
-            BackgroundColor="@RpmBarBackgroundColor" /></div>
+            Max="@MaxRps"
+                Value="@Rps"
+            PrimaryColor="@RpsCurrentColor" 
+            BackgroundColor="@RpsBarBackgroundColor" /></div>
     </div>
 }
 
 @code {
     private string Gear { get; set; } = "N";
-    private float Speed { get;  set; } = 0.0f;
-    private double RPM { get;  set; } = 3000.0f;
-    private double MaxRPM { get; set; } = 9000.0f;
-    private double UpshiftRPM { get; set; } = 7000.0f;
+    private double Speed { get; set; } = 0.0f;
+    private double Rps { get;  set; } = 3000.0f;
+    private double MaxRps { get; set; } = 9000.0f;
 
-    private string RpmBarBackgroundColor => "#454545";
-    private string RpmCurrentColor { get; set; } = "#ffffff";
-    private string RpmBarPrimaryColor => Settings.RpmColor;
-    private string RpmBarSecondaryColor => Settings.RpmUpshiftColor;
+    private string RpsBarBackgroundColor => "#454545";
+    private string RpsCurrentColor { get; set; } = "#ffffff";
 
     public override string ElementId { get => "motecWidget"; }
     public override string Name => "MoTec";
@@ -40,7 +38,6 @@
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
-        //horizontalBar.SetValue(3000d);
     }
 
     protected override void Update()
@@ -58,12 +55,11 @@
                 Gear = data.Gear.ToString();
                 break;
         }
+        Speed = UnitConverter.Convert(data.CarSpeed, SpeedUnit.MilesPerHour, SettingsService.GlobalSettings.SpeedUnit);
+        Rps = (double)data.EngineRps;
+        MaxRps = (double)data.MaxEngineRps;
+        var upshiftRps = (double)data.UpshiftRps;
 
-        Speed = MathF.Round(R3E.Utilities.MpsToKph(data.CarSpeed),0);
-        RPM = (double)R3E.Utilities.RpsToRpm(data.EngineRps);
-        MaxRPM = (double)Utilities.RpsToRpm(data.MaxEngineRps);
-        UpshiftRPM = (double)Utilities.RpsToRpm(data.UpshiftRps);
-
-        RpmCurrentColor = RPM >= UpshiftRPM ? RpmBarSecondaryColor : RpmBarPrimaryColor;
+        RpsCurrentColor = Rps >= upshiftRps ? Settings.RpmUpshiftColor : Settings.RpmColor;
     }
 }
