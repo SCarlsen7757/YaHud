@@ -33,7 +33,7 @@
                                     <WidgetSettings Settings="widget.Settings" />
 
                                     <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
-                                        <button @onclick="() => widget.ResetPosition()">Reset position</button>
+                                        <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
                                     </div>
                                 </li>
                             }
@@ -45,10 +45,10 @@
 
         <!-- Footer -->
         <div class="panel-footer button-group">
-            <button @onclick="OnClose">Close</button>
+            <button class="btn-primary" @onclick="OnClose">Close</button>
             @if (CurrentViewMode == SettingsViewMode.Expert)
             {
-                <button @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
             }
         </div>
     </div>

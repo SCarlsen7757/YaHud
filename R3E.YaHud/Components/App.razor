@@ -17,16 +17,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/widget.css" />
+    <link rel="stylesheet" href="coloris.css" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
-    <body class="@CurrentFont no-select">
-        <Routes @rendermode="InteractiveServer" />
-        <script src="js/HudHelper.js"></script>
-        <script src="_framework/blazor.web.js"></script>
-        <script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
-    </body>
+<body class="@CurrentFont no-select">
+    <Routes @rendermode="InteractiveServer" />
+    <script src="js/HudHelper.js"></script>
+    <script src="coloris.js"></script>
+    <script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
+    <script src="_framework/blazor.web.js"></script>
+</body>
 </html>
 
 @code{

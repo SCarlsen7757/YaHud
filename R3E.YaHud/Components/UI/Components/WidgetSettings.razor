@@ -2,7 +2,7 @@
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Core
-
+@inject IJSRuntime JS
 
 @typeparam TSettings
 
@@ -24,6 +24,22 @@
     [Parameter] public required TSettings Settings { get; set; }
 
     [Inject] public SettingsService SettingsService { get; set; } = default!;
+
+    // mapping: property name -> picker container id
+    private readonly Dictionary<string, string> _pickerIds = new();
+    // reverse mapping: container id -> PropertyInfo
+    private readonly Dictionary<string, PropertyInfo> _pickerProps = new();
+
+    private DotNetObjectReference<WidgetSettings<TSettings>>? _objRef;
+
+    private string GetOrCreatePickerId(PropertyInfo prop)
+    {
+        if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
+        id = $"picker_{Settings.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
+        _pickerIds[prop.Name] = id;
+        _pickerProps[id] = prop;
+        return id;
+    }
 
     private RenderFragment RenderInput(PropertyInfo prop, SettingTypeAttribute attr) => builder =>
     {
@@ -79,17 +95,91 @@
                 break;
 
             case SettingsTypes.ColorPicker:
+                // use Coloris popover — render compact swatch-input that opens Coloris on click
+                var pickerId = GetOrCreatePickerId(prop);
+                var inputId = $"input_{pickerId}";
+
+                // compact swatch (the Coloris input itself; Coloris attaches to inputs)
                 builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "color");
+                builder.AddAttribute(seq++, "id", inputId);
+                builder.AddAttribute(seq++, "type", "text");
+                builder.AddAttribute(seq++, "class", "coloris coloris-swatch");
                 builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
-                builder.AddAttribute(seq++, "onchange",
-                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
-                    {
-                        var val = e.Value?.ToString() ?? "#ffffff";
-                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
-                    }));
+                // visually small; background shows current color
+                builder.AddAttribute(seq++, "style", $"width:30px; height:22px; padding:0; border-radius:4px; border:1px solid rgba(255,255,255,0.12); background:{value?.ToString() ?? "#ffffff"}; color:transparent; cursor:pointer;");
                 builder.CloseElement();
+
+                // readonly hex display (optional)
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "text");
+                builder.AddAttribute(seq++, "readonly", true);
+                builder.AddAttribute(seq++, "id", $"hex_{pickerId}");
+                builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
+                builder.AddAttribute(seq++, "style", "width:90px; margin-left:0.5rem; text-align:center; background:transparent; border:1px solid rgba(255,255,255,0.12); color:inherit;");
+                builder.CloseElement();
+
                 break;
         }
     };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_objRef == null)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+        }
+
+        // initialize Coloris for every color input rendered by this component
+        foreach (var kvp in _pickerProps)
+        {
+            var containerId = kvp.Key; // e.g. picker_Type_Property_guid
+            var prop = kvp.Value;
+            var currentValue = prop.GetValue(Settings)?.ToString() ?? "#ffffff";
+            var inputId = $"input_{containerId}";
+
+            // register the input with colorisHelper. JS will attach Coloris and call back NotifyColorChanged.
+            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, _objRef);
+        }
+    }
+
+    [JSInvokable]
+    public Task NotifyColorChanged(string containerId, string hex)
+    {
+        if (containerId == null) return Task.CompletedTask;
+
+        if (_pickerProps.TryGetValue(containerId, out var prop))
+        {
+            try
+            {
+                // persist value into settings object
+                var targetType = prop.PropertyType;
+                object? converted = targetType == typeof(string) ? hex : Convert.ChangeType(hex, targetType);
+                prop.SetValue(Settings, converted);
+
+                // update UI
+                _ = InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"NotifyColorChanged error: {ex}");
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        // destroy all Coloris bindings on the JS side
+        foreach (var id in _pickerProps.Keys)
+        {
+            try
+            {
+                _ = JS.InvokeVoidAsync("colorisHelper.unregister", id);
+            }
+            catch { /* ignore */ }
+        }
+
+        _objRef?.Dispose();
+    }
 }
