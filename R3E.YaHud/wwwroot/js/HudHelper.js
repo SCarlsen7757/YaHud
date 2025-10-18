@@ -12,7 +12,6 @@
                 isDragging = true;
                 offsetX = e.clientX - el.offsetLeft;
                 offsetY = e.clientY - el.offsetTop;
-                el.style.cursor = 'move';
             });
         });
 
@@ -26,7 +25,6 @@
         document.addEventListener('mouseup', function () {
             if (isDragging) {
                 isDragging = false;
-                el.style.cursor = 'default';
 
                 // Save position as percent (center of widget)
                 const leftPx = el.offsetLeft + el.offsetWidth / 2;
