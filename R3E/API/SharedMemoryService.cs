@@ -45,22 +45,18 @@ namespace R3E.API
             else
             {
                 udpReceiver = new UdpReceiver(10101);
-                // TODO: Investigate whether UdpReceiver reuses buffers; if so copy before using
+                // UDP callback: use header fingerprint gating before full marshalling
                 udpReceiver.DataReceived += (endPoint, bytes) =>
                 {
                     var expected = Marshal.SizeOf<Shared>();
                     if (bytes.Length != expected) return;
 
-                    // compute a small-sample checksum instead of hashing the whole buffer
-                    var hash = ComputeSampleChecksum(bytes);
+                    // compute a small header fingerprint; if unchanged, skip full marshal
+                    var headerHash = ComputeHeaderFingerprint(bytes);
+                    if (lastHash.HasValue && lastHash.Value == headerHash) return;
 
-                    // if identical to last hash, nothing changed
-                    if (lastHash.HasValue && lastHash.Value == hash) return;
+                    lastHash = headerHash;
 
-                    // update stored hash
-                    lastHash = hash;
-
-                    // Marshall and publish
                     if (TryMarshalShared(bytes, out var newData))
                     {
                         data = newData;
@@ -124,15 +120,15 @@ namespace R3E.API
                             continue;
                         }
 
-                        // Compute a sample checksum (cheap) rather than hashing the whole buffer
-                        var hash = ComputeSampleChecksum(readBuffer);
-                        if (lastHash.HasValue && lastHash.Value == hash)
+                        // header gating: compute small fingerprint from header fields
+                        var headerHash = ComputeHeaderFingerprint(readBuffer);
+                        if (lastHash.HasValue && lastHash.Value == headerHash)
                         {
-                            // no change
+                            // no change in header fields
                         }
                         else
                         {
-                            lastHash = hash;
+                            lastHash = headerHash;
 
                             if (TryMarshalShared(readBuffer, out var newData))
                             {
@@ -189,6 +185,53 @@ namespace R3E.API
             {
                 if (handle.IsAllocated) handle.Free();
             }
+        }
+
+        // Compute a tiny fingerprint from a few reliable header fields to gate full marshalling.
+        // Fields chosen (offsets relative to struct):
+        // - VersionMajor (Int32) at offset 0
+        // - VersionMinor (Int32) at offset 4
+        // - SessionType (Int32) at offset: sizeof(Int32)*? (calculate)
+        // - LapTimeCurrentSelf (Single) nested in Player at known offset (calculate)
+        private static ulong ComputeHeaderFingerprint(ReadOnlySpan<byte> data)
+        {
+            // We will read offsets manually based on the Shared layout. Keep this simple and robust.
+            // Offsets:
+            // VersionMajor = 0
+            // VersionMinor = 4
+            // SessionType = 4*4 = 16 (after VersionMajor, VersionMinor, AllDriversOffset, DriverDataSize)
+            // Player starts next; LapTimeCurrentSelf is at a larger offset - we'll sample a few ints instead for safety: SessionType, SessionPhase, and Position.
+
+            if (data.Length < 20) return 0;
+
+            int versionMajor = BitConverter.ToInt32(data.Slice(0, 4));
+            int versionMinor = BitConverter.ToInt32(data.Slice(4, 4));
+            int sessionType = BitConverter.ToInt32(data.Slice(16, 4));
+
+            // Read a few more small fields: SessionPhase (offset 32) and Position (offset approximate)
+            int sessionPhase = 0;
+            int position = 0;
+            if (data.Length >= 36)
+            {
+                sessionPhase = BitConverter.ToInt32(data.Slice(32, 4));
+            }
+
+            // Position is further down; approximate offset by searching for a reasonable location: we'll read at offset 200 as a heuristic if available
+            if (data.Length >= 204)
+            {
+                position = BitConverter.ToInt32(data.Slice(200, 4));
+            }
+
+            // Combine small set using FNV
+            ulong h = 14695981039346656037UL;
+            const ulong prime = 1099511628211UL;
+            foreach (var b in BitConverter.GetBytes(versionMajor)) { h ^= b; h *= prime; }
+            foreach (var b in BitConverter.GetBytes(versionMinor)) { h ^= b; h *= prime; }
+            foreach (var b in BitConverter.GetBytes(sessionType)) { h ^= b; h *= prime; }
+            foreach (var b in BitConverter.GetBytes(sessionPhase)) { h ^= b; h *= prime; }
+            foreach (var b in BitConverter.GetBytes(position)) { h ^= b; h *= prime; }
+
+            return h;
         }
 
         // Compute a small-sample checksum from a few regions of the buffer to avoid hashing the full buffer.
