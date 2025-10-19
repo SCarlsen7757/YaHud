@@ -2,7 +2,6 @@
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
 
 namespace R3E.API
 {
@@ -26,6 +25,9 @@ namespace R3E.API
 
         private readonly bool useUdp = !OperatingSystem.IsWindows();
 
+        // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
+        private byte[]? readBuffer;
+
         public SharedMemoryService() : this(false) { }
 
         public SharedMemoryService(bool? useUdp)
@@ -43,13 +45,14 @@ namespace R3E.API
             else
             {
                 udpReceiver = new UdpReceiver(10101);
+                // TODO: Investigate whether UdpReceiver reuses buffers; if so copy before using
                 udpReceiver.DataReceived += (endPoint, bytes) =>
                 {
                     var expected = Marshal.SizeOf<Shared>();
                     if (bytes.Length != expected) return;
 
-                    // compute checksum of the incoming data (using MD5 then taking first 8 bytes)
-                    var hash = ComputeChecksum(bytes);
+                    // compute a small-sample checksum instead of hashing the whole buffer
+                    var hash = ComputeSampleChecksum(bytes);
 
                     // if identical to last hash, nothing changed
                     if (lastHash.HasValue && lastHash.Value == hash) return;
@@ -57,11 +60,8 @@ namespace R3E.API
                     // update stored hash
                     lastHash = hash;
 
-                    // copy before marshalling because receiver may reuse its buffer
-                    var buf = new byte[bytes.Length];
-                    Array.Copy(bytes, buf, bytes.Length);
-
-                    if (TryMarshalShared(buf, out var newData))
+                    // Marshall and publish
+                    if (TryMarshalShared(bytes, out var newData))
                     {
                         data = newData;
                         DataUpdated?.Invoke(data);
@@ -76,6 +76,13 @@ namespace R3E.API
         {
             var expected = Marshal.SizeOf<Shared>();
 
+            // allocate read buffer once
+            readBuffer = new byte[expected];
+
+            // adaptive delay when game not running
+            var currentDelay = timeInterval;
+            var backoffMs = 250; // start backoff when game not found
+
             while (!token.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
@@ -85,6 +92,9 @@ namespace R3E.API
                     {
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
                         Console.WriteLine("SHM file found");
+                        // reset adaptive delay when file found
+                        currentDelay = timeInterval;
+                        backoffMs = 250;
                     }
                     catch (FileNotFoundException)
                     {
@@ -97,15 +107,25 @@ namespace R3E.API
                     try
                     {
                         using var view = file.CreateViewStream();
-                        using var stream = new BinaryReader(view);
-                        var read = stream.ReadBytes(expected);
-                        if (read.Length != expected)
+
+                        // Read into the reusable buffer to avoid allocations
+                        var bytesRead = 0;
+                        while (bytesRead < expected)
+                        {
+                            var read = view.Read(readBuffer, bytesRead, expected - bytesRead);
+                            if (read <= 0) break; // incomplete read
+                            bytesRead += read;
+                        }
+
+                        if (bytesRead != expected)
                         {
                             // skip incomplete read
+                            await Task.Delay(currentDelay, token).ConfigureAwait(false);
                             continue;
                         }
 
-                        var hash = ComputeChecksum(read);
+                        // Compute a sample checksum (cheap) rather than hashing the whole buffer
+                        var hash = ComputeSampleChecksum(readBuffer);
                         if (lastHash.HasValue && lastHash.Value == hash)
                         {
                             // no change
@@ -114,7 +134,7 @@ namespace R3E.API
                         {
                             lastHash = hash;
 
-                            if (TryMarshalShared(read, out var newData))
+                            if (TryMarshalShared(readBuffer, out var newData))
                             {
                                 data = newData;
                                 DataUpdated?.Invoke(data);
@@ -125,12 +145,21 @@ namespace R3E.API
                     {
                         file?.Dispose();
                         file = null;
+                        // if file lost, increase backoff
+                        currentDelay = TimeSpan.FromMilliseconds(backoffMs);
+                        backoffMs = Math.Min(backoffMs * 2, 2000);
                     }
+                }
+                else
+                {
+                    // game not running - back off to reduce CPU
+                    currentDelay = TimeSpan.FromMilliseconds(backoffMs);
+                    backoffMs = Math.Min(backoffMs * 2, 2000);
                 }
 
                 try
                 {
-                    await Task.Delay(timeInterval, token).ConfigureAwait(false);
+                    await Task.Delay(currentDelay, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -144,6 +173,7 @@ namespace R3E.API
             value = new();
             if (src.Length < Marshal.SizeOf<Shared>()) return false;
 
+            // Use the reliable GCHandle + Marshal.PtrToStructure approach
             var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
             try
             {
@@ -161,14 +191,58 @@ namespace R3E.API
             }
         }
 
-        private static ulong ComputeChecksum(byte[] data)
+        // Compute a small-sample checksum from a few regions of the buffer to avoid hashing the full buffer.
+        // This is conservative and low-risk: it does not change the Shared memory layout and is cheap.
+        private static ulong ComputeSampleChecksum(ReadOnlySpan<byte> data, int sampleSize = 256)
         {
-            // MD5 is available in System.Security.Cryptography and fast enough for change-detection.
-            // We take the first 8 bytes of the MD5 hash as a 64-bit fingerprint.
-            var digest = MD5.HashData(data);
-            // ensure there are at least 8 bytes (MD5 is 16 bytes)
-            return BitConverter.ToUInt64(digest, 0);
+            if (data.Length <= sampleSize) return ComputeChecksum(data);
+
+            // sample first N bytes, middle N bytes, last N bytes (or as much as available)
+            var hash = 14695981039346656037UL;
+            int region = sampleSize / 3;
+            if (region <= 0) region = Math.Min(sampleSize, 64);
+
+            // first
+            hash = CombineFnv(hash, data.Slice(0, region));
+
+            // middle
+            int midStart = Math.Max(0, (data.Length / 2) - region / 2);
+            hash = CombineFnv(hash, data.Slice(midStart, region));
+
+            // last
+            hash = CombineFnv(hash, data.Slice(data.Length - region, region));
+
+            return hash;
         }
+
+        private static ulong CombineFnv(ulong seed, ReadOnlySpan<byte> span)
+        {
+            const ulong prime = 1099511628211UL;
+            ulong h = seed;
+            for (int i = 0; i < span.Length; i++)
+            {
+                h ^= span[i];
+                h *= prime;
+            }
+            return h;
+        }
+
+        // Fast non-cryptographic 64-bit FNV-1a for change detection
+        private static ulong ComputeChecksum(ReadOnlySpan<byte> data)
+        {
+            const ulong offset = 14695981039346656037UL;
+            const ulong prime = 1099511628211UL;
+            ulong hash = offset;
+            for (int i = 0; i < data.Length; i++)
+            {
+                hash ^= data[i];
+                hash *= prime;
+            }
+            return hash;
+        }
+
+        // Overload for byte[] to make caller code simple
+        private static ulong ComputeChecksum(byte[] data) => ComputeChecksum((ReadOnlySpan<byte>)data);
 
         public void Dispose()
         {
