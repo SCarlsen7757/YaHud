@@ -1,84 +1,173 @@
-﻿window.HudHelper = {
-    makeDraggable: function (elementId, dotnetHelper) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
+﻿window.HudHelper = (function () {
+    const registry = {}; // elementId -> { el, dotNetRef, isDragging, handlers, targetX, targetY, raf }
 
-        let offsetX, offsetY;
-        let isDragging = false;
+    function attachHandlers(entry) {
+        if (!entry || entry.handlersAttached) return;
+        const el = entry.el;
+        const dotnetHelper = entry.dotNetRef;
 
-        el.addEventListener('mousedown', function (e) {
-            dotnetHelper.invokeMethodAsync('GetLockState').then(locked => {
-                if (locked) return;
-                isDragging = true;
-                offsetX = e.clientX - el.offsetLeft;
-                offsetY = e.clientY - el.offsetTop;
-            });
-        });
+        function onMouseDown(e) {
+            // only left button
+            if (e.button !== 0) return;
+            entry.isDragging = true;
+            entry.startX = e.clientX;
+            entry.startY = e.clientY;
+            const rect = el.getBoundingClientRect();
+            entry.offsetX = e.clientX - rect.left;
+            entry.offsetY = e.clientY - rect.top;
+            entry.targetX = rect.left;
+            entry.targetY = rect.top;
 
-        document.addEventListener('mousemove', function (e) {
-            if (isDragging) {
-                el.style.left = e.clientX - offsetX + 'px';
-                el.style.top = e.clientY - offsetY + 'px';
-            }
-        });
+            // capture mousemove on window
+            window.addEventListener('mousemove', onMouseMove, { passive: true });
+            window.addEventListener('mouseup', onMouseUp, { passive: true });
 
-        document.addEventListener('mouseup', function () {
-            if (isDragging) {
-                isDragging = false;
+            // start rAF loop
+            if (!entry.raf) entry.raf = requestAnimationFrame(step);
+        }
 
-                // Save position as percent (center of widget)
-                const leftPx = el.offsetLeft + el.offsetWidth / 2;
-                const topPx = el.offsetTop + el.offsetHeight / 2;
-                const leftPercent = (leftPx / window.innerWidth) * 100;
-                const topPercent = (topPx / window.innerHeight) * 100;
+        function onMouseMove(e) {
+            if (!entry.isDragging) return;
+            // update target positions
+            entry.targetX = e.clientX - entry.offsetX;
+            entry.targetY = e.clientY - entry.offsetY;
+        }
 
-                // Notify C# to update settings
+        function onMouseUp(e) {
+            if (!entry.isDragging) return;
+            entry.isDragging = false;
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+
+            // finalize position based on center
+            const rect = el.getBoundingClientRect();
+            const leftPx = rect.left + rect.width / 2;
+            const topPx = rect.top + rect.height / 2;
+            const leftPercent = (leftPx / window.innerWidth) * 100;
+            const topPercent = (topPx / window.innerHeight) * 100;
+
+            try {
                 dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent);
+            } catch (ex) { console.error(ex); }
+
+            // stop rAF on next frame
+        }
+
+        function step() {
+            // apply target position
+            if (entry.isDragging) {
+                // use transform/left/top; keep absolute positioning
+                el.style.position = 'absolute';
+                el.style.left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, entry.targetX)) + 'px';
+                el.style.top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, entry.targetY)) + 'px';
+                entry.raf = requestAnimationFrame(step);
+            } else {
+                if (entry.raf) {
+                    cancelAnimationFrame(entry.raf);
+                    entry.raf = null;
+                }
             }
-        });
+        }
 
-        window.addEventListener('resize', () => {
-            // Call C# method to reposition all widgets
-            dotnetHelper.invokeMethodAsync('OnWindowResize');
-        });
-    },
+        function onResize() {
+            try {
+                dotnetHelper.invokeMethodAsync('OnWindowResize');
+            } catch (ex) { console.error(ex); }
+        }
 
-    setPosition: function (elementId, xPercent, yPercent) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-        const widgetWidth = el.offsetWidth;
-        const widgetHeight = el.offsetHeight;
-        el.style.position = "absolute";
-        el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-        el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
-    },
+        el.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('resize', onResize);
 
-    resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
+        entry.handlers = { onMouseDown, onResize };
+        entry.handlersAttached = true;
+    }
 
-        this.clearWidgetSettings(elementId);
+    function detachHandlers(entry) {
+        if (!entry || !entry.handlersAttached) return;
+        const el = entry.el;
+        const h = entry.handlers;
+        try {
+            el.removeEventListener('mousedown', h.onMouseDown);
+            window.removeEventListener('resize', h.onResize);
+        } catch (e) { /* ignore */ }
+        entry.handlersAttached = false;
+        entry.handlers = null;
+    }
 
-        const widgetWidth = el.offsetWidth;
-        const widgetHeight = el.offsetHeight;
-        el.style.position = "absolute";
-        el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-        el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
-    },
+    return {
+        registerDraggable: function (elementId, dotnetHelper, locked) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            // if already registered, update dotnetRef and locked state
+            let entry = registry[elementId];
+            if (!entry) {
+                entry = { el: el, dotNetRef: dotnetHelper, isDragging: false, handlersAttached: false, raf: null };
+                registry[elementId] = entry;
+            } else {
+                entry.dotNetRef = dotnetHelper;
+            }
 
-    setWidgetSettings: function (elementId, value) {
-        localStorage.setItem(elementId, JSON.stringify(value));
-    },
+            if (!locked) attachHandlers(entry);
+            else detachHandlers(entry);
+        },
 
-    getWidgetSettings: function (elementId) {
-        const value = localStorage.getItem(elementId);
-        return value ? JSON.parse(value) : null;
-    },
+        enableDragging: function (elementId) {
+            const entry = registry[elementId];
+            if (!entry) return;
+            attachHandlers(entry);
+        },
 
-    clearWidgetSettings: function (elementId) {
-        localStorage.removeItem(elementId);
-    },
-};
+        disableDragging: function (elementId) {
+            const entry = registry[elementId];
+            if (!entry) return;
+            detachHandlers(entry);
+        },
+
+        unregisterDraggable: function (elementId) {
+            const entry = registry[elementId];
+            if (!entry) return;
+            detachHandlers(entry);
+            try { entry.dotNetRef?.dispose(); } catch (e) { /* ignore */ }
+            delete registry[elementId];
+        },
+
+        setPosition: function (elementId, xPercent, yPercent) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const widgetWidth = el.offsetWidth;
+            const widgetHeight = el.offsetHeight;
+            el.style.position = "absolute";
+            el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
+            el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+        },
+
+        resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            // Clear any saved settings
+            try { localStorage.removeItem(elementId); } catch (e) { }
+
+            const widgetWidth = el.offsetWidth;
+            const widgetHeight = el.offsetHeight;
+            el.style.position = "absolute";
+            el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
+            el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+        },
+
+        setWidgetSettings: function (elementId, value) {
+            try { localStorage.setItem(elementId, JSON.stringify(value)); } catch (e) { }
+        },
+
+        getWidgetSettings: function (elementId) {
+            try { const value = localStorage.getItem(elementId); return value ? JSON.parse(value) : null; } catch (e) { return null; }
+        },
+
+        clearWidgetSettings: function (elementId) {
+            try { localStorage.removeItem(elementId); } catch (e) { }
+        }
+    };
+})();
 
 // Coloris integration helper
 window.colorisHelper = (function () {

@@ -60,7 +60,8 @@ namespace R3E.YaHud.Components.Widget.Core
 
                 visibleInitialized = true;
                 objRef ??= DotNetObjectReference.Create(this);
-                await JS.InvokeVoidAsync("HudHelper.makeDraggable", ElementId, objRef);
+                // Register draggable and pass current lock state to decide if handlers are attached
+                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked);
             }
         }
 
@@ -81,7 +82,20 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private void OnLockChanged(bool newState)
         {
-            InvokeAsync(StateHasChanged);
+            // Toggle dragging via JS so we avoid calling into .NET from JS on mousedown
+            _ = InvokeAsync(async () =>
+            {
+                try
+                {
+                    if (newState)
+                        await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
+                    else
+                        await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
+                }
+                catch { }
+
+                await InvokeAsync(StateHasChanged);
+            });
         }
 
         protected virtual void OnTelemetryDataUpdated(TelemetryData newData)
