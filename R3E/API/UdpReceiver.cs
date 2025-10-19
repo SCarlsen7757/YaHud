@@ -26,27 +26,25 @@ namespace R3E.API
             {
                 try
                 {
-                    if (udpClient.Available > 0)
-                    {
-                        var result = await udpClient.ReceiveAsync(token);
-                        DataReceived?.Invoke(result.RemoteEndPoint, result.Buffer);
-                    }
+                    var result = await udpClient.ReceiveAsync(token).ConfigureAwait(false);
+                    DataReceived?.Invoke(result.RemoteEndPoint, result.Buffer);
                 }
                 catch (OperationCanceledException)
                 {
                     // Normal on stop
                     break;
                 }
-                catch (SocketException)
+                catch (SocketException ex)
                 {
-                    // Network issue, continue loop
+                    // Network issue, wait a bit then continue
+                    Console.WriteLine($"[UDP Socket Error] {ex.Message}");
+                    try { await Task.Delay(timeInterval, token).ConfigureAwait(false); } catch { }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[UDP Error] {ex.Message}");
+                    try { await Task.Delay(timeInterval, token).ConfigureAwait(false); } catch { }
                 }
-
-                await Task.Delay(timeInterval, token).ContinueWith(_ => { }, token);
             }
         }
 
