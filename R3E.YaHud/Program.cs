@@ -15,13 +15,15 @@ builder.Services.AddSingleton<ShortcutService>();
 // Register appropriate ISharedSource based on OS
 if (OperatingSystem.IsWindows())
 {
-    builder.Services.AddSingleton<ISharedSource, SharedMemoryService>();
-    builder.Services.AddHostedService(sp => (SharedMemoryService)sp.GetRequiredService<ISharedSource>());
+    builder.Services.AddSingleton<SharedMemoryService>();
+    builder.Services.AddSingleton<ISharedSource>(sp => sp.GetRequiredService<SharedMemoryService>());
+    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SharedMemoryService>());
 }
 else
 {
-    builder.Services.AddSingleton<ISharedSource, RemoteSharedMemoryService>();
-    builder.Services.AddHostedService(sp => (RemoteSharedMemoryService)sp.GetRequiredService<ISharedSource>());
+    builder.Services.AddSingleton<RemoteSharedMemoryService>();
+    builder.Services.AddSingleton<ISharedSource>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
+    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
 // TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
