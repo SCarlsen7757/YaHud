@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using R3E.Data;
 
@@ -10,6 +9,7 @@ namespace R3E.API
         private readonly ILogger<RemoteSharedMemoryService> logger;
         private readonly UdpReceiver receiver;
         private readonly int port = 10101;
+        private Task? pollTask;
 
         public event Action<Shared>? DataUpdated;
 
@@ -49,21 +49,56 @@ namespace R3E.API
         {
             logger.LogInformation("Starting RemoteSharedMemoryService (UDP receiver) on port {Port}", port);
             // start receiver loop
-            _ = receiver.PollLoop(cancellationToken);
+            pollTask = receiver.PollLoop(cancellationToken);
+            // ensure exceptions are observed
+            pollTask.ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    logger.LogError(t.Exception!, "Unhandled exception in pollTask");
+                }
+            }, TaskContinuationOptions.OnlyOnFaulted);
             return Task.CompletedTask;
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             logger.LogInformation("Stopping RemoteSharedMemoryService");
             receiver.Dispose();
-            return Task.CompletedTask;
+            if (pollTask != null)
+            {
+                try
+                {
+                    // wait for the pollTask to complete, with a timeout
+                    await Task.WhenAny(pollTask, Task.Delay(5000, cancellationToken));
+                }
+                catch (TaskCanceledException)
+                {
+                    // expected on shutdown
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Exception observed in pollTask");
+                }
+            }
         }
 
         public void Dispose()
         {
             logger.LogDebug("Disposing RemoteSharedMemoryService");
             receiver.Dispose();
+            // if pollTask is still running, wait briefly to avoid blocking too long
+            if (pollTask != null && !pollTask.IsCompleted)
+            {
+                try
+                {
+                    pollTask.Wait(1000);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
             GC.SuppressFinalize(this);
         }
     }
