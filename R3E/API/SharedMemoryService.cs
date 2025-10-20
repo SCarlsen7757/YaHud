@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using R3E.Data;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -6,11 +7,11 @@ using System.Runtime.Versioning;
 
 namespace R3E.API
 {
-    public class SharedMemoryService : BackgroundService
+    [SupportedOSPlatform("windows")]
+    public class SharedMemoryService : BackgroundService, ISharedSource
     {
         private MemoryMappedFile? file;
         private Shared data;
-        private readonly UdpReceiver? udpReceiver;
 
         // Track last observed header values for change detection
         private int? lastSimTicks;
@@ -52,70 +53,10 @@ namespace R3E.API
         {
             this.logger = logger ?? NullLogger<SharedMemoryService>.Instance;
             data = new();
-            if (OperatingSystem.IsWindows())
-            {
-                // PollLoop will be started by the host in ExecuteAsync
-            }
-            else
-            {
-                udpReceiver = new UdpReceiver(10101, NullLogger<UdpReceiver>.Instance);
-                // UDP callback: use GameSimulationTicks + GamePaused gating before full marshalling
-                udpReceiver.DataReceived += (endPoint, bytes) =>
-                {
-                    var expected = Marshal.SizeOf<Shared>();
-                    if (bytes.Length != expected) return;
-
-                    // Ensure we have enough bytes to read the header fields
-                    if (bytes.Length < s_offsetGameSimulationTicks + 4) return;
-
-                    // Read GamePaused and Player.GameSimulationTicks using computed offsets
-                    int gamePaused = BitConverter.ToInt32(bytes, s_offsetGamePaused);
-                    int simTicks = BitConverter.ToInt32(bytes, s_offsetGameSimulationTicks);
-
-                    // If nothing changed, skip
-                    if (lastSimTicks.HasValue && lastGamePaused.HasValue && lastSimTicks.Value == simTicks && lastGamePaused.Value == gamePaused)
-                    {
-                        return;
-                    }
-
-                    // update last observed
-                    lastSimTicks = simTicks;
-                    lastGamePaused = gamePaused;
-
-                    // If game is paused, skip publishing (HUD hidden)
-                    if (gamePaused != 0)
-                    {
-                        return;
-                    }
-
-                    // marshal and publish
-                    if (TryMarshalShared(bytes, out var newData))
-                    {
-                        data = newData;
-                        DataUpdated?.Invoke(data);
-                        logger?.LogDebug("Received UDP shared data update");
-                    }
-                };
-            }
+            // This service only handles local shared memory (Windows). UDP handling moved to RemoteSharedMemoryService.
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                await PollLoop(stoppingToken).ConfigureAwait(false);
-            }
-            else
-            {
-                if (udpReceiver != null)
-                {
-                    await udpReceiver.PollLoop(stoppingToken).ConfigureAwait(false);
-                }
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        private async Task PollLoop(CancellationToken token)
         {
             var expected = Marshal.SizeOf<Shared>();
 
@@ -125,7 +66,7 @@ namespace R3E.API
             // current delay, start with normal
             var currentDelay = normalInterval;
 
-            while (!token.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
                 {
@@ -159,7 +100,7 @@ namespace R3E.API
                         if (bytesRead != expected)
                         {
                             // skip incomplete read
-                            await Task.Delay(currentDelay, token).ConfigureAwait(false);
+                            await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
                         }
 
@@ -213,12 +154,12 @@ namespace R3E.API
                 else
                 {
                     // game not running - back off to reduce CPU
-                    currentDelay = notRunningInterval;
+                            currentDelay = notRunningInterval;
                 }
 
                 try
                 {
-                    await Task.Delay(currentDelay, token).ConfigureAwait(false);
+                    await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -227,7 +168,7 @@ namespace R3E.API
             }
         }
 
-        private static bool TryMarshalShared(byte[] src, out Shared value)
+        public static bool TryMarshalShared(byte[] src, out Shared value)
         {
             value = new();
             if (src.Length < Marshal.SizeOf<Shared>()) return false;
@@ -253,7 +194,6 @@ namespace R3E.API
         public override void Dispose()
         {
             file?.Dispose();
-            udpReceiver?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

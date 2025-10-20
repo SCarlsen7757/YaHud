@@ -12,11 +12,19 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 
-// Register SharedMemoryService so it can be injected and also run as a hosted background service.
-builder.Services.AddSingleton<SharedMemoryService>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<SharedMemoryService>());
+// Register appropriate ISharedSource based on OS
+if (OperatingSystem.IsWindows())
+{
+    builder.Services.AddSingleton<ISharedSource, SharedMemoryService>();
+    builder.Services.AddHostedService(sp => (SharedMemoryService)sp.GetRequiredService<ISharedSource>());
+}
+else
+{
+    builder.Services.AddSingleton<ISharedSource, RemoteSharedMemoryService>();
+    builder.Services.AddHostedService(sp => (RemoteSharedMemoryService)sp.GetRequiredService<ISharedSource>());
+}
 
-// TelemetryService depends on SharedMemoryService. Let DI construct it so ILogger is injected.
+// TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
 builder.Services.AddSingleton<TelemetryService>();
 
 var app = builder.Build();
