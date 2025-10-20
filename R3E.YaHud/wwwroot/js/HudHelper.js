@@ -19,8 +19,8 @@
             entry.targetY = rect.top;
 
             // capture mousemove on window
-            window.addEventListener('mousemove', onMouseMove, { passive: true });
-            window.addEventListener('mouseup', onMouseUp, { passive: true });
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
 
             // start rAF loop
             if (!entry.raf) entry.raf = requestAnimationFrame(step);
