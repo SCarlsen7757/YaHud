@@ -57,8 +57,9 @@
             if (entry.isDragging) {
                 // use transform/left/top; keep absolute positioning
                 el.style.position = 'absolute';
-                el.style.left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, entry.targetX)) + 'px';
-                el.style.top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, entry.targetY)) + 'px';
+                const rect = el.getBoundingClientRect();
+                el.style.left = Math.max(0, Math.min(window.innerWidth - rect.width, entry.targetX)) + 'px';
+                el.style.top = Math.max(0, Math.min(window.innerHeight - rect.height, entry.targetY)) + 'px';
                 entry.raf = requestAnimationFrame(step);
             } else {
                 if (entry.raf) {
