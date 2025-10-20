@@ -9,7 +9,6 @@ namespace R3E.API
         private readonly int port;
         private readonly UdpClient udpClient;
         private readonly CancellationTokenSource cts = new();
-        private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(10);
         private readonly ILogger<UdpReceiver> logger;
 
         public event Action<IPEndPoint, byte[]>? DataReceived;
