@@ -28,11 +28,19 @@ namespace R3E.API
             {
                 try
                 {
-                    var receiveTask = udpClient.ReceiveAsync(token);
+                    // Start the receive operation (ValueTask<UdpReceiveResult>)
+                    var receiveValueTask = udpClient.ReceiveAsync(token);
+
+                    // Convert to Task once so it can be used with Task.WhenAny
+                    var receiveTask = receiveValueTask.AsTask();
+
+                    // Wait for either receive or a short delay to allow cancellation checks
                     var completedTask = await Task.WhenAny(receiveTask, Task.Delay(100, token)).ConfigureAwait(false);
+
                     if (completedTask == receiveTask)
                     {
-                        var result = receiveTask.Result;
+                        // Await the receiveTask to get the result
+                        var result = await receiveTask.ConfigureAwait(false);
                         DataReceived?.Invoke(result.RemoteEndPoint, result.Buffer);
                     }
                     // else: timeout, loop again to check cancellation
