@@ -1,21 +1,21 @@
-﻿using R3E.Data;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using R3E.Data;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace R3E.API
 {
-    public class SharedMemoryService : IDisposable, IAsyncDisposable
+    public class SharedMemoryService : BackgroundService
     {
         private MemoryMappedFile? file;
         private Shared data;
-        private readonly CancellationTokenSource cts = new();
-        private readonly Task? pollingTask;
         private readonly UdpReceiver? udpReceiver;
 
         // Track last observed header values for change detection
         private int? lastSimTicks;
         private int? lastGamePaused;
+        private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
         private readonly TimeSpan pausedInterval = TimeSpan.FromMilliseconds(200); // when game paused
@@ -43,28 +43,22 @@ namespace R3E.API
 
         public Shared Data => data;
 
-        private readonly bool useUdp = !OperatingSystem.IsWindows();
+        // (useUdp removed - runtime OS detection is used directly)
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
 
-        public SharedMemoryService() : this(false) { }
-
-        public SharedMemoryService(bool? useUdp)
+        public SharedMemoryService(ILogger<SharedMemoryService>? logger = null)
         {
-            if (useUdp is not null)
-            {
-                this.useUdp = useUdp.Value;
-            }
-
+            this.logger = logger ?? NullLogger<SharedMemoryService>.Instance;
             data = new();
-            if (OperatingSystem.IsWindows() && !this.useUdp)
+            if (OperatingSystem.IsWindows())
             {
-                pollingTask = Task.Run(() => PollLoop(cts.Token));
+                // PollLoop will be started by the host in ExecuteAsync
             }
             else
             {
-                udpReceiver = new UdpReceiver(10101);
+                udpReceiver = new UdpReceiver(10101, NullLogger<UdpReceiver>.Instance);
                 // UDP callback: use GameSimulationTicks + GamePaused gating before full marshalling
                 udpReceiver.DataReceived += (endPoint, bytes) =>
                 {
@@ -99,9 +93,24 @@ namespace R3E.API
                     {
                         data = newData;
                         DataUpdated?.Invoke(data);
+                        logger?.LogDebug("Received UDP shared data update");
                     }
                 };
-                pollingTask = Task.Run(() => udpReceiver.PollLoop(cts.Token));
+            }
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                await PollLoop(stoppingToken).ConfigureAwait(false);
+            }
+            else
+            {
+                if (udpReceiver != null)
+                {
+                    await udpReceiver.PollLoop(stoppingToken).ConfigureAwait(false);
+                }
             }
         }
 
@@ -241,36 +250,12 @@ namespace R3E.API
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
-            DisposeAsync().AsTask().GetAwaiter().GetResult();
+            file?.Dispose();
+            udpReceiver?.Dispose();
+            base.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            try
-            {
-                cts.Cancel();
-
-                if (pollingTask != null)
-                {
-                    try
-                    {
-                        await pollingTask.ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) { }
-                    catch { /* swallow any other exceptions during shutdown */ }
-                }
-
-                file?.Dispose();
-                udpReceiver?.Dispose();
-            }
-            finally
-            {
-                cts.Dispose();
-                GC.SuppressFinalize(this);
-            }
         }
     }
 }

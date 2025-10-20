@@ -1,10 +1,8 @@
-using System;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
-using R3E;
 using R3E.Data;
+using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 
 namespace R3E.Benchmarks
 {

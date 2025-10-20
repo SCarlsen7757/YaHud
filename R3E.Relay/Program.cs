@@ -1,4 +1,5 @@
-﻿using R3E.API;
+﻿using Microsoft.Extensions.Logging;
+using R3E.API;
 using R3E.Data;
 using R3E.UdpRelay;
 using System.Net;
@@ -8,12 +9,18 @@ internal class Program : IDisposable
 {
     public SharedMemoryService sharedMemoryService;
     public UdpRelayService udpRelayService;
+    private readonly ILoggerFactory? loggerFactory;
 
     public Program()
     {
-        sharedMemoryService = new SharedMemoryService();
+        // keep logger factory alive for the lifetime of the program
+        loggerFactory = LoggerFactory.Create(lb => lb.AddConsole());
+        var shmLogger = loggerFactory.CreateLogger<SharedMemoryService>();
+        var udpLogger = loggerFactory.CreateLogger<UdpRelayService>();
+
+        sharedMemoryService = new SharedMemoryService(shmLogger);
         int sourcePort = GetAvailablePort();
-        udpRelayService = new UdpRelayService(sourcePort, "127.0.0.1", 10101);
+        udpRelayService = new UdpRelayService(sourcePort, "127.0.0.1", 10101, udpLogger);
         sharedMemoryService.DataUpdated += OnDataUpdated;
     }
 

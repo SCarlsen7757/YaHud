@@ -3,12 +3,10 @@
 // Trade-offs: this benchmark shares a MemoryStream across iterations to avoid measuring stream allocation.
 // To measure end-to-end including stream allocation, create the MemoryStream inside the benchmark methods.
 
-using System;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace R3E.Benchmarks
 {

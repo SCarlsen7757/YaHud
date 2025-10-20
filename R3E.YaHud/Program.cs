@@ -12,7 +12,12 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 
-builder.Services.AddSingleton<TelemetryService>(sp => new(new SharedMemoryService(false))); // Set useUdp to true to use UDP shared memory on Windows
+// Register SharedMemoryService so it can be injected and also run as a hosted background service.
+builder.Services.AddSingleton<SharedMemoryService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SharedMemoryService>());
+
+// TelemetryService depends on SharedMemoryService. Let DI construct it so ILogger is injected.
+builder.Services.AddSingleton<TelemetryService>();
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
 using System.Net.Sockets;
 
 namespace R3E.API
@@ -9,18 +10,20 @@ namespace R3E.API
         private readonly UdpClient udpClient;
         private readonly CancellationTokenSource cts = new();
         private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(10);
+        private readonly ILogger<UdpReceiver> logger;
 
         public event Action<IPEndPoint, byte[]>? DataReceived;
 
-        public UdpReceiver(int port)
+        public UdpReceiver(int port, ILogger<UdpReceiver>? logger = null)
         {
             this.port = port;
+            this.logger = logger ?? NullLogger<UdpReceiver>.Instance;
             udpClient = new UdpClient(this.port);
         }
 
         public async Task PollLoop(CancellationToken token)
         {
-            Console.WriteLine($"[UDP] Listening on port {port}...");
+            logger.LogInformation("Listening on UDP port {Port}", port);
 
             while (!token.IsCancellationRequested)
             {
@@ -36,20 +39,19 @@ namespace R3E.API
                 }
                 catch (SocketException ex)
                 {
-                    // Network issue, wait a bit then continue
-                    Console.WriteLine($"[UDP Socket Error] {ex.Message}");
-                    try { await Task.Delay(timeInterval, token).ConfigureAwait(false); } catch { }
+                    logger.LogWarning(ex, "UDP socket exception");
+                    // Network issue, continue loop
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[UDP Error] {ex.Message}");
-                    try { await Task.Delay(timeInterval, token).ConfigureAwait(false); } catch { }
+                    logger.LogError(ex, "UDP receive loop error");
                 }
             }
         }
 
         public void Dispose()
         {
+            logger.LogDebug("Disposing UdpReceiver on port {Port}", port);
             cts.Cancel();
             udpClient?.Dispose();
             cts.Dispose();
