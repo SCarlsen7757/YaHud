@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using R3E.Data;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -53,6 +52,7 @@ namespace R3E.API
         {
             this.logger = logger ?? NullLogger<SharedMemoryService>.Instance;
             data = new();
+            this.logger.LogDebug("SharedMemoryService constructed");
             // This service only handles local shared memory (Windows). UDP handling moved to RemoteSharedMemoryService.
         }
 
@@ -66,6 +66,8 @@ namespace R3E.API
             // current delay, start with normal
             var currentDelay = normalInterval;
 
+            logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
@@ -73,6 +75,7 @@ namespace R3E.API
                     try
                     {
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
+                        logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
                         // reset to normal when found
                         currentDelay = normalInterval;
                     }
@@ -100,6 +103,7 @@ namespace R3E.API
                         if (bytesRead != expected)
                         {
                             // skip incomplete read
+                            logger.LogDebug("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
                             await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
                         }
@@ -119,7 +123,7 @@ namespace R3E.API
                         // If nothing changed, skip
                         if (lastSimTicks.HasValue && lastGamePaused.HasValue && lastSimTicks.Value == simTicks && lastGamePaused.Value == gamePaused)
                         {
-                            // no change, continue
+                            logger.LogTrace("No change in shared header: simTicks={SimTicks} paused={Paused}", simTicks, gamePaused);
                         }
                         else
                         {
@@ -130,21 +134,27 @@ namespace R3E.API
                             // If game is paused, skip publishing (HUD hidden)
                             if (gamePaused != 0)
                             {
-                                // do not marshal or publish while paused
+                                logger.LogDebug("Game paused (GamePaused={Paused}); skipping publish", gamePaused);
                             }
                             else
                             {
-                                if (TryMarshalShared(readBuffer, out var newData))
+                                if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
                                 {
                                     data = newData;
                                     // Immediately publish updates so HUD receives fresh data
                                     DataUpdated?.Invoke(data);
+                                    logger.LogDebug("Published shared memory update (simTicks={SimTicks})", simTicks);
+                                }
+                                else
+                                {
+                                    logger.LogWarning("Failed to marshal shared memory buffer");
                                 }
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        logger.LogWarning(ex, "Error reading shared memory, disposing file handle");
                         file?.Dispose();
                         file = null;
                         // if file lost, back off heavily
@@ -154,7 +164,7 @@ namespace R3E.API
                 else
                 {
                     // game not running - back off to reduce CPU
-                            currentDelay = notRunningInterval;
+                    currentDelay = notRunningInterval;
                 }
 
                 try
@@ -163,36 +173,15 @@ namespace R3E.API
                 }
                 catch (OperationCanceledException)
                 {
-                    // cancellation requested
+                    logger.LogInformation("Shared memory poll loop cancellation requested");
+                    break;
                 }
-            }
-        }
-
-        public static bool TryMarshalShared(byte[] src, out Shared value)
-        {
-            value = new();
-            if (src.Length < Marshal.SizeOf<Shared>()) return false;
-
-            // Use the reliable GCHandle + Marshal.PtrToStructure approach
-            var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
-            try
-            {
-                var ptr = handle.AddrOfPinnedObject();
-                value = Marshal.PtrToStructure<Shared>(ptr);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                if (handle.IsAllocated) handle.Free();
             }
         }
 
         public override void Dispose()
         {
+            logger.LogInformation("Disposing SharedMemoryService");
             file?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
