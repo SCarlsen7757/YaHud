@@ -18,8 +18,8 @@ namespace R3E.API
         private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
-        private readonly TimeSpan pausedInterval = TimeSpan.FromMilliseconds(200); // when game paused
-        private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // when game not running
+        private readonly TimeSpan pausedInterval = TimeSpan.FromMilliseconds(200); // Game paused update interval
+        private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // Game not running update interval
 
         // Offsets computed at runtime so code remains correct if SHM layout moves
         private static readonly int s_offsetGamePaused;
@@ -43,8 +43,6 @@ namespace R3E.API
 
         public Shared Data => data;
 
-        // (useUdp removed - runtime OS detection is used directly)
-
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
 
@@ -53,7 +51,6 @@ namespace R3E.API
             this.logger = logger ?? NullLogger<SharedMemoryService>.Instance;
             data = new();
             this.logger.LogDebug("SharedMemoryService constructed");
-            // This service only handles local shared memory (Windows). UDP handling moved to RemoteSharedMemoryService.
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
