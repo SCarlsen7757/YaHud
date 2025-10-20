@@ -71,6 +71,16 @@ namespace R3E.API
                 {
                     // wait for the pollTask to complete, with a timeout
                     await Task.WhenAny(pollTask, Task.Delay(5000, cancellationToken));
+
+                    // After waiting, check if pollTask is completed and faulted, and observe/log the exception
+                    if (pollTask.IsCompleted)
+                    {
+                        if (pollTask.IsFaulted)
+                        {
+                            // Observe the exception to avoid unobserved task exceptions
+                            logger.LogWarning(pollTask.Exception, "Exception observed in pollTask during StopAsync");
+                        }
+                    }
                 }
                 catch (TaskCanceledException)
                 {
