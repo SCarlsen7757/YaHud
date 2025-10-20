@@ -5,14 +5,16 @@ namespace R3E.API
     public class TelemetryService : IDisposable, IAsyncDisposable
     {
         private readonly SharedMemoryService sharedMemoryService;
+        private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
 
         public event Action<TelemetryData>? DataUpdated;
 
         public TelemetryData Data { get; private set; }
 
-        public TelemetryService(SharedMemoryService sharedMemoryService)
+        public TelemetryService(SharedMemoryService sharedMemoryService, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
         {
             this.sharedMemoryService = sharedMemoryService ?? throw new ArgumentNullException(nameof(sharedMemoryService));
+            this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
             Data = new TelemetryData(sharedMemoryService.Data);
             sharedMemoryService.DataUpdated += OnRawDataUpdated;
         }
@@ -21,6 +23,7 @@ namespace R3E.API
         {
             Data = new TelemetryData(raw);
             DataUpdated?.Invoke(Data);
+            logger.LogDebug("Telemetry data updated");
         }
 
         public void Dispose()

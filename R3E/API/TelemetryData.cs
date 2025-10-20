@@ -5,7 +5,7 @@ namespace R3E.API
     public class TelemetryData
     {
         // Raw telemetry struct
-        public Shared Raw { get; internal set; }
+        public Shared Raw { get; set; }
 
         public TelemetryData()
         {

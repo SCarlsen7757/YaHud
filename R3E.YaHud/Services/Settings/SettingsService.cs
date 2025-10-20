@@ -1,11 +1,13 @@
-﻿using Microsoft.JSInterop;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.JSInterop;
 using R3E.YaHud.Components.Widget.Core;
 
 namespace R3E.YaHud.Services.Settings
 {
-    public class SettingsService(IJSRuntime js)
+    public class SettingsService(IJSRuntime js, ILogger<SettingsService>? logger = null)
     {
         private IJSRuntime JS { get; set; } = js;
+        private readonly ILogger<SettingsService> logger = logger ?? NullLogger<SettingsService>.Instance;
 
         private GlobalSettings globalSettings = new();
 
@@ -38,6 +40,7 @@ namespace R3E.YaHud.Services.Settings
             try
             {
                 await JS.InvokeVoidAsync("HudHelper.setWidgetSettings", id, settings);
+                logger.LogDebug("Saved settings for {Id}", id);
             }
             catch (InvalidOperationException ex)
                     when (ex.Message.Contains("server-side static rendering"))
@@ -64,7 +67,9 @@ namespace R3E.YaHud.Services.Settings
             if (JS is null) return null;
             try
             {
-                return await JS.InvokeAsync<TSettings>("HudHelper.getWidgetSettings", id);
+                var result = await JS.InvokeAsync<TSettings>("HudHelper.getWidgetSettings", id);
+                logger.LogDebug("Loaded settings for {Id}", id);
+                return result;
             }
             catch (InvalidOperationException ex)
                     when (ex.Message.Contains("server-side static rendering"))
@@ -82,6 +87,7 @@ namespace R3E.YaHud.Services.Settings
                 await widget.ClearSettings();
             }
             await JS.InvokeVoidAsync("location.reload");
+            logger.LogDebug("Cleared all settings");
         }
 
         public async Task Clear(IWidget widget)
@@ -95,6 +101,7 @@ namespace R3E.YaHud.Services.Settings
             try
             {
                 await JS.InvokeVoidAsync("HudHelper.clearWidgetSettings", id);
+                logger.LogDebug("Cleared settings for {Id}", id);
             }
             catch (InvalidOperationException ex)
                     when (ex.Message.Contains("server-side static rendering"))
