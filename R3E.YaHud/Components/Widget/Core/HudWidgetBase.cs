@@ -94,7 +94,7 @@ namespace R3E.YaHud.Components.Widget.Core
                 }
                 catch { }
 
-                await InvokeAsync(StateHasChanged);
+                StateHasChanged();
             });
         }
 
