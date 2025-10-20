@@ -4,19 +4,19 @@ namespace R3E.API
 {
     public class TelemetryService : IDisposable, IAsyncDisposable
     {
-        private readonly SharedMemoryService sharedMemoryService;
+        private readonly ISharedSource sharedSource;
         private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
 
         public event Action<TelemetryData>? DataUpdated;
 
         public TelemetryData Data { get; private set; }
 
-        public TelemetryService(SharedMemoryService sharedMemoryService, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
+        public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
         {
-            this.sharedMemoryService = sharedMemoryService ?? throw new ArgumentNullException(nameof(sharedMemoryService));
+            this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
             this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
-            Data = new TelemetryData(sharedMemoryService.Data);
-            sharedMemoryService.DataUpdated += OnRawDataUpdated;
+            Data = new TelemetryData(sharedSource.Data);
+            sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
         private void OnRawDataUpdated(Shared raw)
@@ -28,7 +28,7 @@ namespace R3E.API
 
         public void Dispose()
         {
-            sharedMemoryService.DataUpdated -= OnRawDataUpdated;
+            sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
         }
 
