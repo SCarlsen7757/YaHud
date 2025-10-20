@@ -65,6 +65,8 @@ namespace R3E.API
 
             logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
+            ulong noUpdate = 0;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
@@ -120,10 +122,16 @@ namespace R3E.API
                         // If nothing changed, skip
                         if (lastSimTicks.HasValue && lastGamePaused.HasValue && lastSimTicks.Value == simTicks && lastGamePaused.Value == gamePaused)
                         {
-                            logger.LogTrace("No change in shared header: simTicks={SimTicks} paused={Paused}", simTicks, gamePaused);
+                            noUpdate++;
+                            if (noUpdate > 100)
+                            {
+                                logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks}, paused={Paused})", simTicks, gamePaused);
+                                noUpdate = 0;
+                            }
                         }
                         else
                         {
+                            noUpdate = 0;
                             // update last observed
                             lastSimTicks = simTicks;
                             lastGamePaused = gamePaused;
