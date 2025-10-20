@@ -50,7 +50,6 @@
                 dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent);
             } catch (ex) { console.error(ex); }
 
-            // stop rAF on next frame
         }
 
         function step() {
