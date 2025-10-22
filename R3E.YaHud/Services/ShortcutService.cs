@@ -41,13 +41,19 @@ namespace R3E.YaHud.Services
 
         public void Dispose()
         {
-            if (disposed) return;
+            if (disposed)
+            {
+                return;
+            }
+
             disposed = true;
+
             if (hook is not null)
             {
                 hook.KeyPressed -= OnKeyPressed;
                 hook.Dispose();
             }
+
             GC.SuppressFinalize(this);
         }
     }

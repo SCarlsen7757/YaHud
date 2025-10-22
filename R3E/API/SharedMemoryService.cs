@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace R3E.API
 {
     [SupportedOSPlatform("windows")]
-    public class SharedMemoryService : BackgroundService, ISharedSource
+    public class SharedMemoryService : BackgroundService, ISharedSource, IAsyncDisposable
     {
         private MemoryMappedFile? file;
         private Shared data;
@@ -26,6 +26,10 @@ namespace R3E.API
         private static readonly int s_offsetPlayer;
         private static readonly int s_offsetGameSimulationTicks;
 
+        // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
+        private byte[]? readBuffer;
+        private bool disposed;
+
         static SharedMemoryService()
         {
             // Use Marshal.OffsetOf to compute offsets relative to the Shared struct
@@ -42,9 +46,6 @@ namespace R3E.API
         public event Action<Shared>? DataUpdated;
 
         public Shared Data => data;
-
-        // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
-        private byte[]? readBuffer;
 
         public SharedMemoryService(ILogger<SharedMemoryService>? logger = null)
         {
@@ -186,10 +187,34 @@ namespace R3E.API
 
         public override void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
             logger.LogInformation("Disposing SharedMemoryService");
             file?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        public new ValueTask DisposeAsync()
+        {
+            if (disposed)
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            disposed = true;
+            logger.LogInformation("Disposing SharedMemoryService asynchronously");
+            file?.Dispose();
+            
+            // BackgroundService doesn't implement IAsyncDisposable, so just dispose synchronously
+            base.Dispose();
+            
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
     }
 }

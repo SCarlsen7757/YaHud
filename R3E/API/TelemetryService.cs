@@ -6,6 +6,7 @@ namespace R3E.API
     {
         private readonly ISharedSource sharedSource;
         private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
+        private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
 
@@ -28,6 +29,12 @@ namespace R3E.API
 
         public void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
         }
@@ -35,7 +42,6 @@ namespace R3E.API
         public ValueTask DisposeAsync()
         {
             Dispose();
-            GC.SuppressFinalize(this);
             return ValueTask.CompletedTask;
         }
     }

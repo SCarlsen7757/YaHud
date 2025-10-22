@@ -5,11 +5,13 @@ using R3E.UdpRelay;
 using System.Net;
 using System.Runtime.InteropServices;
 
-internal class Program : IDisposable
+internal class Program : IAsyncDisposable
 {
     public SharedMemoryService sharedMemoryService;
     public UdpRelayService udpRelayService;
     private readonly ILoggerFactory? loggerFactory;
+    private readonly ILogger<Program> logger;
+    private bool disposed;
 
     public Program()
     {
@@ -17,6 +19,7 @@ internal class Program : IDisposable
         loggerFactory = LoggerFactory.Create(lb => lb.AddConsole());
         var shmLogger = loggerFactory.CreateLogger<SharedMemoryService>();
         var udpLogger = loggerFactory.CreateLogger<UdpRelayService>();
+        logger = loggerFactory.CreateLogger<Program>();
 
         sharedMemoryService = new SharedMemoryService(shmLogger);
         int sourcePort = GetAvailablePort();
@@ -28,19 +31,38 @@ internal class Program : IDisposable
     {
         try
         {
-            // Serialize Shared struct to JSON
+            // Serialize Shared struct to byte array
             var size = Marshal.SizeOf<Shared>();
             var buffer = new byte[size];
             var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
-            handle.Free();
+            try
+            {
+                Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
+            }
+            finally
+            {
+                handle.Free();
+            }
 
-            // Send via UDP relay
-            udpRelayService.SendAsync(buffer);
+            // Send via UDP relay with proper async handling
+            // Use fire-and-forget pattern but with proper error handling
+            _ = SendDataAsync(buffer);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[R3E Error] {ex.Message}");
+            logger.LogError(ex, "Error processing data update");
+        }
+    }
+
+    private async Task SendDataAsync(byte[] buffer)
+    {
+        try
+        {
+            await udpRelayService.SendAsync(buffer).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error sending UDP data");
         }
     }
 
@@ -50,10 +72,23 @@ internal class Program : IDisposable
         return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        sharedMemoryService.Dispose();
+        if (disposed)
+        {
+            return;
+        }
+
+        disposed = true;
+
+        // Unsubscribe from events before disposing
+        sharedMemoryService.DataUpdated -= OnDataUpdated;
+
+        // Dispose services asynchronously
+        await sharedMemoryService.DisposeAsync().ConfigureAwait(false);
         udpRelayService.Dispose();
+        loggerFactory?.Dispose();
+
         GC.SuppressFinalize(this);
     }
 
@@ -61,12 +96,32 @@ internal class Program : IDisposable
     {
         Console.WriteLine("Starting R3E API UDP relay service");
         Console.WriteLine("Waiting for R3E to start");
-        using var program = new Program();
+        await using var program = new Program();
 
-        while (true)
+        // Use a CancellationTokenSource to allow graceful shutdown
+        using var cts = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (sender, e) =>
         {
-            await Task.Delay(1000); // keeps app alive
+            e.Cancel = true;
+            cts.Cancel();
+        };
+
+        // Start the background service
+        await program.sharedMemoryService.StartAsync(cts.Token);
+
+        try
+        {
+            await Task.Delay(Timeout.Infinite, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Shutting down...");
+        }
+        finally
+        {
+            // Stop the background service gracefully
+            await program.sharedMemoryService.StopAsync(CancellationToken.None);
         }
     }
-
 }

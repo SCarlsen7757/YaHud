@@ -8,8 +8,8 @@ namespace R3E.API
     {
         private readonly int port;
         private readonly UdpClient udpClient;
-        private readonly CancellationTokenSource cts = new();
         private readonly ILogger<UdpReceiver> logger;
+        private bool disposed;
 
         public event Action<IPEndPoint, byte[]>? DataReceived;
 
@@ -64,10 +64,14 @@ namespace R3E.API
 
         public void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
             logger.LogDebug("Disposing UdpReceiver on port {Port}", port);
-            cts.Cancel();
             udpClient?.Dispose();
-            cts.Dispose();
             GC.SuppressFinalize(this);
         }
     }

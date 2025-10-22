@@ -10,6 +10,7 @@ namespace R3E.UdpRelay
         private readonly UdpClient udpClient = new();
         private readonly CancellationTokenSource cts = new();
         private readonly ILogger<UdpRelayService> logger = logger ?? NullLogger<UdpRelayService>.Instance;
+        private bool disposed;
 
         /// <summary>
         /// Source port to listen on.
@@ -29,6 +30,12 @@ namespace R3E.UdpRelay
 
         public void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
             logger.LogDebug("Disposing UdpRelayService");
             cts.Cancel();
             cts.Dispose();

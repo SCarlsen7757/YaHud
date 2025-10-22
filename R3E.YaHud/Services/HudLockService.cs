@@ -6,6 +6,7 @@ namespace R3E.YaHud.Services
     {
         private readonly ShortcutService shortcutService;
         private readonly ILogger<HudLockService> logger;
+        private bool disposed;
 
         public HudLockService(ShortcutService shortcutService, ILogger<HudLockService>? logger = null)
         {
@@ -42,6 +43,12 @@ namespace R3E.YaHud.Services
 
         public void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
             shortcutService.ToggleLockShortcutReceived -= OnLockShortcutReceived;
             GC.SuppressFinalize(this);
         }

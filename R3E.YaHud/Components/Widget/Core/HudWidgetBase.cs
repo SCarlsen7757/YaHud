@@ -51,7 +51,7 @@ namespace R3E.YaHud.Components.Widget.Core
             {
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
-                _ = InvokeAsync(StateHasChanged);
+                await InvokeAsync(StateHasChanged);
             }
 
             if (Settings.Visible && firstRender || !visibleInitialized)
@@ -82,19 +82,33 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private void OnLockChanged(bool newState)
         {
-            // Toggle dragging via JS so we avoid calling into .NET from JS on mousedown
-            _ = InvokeAsync(async () =>
+            // Use fire-and-forget pattern here but log if it fails
+            // This is acceptable because UI state changes are not critical
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    if (newState)
-                        await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
-                    else
-                        await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
-                }
-                catch { }
+                    await InvokeAsync(async () =>
+                    {
+                        try
+                        {
+                            if (newState)
+                                await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
+                            else
+                                await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
+                        }
+                        catch
+                        {
+                            // Swallow JS interop errors - UI updates are non-critical
+                        }
 
-                await InvokeAsync(StateHasChanged);
+                        StateHasChanged();
+                    });
+                }
+                catch
+                {
+                    // Swallow invocation errors - UI updates are non-critical
+                }
             });
         }
 
