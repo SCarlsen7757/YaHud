@@ -1,0 +1,97 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.API
+@inherits HudWidgetBase<FuelSettings>
+
+@if (Settings.Visible)
+{
+    <div id=@ElementId class="Fuel-widget text">
+        <p class="FuelRemaining-text">@FuelRemaining</p>
+        <p class="TimeEstimatedLeft-text">@TimeEstimatedLeft</p>
+        <p class="LapsEstimatedLeft-text">@LapsEstimatedLeft</p>
+        <p class="LastLapFuelUsage-text">@LastLapFuelUsage</p>
+        <p class="FuelPerLap-text">@FuelPerLap</p>
+        <p class="FuelToEnd-text">@FuelToEnd</p>
+        <p class="FuelToAdd-text">@FuelToAdd</p>
+    </div>
+}
+
+@code {
+    private Single FuelRemaining { get; set; } = 0.0f;
+    private Single TimeEstimatedLeft { get; set; } = 0.0f;
+    private Single LapsEstimatedLeft { get;  set; } = 0.0f;
+    private Single LastLapFuelUsage { get; set; } = 0.0f;
+    private Single FuelPerLap { get; set; } = 0.0f;
+    private Single FuelToEnd { get; set; } = 0.0f;
+    private Single FuelToAdd { get;  set; } = 0.0f;
+    private Int16 NumberOfLaps { get;  set; } = 0;
+    private Int16 oldNumberOfLaps = 0;
+    private Single oldFuelRemaining = 0.0f;
+    private Int16 SessionPhase = -1;
+    private Int16 SessionLengthFormat = -1;
+    
+
+
+    private string RpsBarBackgroundColor => "#454545";
+    private string RpsCurrentColor { get; set; } = "#ffffff";
+
+    public override string ElementId { get => "FuelWidget"; }
+    public override string Name => "Fuel";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 50;
+
+
+    public Fuel()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+
+          
+        SessionPhase = (Int16)data.SessionPhase;
+        FuelRemaining = (Single)data.FuelLeft;
+        if (SessionPhase == 4)
+        {
+           oldFuelRemaining = FuelRemaining;
+        }
+
+        TimeEstimatedLeft = (Single)data.SessionTimeRemaining;
+        FuelPerLap = (Single)data.FuelPerLap;
+
+        LapsEstimatedLeft = (Single)data.FuelLeft / (Single)data.FuelPerLap;
+        
+        switch (SessionLengthFormat)
+          {
+            // TimeBased
+            case 0: 
+            FuelToEnd = (FuelPerLap / (Single)data.LapTimeCurrentSelf) * TimeEstimatedLeft;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining); 
+            break;
+
+            // LapBased
+            case 1:
+            FuelToEnd = (Single)data.NumberOfLaps / (Single)data.FuelPerLap;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining); 
+            break;
+
+
+            // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
+            case 2:
+            FuelToEnd = ((Single)data.NumberOfLaps+1) / (Single)data.FuelPerLap;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining);       
+            break;
+
+          }  
+
+        if ((Single)data.NumberOfLaps != oldNumberOfLaps)
+        {
+            LastLapFuelUsage = oldFuelRemaining - FuelRemaining;
+            oldFuelRemaining = (Single)data.FuelLeft;
+        }
+    }
+}
