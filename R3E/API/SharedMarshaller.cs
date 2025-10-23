@@ -1,5 +1,6 @@
-using System.Runtime.InteropServices;
 using R3E.Data;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace R3E.API
 {
@@ -17,8 +18,19 @@ namespace R3E.API
                 value = Marshal.PtrToStructure<Shared>(ptr);
                 return true;
             }
-            catch
+            catch (ArgumentException)
             {
+                // Invalid structure or pointer
+                return false;
+            }
+            catch (MissingMethodException)
+            {
+                // Structure doesn't have parameterless constructor
+                return false;
+            }
+            catch (TargetInvocationException)
+            {
+                // Error in structure constructor
                 return false;
             }
             finally
