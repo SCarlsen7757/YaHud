@@ -48,7 +48,9 @@
 
             try {
                 dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent);
-            } catch (ex) { console.error(ex); }
+            } catch (ex) { 
+                console.error('HudHelper: Failed to update widget position', ex); 
+            }
 
         }
 
@@ -72,7 +74,9 @@
         function onResize() {
             try {
                 dotnetHelper.invokeMethodAsync('OnWindowResize');
-            } catch (ex) { console.error(ex); }
+            } catch (ex) { 
+                console.error('HudHelper: Failed to notify resize', ex); 
+            }
         }
 
         el.addEventListener('mousedown', onMouseDown);
@@ -89,7 +93,9 @@
         try {
             el.removeEventListener('mousedown', h.onMouseDown);
             window.removeEventListener('resize', h.onResize);
-        } catch (e) { /* ignore */ }
+        } catch (e) { 
+            console.warn('HudHelper: Error detaching handlers', e); 
+        }
         entry.handlersAttached = false;
         entry.handlers = null;
     }
@@ -97,7 +103,10 @@
     return {
         registerDraggable: function (elementId, dotnetHelper, locked) {
             const el = document.getElementById(elementId);
-            if (!el) return;
+            if (!el) {
+                console.warn('HudHelper.registerDraggable: element not found', elementId);
+                return;
+            }
             // if already registered, update dotnetRef and locked state
             let entry = registry[elementId];
             if (!entry) {
@@ -113,13 +122,19 @@
 
         enableDragging: function (elementId) {
             const entry = registry[elementId];
-            if (!entry) return;
+            if (!entry) {
+                console.warn('HudHelper.enableDragging: element not registered', elementId);
+                return;
+            }
             attachHandlers(entry);
         },
 
         disableDragging: function (elementId) {
             const entry = registry[elementId];
-            if (!entry) return;
+            if (!entry) {
+                console.warn('HudHelper.disableDragging: element not registered', elementId);
+                return;
+            }
             detachHandlers(entry);
         },
 
@@ -127,13 +142,20 @@
             const entry = registry[elementId];
             if (!entry) return;
             detachHandlers(entry);
-            try { entry.dotNetRef?.dispose(); } catch (e) { /* ignore */ }
+            try { 
+                entry.dotNetRef?.dispose(); 
+            } catch (e) { 
+                console.warn('HudHelper.unregisterDraggable: Error disposing dotNetRef', e); 
+            }
             delete registry[elementId];
         },
 
         setPosition: function (elementId, xPercent, yPercent) {
             const el = document.getElementById(elementId);
-            if (!el) return;
+            if (!el) {
+                console.warn('HudHelper.setPosition: element not found', elementId);
+                return;
+            }
             const widgetWidth = el.offsetWidth;
             const widgetHeight = el.offsetHeight;
             el.style.position = "absolute";
@@ -143,10 +165,17 @@
 
         resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
             const el = document.getElementById(elementId);
-            if (!el) return;
+            if (!el) {
+                console.warn('HudHelper.resetPosition: element not found', elementId);
+                return;
+            }
 
             // Clear any saved settings
-            try { localStorage.removeItem(elementId); } catch (e) { }
+            try { 
+                localStorage.removeItem(elementId); 
+            } catch (e) { 
+                console.warn('HudHelper.resetPosition: localStorage error', e); 
+            }
 
             const widgetWidth = el.offsetWidth;
             const widgetHeight = el.offsetHeight;
@@ -156,15 +185,29 @@
         },
 
         setWidgetSettings: function (elementId, value) {
-            try { localStorage.setItem(elementId, JSON.stringify(value)); } catch (e) { }
+            try { 
+                localStorage.setItem(elementId, JSON.stringify(value)); 
+            } catch (e) { 
+                console.error('HudHelper.setWidgetSettings: localStorage error', e); 
+            }
         },
 
         getWidgetSettings: function (elementId) {
-            try { const value = localStorage.getItem(elementId); return value ? JSON.parse(value) : null; } catch (e) { return null; }
+            try { 
+                const value = localStorage.getItem(elementId); 
+                return value ? JSON.parse(value) : null; 
+            } catch (e) { 
+                console.error('HudHelper.getWidgetSettings: localStorage/JSON error', e); 
+                return null; 
+            }
         },
 
         clearWidgetSettings: function (elementId) {
-            try { localStorage.removeItem(elementId); } catch (e) { }
+            try { 
+                localStorage.removeItem(elementId); 
+            } catch (e) { 
+                console.warn('HudHelper.clearWidgetSettings: localStorage error', e); 
+            }
         }
     };
 })();
@@ -219,7 +262,9 @@ window.colorisHelper = (function () {
                         if (dotNetRef && typeof dotNetRef.invokeMethodAsync === 'function') {
                             dotNetRef.invokeMethodAsync('NotifyColorChanged', containerId, val);
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) { 
+                        console.error('colorisHelper.register listener: callback error', e); 
+                    }
                 };
 
                 inputEl.addEventListener('input', listener, { passive: true });
@@ -242,14 +287,19 @@ window.colorisHelper = (function () {
 
         setColor: function (containerId, hex) {
             const entry = pickers[containerId];
-            if (!entry) return;
+            if (!entry) {
+                console.warn('colorisHelper.setColor: picker not found', containerId);
+                return;
+            }
             try {
                 entry.inputEl.value = hex;
                 entry.inputEl.style.background = hex;
                 // dispatch input event so Coloris and Blazor sync
                 const ev = new Event('input', { bubbles: true });
                 entry.inputEl.dispatchEvent(ev);
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error('colorisHelper.setColor error', e); 
+            }
         },
 
         unregister: function (containerId) {
@@ -257,7 +307,9 @@ window.colorisHelper = (function () {
             if (!entry) return;
             try {
                 entry.inputEl.removeEventListener('input', entry.listener);
-            } catch (e) { /* ignore */ }
+            } catch (e) { 
+                console.warn('colorisHelper.unregister: removeEventListener error', e); 
+            }
             delete pickers[containerId];
         },
 
