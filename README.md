@@ -70,17 +70,11 @@ For Linux support, you need to run the relay service inside the same Proton inst
    ```bash
    # Replace STEAM_COMPAT_CLIENT_INSTALL_PATH with your Linux user's name. Steam should be installed there unless you have chosen another place.
    # Replace /path/to/R3E.Relay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
-   STEAM_COMPAT_CLIENT_INSTALL_PATH="/home/$yourusername$/.local/share/Steam" \
-   STEAM_COMPAT_DATA_PATH="/home/$yourusername$/.local/share/Steam/steamapps/compatdata/211500" \
-   "/home/$yourusername$/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
-   "C:\Windows\System32\cmd.exe" 
+   STEAM_COMPAT_CLIENT_INSTALL_PATH="/$HOME/.local/share/Steam" \
+   STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
+   "/$HOME/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
+   C:\Program Files\R3EApiRelay\R3E.Relay.exe"
    ```
-   After this command has been activated in the terminal a new cmd looking terminal will open, enter this:
-   ```
-   # Replace the file path with where you extracted the zip earlier
-   "C:\Program Files\R3EApiRelay\R3E.Relay.exe"
-   ```
-   
    > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
 5. On your Linux machine, run the HUD application:
