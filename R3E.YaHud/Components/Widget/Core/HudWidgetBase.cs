@@ -12,6 +12,7 @@ namespace R3E.YaHud.Components.Widget.Core
         [Inject] protected HudLockService LockService { get; set; } = default!;
         [Inject] protected TelemetryService TelemetryService { get; set; } = default!;
         [Inject] protected SettingsService SettingsService { get; set; } = default!;
+        [Inject] protected ILogger<HudWidgetBase<TSettings>> Logger { get; set; } = default!;
 
 
         protected bool Locked => LockService.Locked;
@@ -82,32 +83,33 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private void OnLockChanged(bool newState)
         {
-            // Use fire-and-forget pattern here but log if it fails
-            // This is acceptable because UI state changes are not critical
-            _ = Task.Run(async () =>
+            // Use InvokeAsync directly - no need for Task.Run
+            // InvokeAsync already handles the threading context properly
+            _ = InvokeAsync(async () =>
             {
                 try
                 {
-                    await InvokeAsync(async () =>
-                    {
-                        try
-                        {
-                            if (newState)
-                                await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
-                            else
-                                await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
-                        }
-                        catch
-                        {
-                            // Swallow JS interop errors - UI updates are non-critical
-                        }
+                    if (newState)
+                        await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
+                    else
+                        await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
 
-                        StateHasChanged();
-                    });
+                    StateHasChanged();
                 }
-                catch
+                catch (JSDisconnectedException)
                 {
-                    // Swallow invocation errors - UI updates are non-critical
+                    // Expected when circuit is disconnected - safe to ignore
+                    Logger.LogDebug("JS interop failed: Circuit disconnected for widget {ElementId}", ElementId);
+                }
+                catch (JSException ex)
+                {
+                    // Log JS errors but don't crash - UI updates are non-critical
+                    Logger.LogWarning(ex, "JS interop error updating drag state for widget {ElementId}", ElementId);
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
+                {
+                    // Circuit disconnected or component disposed
+                    Logger.LogDebug(ex, "Widget {ElementId} is no longer available", ElementId);
                 }
             });
         }
