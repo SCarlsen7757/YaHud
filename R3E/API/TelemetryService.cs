@@ -10,19 +10,20 @@ namespace R3E.API
 
         public event Action<TelemetryData>? DataUpdated;
 
-        public TelemetryData Data { get; private set; }
+        private readonly TelemetryData data = new();
+        public TelemetryData Data { get => data; }
 
         public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
         {
             this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
             this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
-            Data = new TelemetryData(sharedSource.Data);
+            Data.Raw = sharedSource.Data;
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
         private void OnRawDataUpdated(Shared raw)
         {
-            Data = new TelemetryData(raw);
+            Data.Raw = raw;
             DataUpdated?.Invoke(Data);
             logger.LogDebug("Telemetry data updated");
         }
