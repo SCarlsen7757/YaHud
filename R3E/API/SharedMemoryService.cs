@@ -199,7 +199,7 @@ namespace R3E.API
             GC.SuppressFinalize(this);
         }
 
-        public new ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             if (disposed)
             {
