@@ -64,19 +64,26 @@ The HUD will automatically connect to RaceRoom's shared memory.
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
 1. Extract `R3E.Relay.zip` to a location accessible from your Steam Proton prefix
+   Example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
 
-2. Start the relay service in the Proton environment using the `proton` command:
+3. Start the relay service in the Proton environment using the `Terminal` command:
    ```bash
-   # Replace APPID with RaceRoom's Steam App ID (211500)
-   # Replace /path/to/R3E.Relay with the actual path to the relay executable
-   STEAM_COMPAT_DATA_PATH=~/.steam/steam/steamapps/compatdata/211500 \
-   ~/.steam/steam/steamapps/common/Proton\ 9.0/proton run \
-   /path/to/R3E.Relay/R3E.Relay.exe
+   # Replace STEAM_COMPAT_CLIENT_INSTALL_PATH with your Linux user's name. Steam should be installed there unless you have chosen another place.
+   # Replace /path/to/R3E.Relay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
+   STEAM_COMPAT_CLIENT_INSTALL_PATH="/home/$yourusername$/.local/share/Steam" \
+   STEAM_COMPAT_DATA_PATH="/home/$yourusername$/.local/share/Steam/steamapps/compatdata/211500" \
+   "/home/$yourusername$/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
+   "C:\Windows\System32\cmd.exe" 
+   ```
+   After this command has been activated in the terminal a new cmd looking terminal will open, enter this:
+   ```
+   # Replace the file path with where you extracted the zip earlier
+   "C:\Program Files\R3EApiRelay\R3E.Relay.exe"
    ```
    
-   > **Note**: Adjust the Proton version (e.g., `Proton 9.0`) to match the version you're using for RaceRoom.
+   > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
-3. On your Linux machine, run the HUD application:
+5. On your Linux machine, run the HUD application:
    ```bash
    ./R3E.YaHud
    ```
