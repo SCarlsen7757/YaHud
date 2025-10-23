@@ -73,7 +73,7 @@ For Linux support, you need to run the relay service inside the same Proton inst
    STEAM_COMPAT_CLIENT_INSTALL_PATH="/$HOME/.local/share/Steam" \
    STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
    "/$HOME/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
-   C:\Program Files\R3EApiRelay\R3E.Relay.exe"
+   "C:\Program Files\R3EApiRelay\R3E.Relay.exe"
    ```
    > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
