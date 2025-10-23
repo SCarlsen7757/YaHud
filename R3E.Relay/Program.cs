@@ -13,6 +13,10 @@ internal class Program : IAsyncDisposable
     private readonly ILogger<Program> logger;
     private bool disposed;
 
+    // Reusable buffer for serialization to avoid repeated allocations
+    private readonly byte[] sendBuffer;
+    private readonly int bufferSize;
+
     public Program()
     {
         // keep logger factory alive for the lifetime of the program
@@ -24,6 +28,11 @@ internal class Program : IAsyncDisposable
         sharedMemoryService = new SharedMemoryService(shmLogger);
         int sourcePort = GetAvailablePort();
         udpRelayService = new UdpRelayService(sourcePort, "127.0.0.1", 10101, udpLogger);
+
+        // Allocate buffer once for the lifetime of the program
+        bufferSize = Marshal.SizeOf<Shared>();
+        sendBuffer = new byte[bufferSize];
+
         sharedMemoryService.DataUpdated += OnDataUpdated;
     }
 
@@ -31,22 +40,23 @@ internal class Program : IAsyncDisposable
     {
         try
         {
-            // Serialize Shared struct to byte array
-            var size = Marshal.SizeOf<Shared>();
-            var buffer = new byte[size];
-            var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            // Serialize Shared struct to byte array using the reusable buffer
+            var handle = GCHandle.Alloc(sendBuffer, GCHandleType.Pinned);
             try
             {
                 Marshal.StructureToPtr(data, handle.AddrOfPinnedObject(), false);
             }
             finally
             {
-                handle.Free();
+                if (handle.IsAllocated)
+                {
+                    handle.Free();
+                }
             }
 
             // Send via UDP relay with proper async handling
             // Use fire-and-forget pattern but with proper error handling
-            _ = SendDataAsync(buffer);
+            _ = SendDataAsync(sendBuffer);
         }
         catch (Exception ex)
         {
