@@ -51,6 +51,9 @@ namespace R3E.API
         {
             logger.LogInformation("Starting RemoteSharedMemoryService (UDP receiver) on port {Port}", port);
 
+            if (pollTask != null)
+                throw new InvalidOperationException("Service is already started");
+
             // Create a dedicated CancellationTokenSource for the receiver
             receiverCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -72,6 +75,8 @@ namespace R3E.API
                     throw; // Re-throw to ensure the task enters faulted state
                 }
             }, receiverCts.Token);
+
+            _ = pollTask.ContinueWith(t => logger.LogError(t.Exception, "PollLoop terminated unexpectedly"), TaskContinuationOptions.OnlyOnFaulted);
 
             return Task.CompletedTask;
         }
