@@ -1,21 +1,44 @@
-﻿using R3E.Data;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using R3E.Data;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
 
 namespace R3E.API
 {
-    public class SharedMemoryService : IDisposable, IAsyncDisposable
+    [SupportedOSPlatform("windows")]
+    public class SharedMemoryService : BackgroundService, ISharedSource, IAsyncDisposable
     {
         private MemoryMappedFile? file;
         private Shared data;
-        private readonly CancellationTokenSource cts = new();
-        private readonly Task? pollingTask;
-        private readonly UdpReceiver? udpReceiver;
-        private ulong? lastHash;
 
-        private readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(16);
+        // Track last observed header values for change detection
+        private int? lastSimTicks;
+        private int? lastGamePaused;
+        private readonly ILogger<SharedMemoryService> logger;
+
+        private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
+        private readonly TimeSpan pausedInterval = TimeSpan.FromMilliseconds(200); // Game paused update interval
+        private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // Game not running update interval
+
+        // Offsets computed at runtime so code remains correct if SHM layout moves
+        private static readonly int s_offsetGamePaused;
+        private static readonly int s_offsetPlayer;
+        private static readonly int s_offsetGameSimulationTicks;
+
+        // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
+        private byte[]? readBuffer;
+        private bool disposed;
+
+        static SharedMemoryService()
+        {
+            // Use Marshal.OffsetOf to compute offsets relative to the Shared struct
+            s_offsetGamePaused = (int)Marshal.OffsetOf<Shared>(nameof(Shared.GamePaused));
+            s_offsetPlayer = (int)Marshal.OffsetOf<Shared>(nameof(Shared.Player));
+
+            // Offset of GameSimulationTicks inside PlayerData
+            s_offsetGameSimulationTicks = s_offsetPlayer + (int)Marshal.OffsetOf<PlayerData>(nameof(PlayerData.GameSimulationTicks));
+        }
 
         /// <summary>
         /// Raised when new shared memory data is available.
@@ -24,67 +47,37 @@ namespace R3E.API
 
         public Shared Data => data;
 
-        private readonly bool useUdp = !OperatingSystem.IsWindows();
-
-        public SharedMemoryService() : this(false) { }
-
-        public SharedMemoryService(bool? useUdp)
+        public SharedMemoryService(ILogger<SharedMemoryService>? logger = null)
         {
-            if (useUdp is not null)
-            {
-                this.useUdp = useUdp.Value;
-            }
-
+            this.logger = logger ?? NullLogger<SharedMemoryService>.Instance;
             data = new();
-            if (OperatingSystem.IsWindows() && !this.useUdp)
-            {
-                pollingTask = Task.Run(() => PollLoop(cts.Token));
-            }
-            else
-            {
-                udpReceiver = new UdpReceiver(10101);
-                udpReceiver.DataReceived += (endPoint, bytes) =>
-                {
-                    var expected = Marshal.SizeOf<Shared>();
-                    if (bytes.Length != expected) return;
-
-                    // compute checksum of the incoming data (using MD5 then taking first 8 bytes)
-                    var hash = ComputeChecksum(bytes);
-
-                    // if identical to last hash, nothing changed
-                    if (lastHash.HasValue && lastHash.Value == hash) return;
-
-                    // update stored hash
-                    lastHash = hash;
-
-                    // copy before marshalling because receiver may reuse its buffer
-                    var buf = new byte[bytes.Length];
-                    Array.Copy(bytes, buf, bytes.Length);
-
-                    if (TryMarshalShared(buf, out var newData))
-                    {
-                        data = newData;
-                        DataUpdated?.Invoke(data);
-                    }
-                };
-                pollingTask = Task.Run(() => udpReceiver.PollLoop(cts.Token));
-            }
+            this.logger.LogDebug("SharedMemoryService constructed");
         }
 
-        [SupportedOSPlatform("windows")]
-        private async Task PollLoop(CancellationToken token)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var expected = Marshal.SizeOf<Shared>();
 
-            while (!token.IsCancellationRequested)
+            // allocate read buffer once
+            readBuffer = new byte[expected];
+
+            // current delay, start with normal
+            var currentDelay = normalInterval;
+
+            logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
+
+            ulong noUpdate = 0;
+
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if (Utilities.IsRrreRunning() && file == null)
                 {
-                    Console.WriteLine("Raceroom game found");
                     try
                     {
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
-                        Console.WriteLine("SHM file found");
+                        logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
+                        // reset to normal when found
+                        currentDelay = normalInterval;
                     }
                     catch (FileNotFoundException)
                     {
@@ -97,109 +90,131 @@ namespace R3E.API
                     try
                     {
                         using var view = file.CreateViewStream();
-                        using var stream = new BinaryReader(view);
-                        var read = stream.ReadBytes(expected);
-                        if (read.Length != expected)
+
+                        // Read into the reusable buffer to avoid allocations
+                        var bytesRead = 0;
+                        while (bytesRead < expected)
+                        {
+                            var read = view.Read(readBuffer, bytesRead, expected - bytesRead);
+                            if (read <= 0) break; // incomplete read
+                            bytesRead += read;
+                        }
+
+                        if (bytesRead != expected)
                         {
                             // skip incomplete read
+                            logger.LogDebug("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
+                            await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
                         }
 
-                        var hash = ComputeChecksum(read);
-                        if (lastHash.HasValue && lastHash.Value == hash)
+                        // Determine paused state and sim ticks directly from buffer using computed offsets
+                        int gamePaused = 0;
+                        int simTicks = 0;
+                        if (readBuffer.Length >= s_offsetGameSimulationTicks + 4)
                         {
-                            // no change
+                            gamePaused = BitConverter.ToInt32(readBuffer, s_offsetGamePaused);
+                            simTicks = BitConverter.ToInt32(readBuffer, s_offsetGameSimulationTicks);
+                        }
+
+                        // adjust polling interval based on paused/running
+                        currentDelay = gamePaused != 0 ? pausedInterval : normalInterval;
+
+                        // If nothing changed, skip
+                        if (lastSimTicks.HasValue && lastGamePaused.HasValue && lastSimTicks.Value == simTicks && lastGamePaused.Value == gamePaused)
+                        {
+                            noUpdate++;
+                            if (noUpdate > 100)
+                            {
+                                logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks}, paused={Paused})", simTicks, gamePaused);
+                                noUpdate = 0;
+                            }
                         }
                         else
                         {
-                            lastHash = hash;
+                            noUpdate = 0;
+                            // update last observed
+                            lastSimTicks = simTicks;
+                            lastGamePaused = gamePaused;
 
-                            if (TryMarshalShared(read, out var newData))
+                            // If game is paused, skip publishing (HUD hidden)
+                            if (gamePaused != 0)
                             {
-                                data = newData;
-                                DataUpdated?.Invoke(data);
+                                logger.LogDebug("Game paused (GamePaused={Paused}); skipping publish", gamePaused);
+                            }
+                            else
+                            {
+                                if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
+                                {
+                                    data = newData;
+                                    // Immediately publish updates so HUD receives fresh data
+                                    DataUpdated?.Invoke(data);
+                                    logger.LogDebug("Published shared memory update (simTicks={SimTicks})", simTicks);
+                                }
+                                else
+                                {
+                                    logger.LogWarning("Failed to marshal shared memory buffer");
+                                }
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        logger.LogWarning(ex, "Error reading shared memory, disposing file handle");
                         file?.Dispose();
                         file = null;
+                        // if file lost, back off heavily
+                        currentDelay = notRunningInterval;
                     }
+                }
+                else
+                {
+                    // game not running - back off to reduce CPU
+                    currentDelay = notRunningInterval;
                 }
 
                 try
                 {
-                    await Task.Delay(timeInterval, token).ConfigureAwait(false);
+                    await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
-                    // cancellation requested
+                    logger.LogInformation("Shared memory poll loop cancellation requested");
+                    break;
                 }
             }
         }
 
-        private static bool TryMarshalShared(byte[] src, out Shared value)
+        public override void Dispose()
         {
-            value = new();
-            if (src.Length < Marshal.SizeOf<Shared>()) return false;
-
-            var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
-            try
+            if (disposed)
             {
-                var ptr = handle.AddrOfPinnedObject();
-                value = Marshal.PtrToStructure<Shared>(ptr);
-                return true;
+                return;
             }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                if (handle.IsAllocated) handle.Free();
-            }
-        }
 
-        private static ulong ComputeChecksum(byte[] data)
-        {
-            // MD5 is available in System.Security.Cryptography and fast enough for change-detection.
-            // We take the first 8 bytes of the MD5 hash as a 64-bit fingerprint.
-            var digest = MD5.HashData(data);
-            // ensure there are at least 8 bytes (MD5 is 16 bytes)
-            return BitConverter.ToUInt64(digest, 0);
-        }
-
-        public void Dispose()
-        {
-            DisposeAsync().AsTask().GetAwaiter().GetResult();
+            disposed = true;
+            logger.LogInformation("Disposing SharedMemoryService");
+            file?.Dispose();
+            base.Dispose();
             GC.SuppressFinalize(this);
         }
 
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            try
+            if (disposed)
             {
-                cts.Cancel();
-
-                if (pollingTask != null)
-                {
-                    try
-                    {
-                        await pollingTask.ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) { }
-                    catch { /* swallow any other exceptions during shutdown */ }
-                }
-
-                file?.Dispose();
-                udpReceiver?.Dispose();
+                return ValueTask.CompletedTask;
             }
-            finally
-            {
-                cts.Dispose();
-                GC.SuppressFinalize(this);
-            }
+
+            disposed = true;
+            logger.LogInformation("Disposing SharedMemoryService asynchronously");
+            file?.Dispose();
+            
+            // BackgroundService doesn't implement IAsyncDisposable, so just dispose synchronously
+            base.Dispose();
+            
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
     }
 }

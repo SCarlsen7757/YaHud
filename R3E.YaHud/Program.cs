@@ -12,7 +12,22 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
 builder.Services.AddSingleton<ShortcutService>();
 
-builder.Services.AddSingleton<TelemetryService>(sp => new(new SharedMemoryService(false))); // Set useUdp to true to use UDP shared memory on Windows
+// Register appropriate ISharedSource based on OS
+if (OperatingSystem.IsWindows())
+{
+    builder.Services.AddSingleton<SharedMemoryService>();
+    builder.Services.AddSingleton<ISharedSource>(sp => sp.GetRequiredService<SharedMemoryService>());
+    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SharedMemoryService>());
+}
+else
+{
+    builder.Services.AddSingleton<RemoteSharedMemoryService>();
+    builder.Services.AddSingleton<ISharedSource>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
+    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
+}
+
+// TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
+builder.Services.AddSingleton<TelemetryService>();
 
 var app = builder.Build();
 
