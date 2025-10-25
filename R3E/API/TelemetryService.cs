@@ -4,35 +4,45 @@ namespace R3E.API
 {
     public class TelemetryService : IDisposable, IAsyncDisposable
     {
-        private readonly SharedMemoryService sharedMemoryService;
+        private readonly ISharedSource sharedSource;
+        private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
+        private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
 
-        public TelemetryData Data { get; private set; }
+        private readonly TelemetryData data = new();
+        public TelemetryData Data { get => data; }
 
-        public TelemetryService(SharedMemoryService sharedMemoryService)
+        public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
         {
-            this.sharedMemoryService = sharedMemoryService ?? throw new ArgumentNullException(nameof(sharedMemoryService));
-            Data = new TelemetryData(sharedMemoryService.Data);
-            sharedMemoryService.DataUpdated += OnRawDataUpdated;
+            this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
+            this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
+            Data.Raw = sharedSource.Data;
+            sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
         private void OnRawDataUpdated(Shared raw)
         {
-            Data = new TelemetryData(raw);
+            Data.Raw = raw;
             DataUpdated?.Invoke(Data);
+            logger.LogDebug("Telemetry data updated");
         }
 
         public void Dispose()
         {
-            sharedMemoryService.DataUpdated -= OnRawDataUpdated;
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
+            sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
         }
 
         public ValueTask DisposeAsync()
         {
             Dispose();
-            GC.SuppressFinalize(this);
             return ValueTask.CompletedTask;
         }
     }
