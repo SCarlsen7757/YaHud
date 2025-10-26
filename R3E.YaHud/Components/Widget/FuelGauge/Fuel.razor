@@ -1,44 +1,59 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.API
+@using System.Drawing
 @using static R3E.Constant
 @inherits HudWidgetBase<FuelSettings>
 
 @if (Settings.Visible)
 {
-    <div id=@ElementId class="Fuel-widget text">
-        <p class="FuelRemaining-text">@FuelRemaining</p>
-        <p class="TimeEstimatedLeft-text">@TimeEstimatedLeft</p>
-        <p class="LapsEstimatedLeft-text">@LapsEstimatedLeft</p>
-        <p class="LastLapFuelUsage-text">@LastLapFuelUsage</p>
-        <p class="FuelPerLap-text">@FuelPerLap</p>
-        <p class="FuelToEnd-text">@FuelToEnd</p>
-        <p class="FuelToAdd-text">@FuelToAdd</p>
+    <div id=@ElementId class="Fuel-widget">
+        <div class="data-grid">
+            <div class="data-box large-box">
+            <p class="FuelRemaining-text"style="color: @FRColor"> @FuelRemaining</p>
+            </div>
+            <div class="data-box">
+            <p class="TimeEstimatedLeft-text">@TimeEstimatedLeft</p>
+            </div>
+            <div class="data-box">
+            <p class="LapsEstimatedLeft-text">@LapsEstimatedLeft</p>
+            </div>
+            <div class="data-box">
+            <p class="LastLapFuelUsage-text">@LastLapFuelUsage</p>
+            </div>
+            <div class="data-box">
+            <p class="FuelPerLap-text">@FuelPerLap</p>
+            </div>
+            <div class="data-box large-box">
+            <p class="FuelToEnd-text"style="color: @FTEColor">@FuelToEnd</p>
+            </div>
+            <div class="data-box large-box">
+            <p class="FuelToAdd-text">@FuelToAdd</p>
+            </div>
+        </div>
     </div>
 }
 
 @code {
     private float FuelRemaining { get; set; } = 0.0f;
+    private string FRColor { get; set; } = "rgb(0, 128, 0)";
+    private float FRColorSwitch { get; set; } = 0.0f;
     private float TimeEstimatedLeft { get; set; } = 0.0f;
     private float LapsEstimatedLeft { get;  set; } = 0.0f;
     private float LastLapFuelUsage { get; set; } = 0.0f;
     private float FuelPerLap { get; set; } = 0.0f;
     private float FuelToEnd { get; set; } = 0.0f;
+    private string FTEColor { get; set; } = "rgb(0, 128, 0)";
+    private float FTEColorSwitch { get; set; } = 0.0f;
     private float FuelToAdd { get;  set; } = 0.0f;
+    private float FuelCapacity { get;  set; } = 0.0f;
     private int NumberOfLaps { get;  set; } = 0;
     private int oldNumberOfLaps = 0;
     private float oldFuelRemaining = 0.0f;
     private int SessionPhase = -1;
     private SessionLengthFormat SessionLengthFormat = SessionLengthFormat.Unavailable;
-    
-
-
-    private string RpsBarBackgroundColor => "#454545";
-    private string RpsCurrentColor { get; set; } = "#ffffff";
-
     public override string ElementId { get => "FuelWidget"; }
     public override string Name => "Fuel";
     public override string Category => "Telemetry";
-
     public override double DefaultXPercent => 50;
     public override double DefaultYPercent => 50;
 
@@ -82,6 +97,7 @@
         {
            oldFuelRemaining = FuelRemaining;
            oldNumberOfLaps = data.NumberOfLaps;
+           FuelCapacity = data.FuelCapacity;
         }
 
         //Based on the Session Format change the calculations
@@ -108,6 +124,42 @@
             FuelToEnd = (data.NumberOfLaps+1) / data.FuelPerLap;
             FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining);       
             break;
-          }      
+          }  
+
+
+        FRColorSwitch = FuelRemaining / (FuelCapacity / 100);
+        if (FRColorSwitch >= 50.0)
+        {
+            //green
+            FRColor = "rgb(0, 128, 0)"; 
+        }   
+        else if  (50.0 > FRColorSwitch && FRColorSwitch >= 35.0)
+        {
+            //yellow
+            FRColor = "rgb(255, 251, 0)"; 
+        }
+        else if  (35.0 > FRColorSwitch && FRColorSwitch >= 15.0)
+        {
+            //orange
+            FRColor = "rgb(255, 102, 0);"; 
+        }
+        else if  (15.0 > FRColorSwitch && FRColorSwitch >= 0.0)
+        {
+            //red
+            FRColor = "rgb(255, 0, 0)"; 
+        }
+
+
+
+        if (FuelToEnd < FuelRemaining)
+        {
+            //green
+            FTEColor = "rgb(0, 128, 0)"; 
+        }   
+        else 
+        {
+            //red
+            FTEColor = "rgb(255, 0, 0)"; 
+        }
     }
 }
