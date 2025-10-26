@@ -66,7 +66,7 @@ For Linux support, you need to run the relay service inside the same Proton inst
 1. Extract `R3E.Relay.zip` to a location accessible from your Steam Proton prefix
    An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
 
-3. Start the relay service in the Proton environment using the `Terminal` command:
+2. Start the relay service in the Proton environment using the `Terminal` command:
    ```bash
    # Replace STEAM_COMPAT_CLIENT_INSTALL_PATH with your Linux user's name. Steam should be installed there unless you have chosen another place.
    # Replace /path/to/R3E.Relay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
