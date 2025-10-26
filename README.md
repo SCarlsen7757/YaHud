@@ -1,4 +1,4 @@
-﻿# YaHud - Yet Another HUD for RaceRoom Racing Experience
+# YaHud - Yet Another HUD for RaceRoom Racing Experience
 
 A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experience, built with Blazor and .NET 9.
 
@@ -77,7 +77,7 @@ For Linux support, you need to run the relay service inside the same Proton inst
    ```
    > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
-5. On your Linux machine, run the HUD application:
+3. On your Linux machine, run the HUD application:
    ```bash
    ./R3E.YaHud
    ```
