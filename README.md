@@ -64,7 +64,7 @@ The HUD will automatically connect to RaceRoom's shared memory.
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
 1. Extract `R3E.Relay.zip` to a location accessible from your Steam Proton prefix
-   Example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
+   An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
 
 3. Start the relay service in the Proton environment using the `Terminal` command:
    ```bash
