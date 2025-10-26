@@ -4,7 +4,7 @@
     align-items: center;      /* center horizontally */
     text-align: center;
     border-radius: 4px;
-    width: 300px;             /* fixed width */
+    width: auto;             /* fixed width */
     height: auto;             /* height defined by contents */
     background-color: rgba(2, 0, 0, 0.5);
     position: absolute;       /* can still be placed absolutely */
@@ -29,11 +29,44 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    /* Reduces the space between the value and the label */
+    padding-top: 2px;
+    padding-bottom: 5px;
 }
 
 .data-box.large-box {
     grid-row: span 2; 
     /* The original image has them spanning two rows visually. */
+}
+
+/* --- Value Text (The main numbers) --- */
+.value {
+    font-size: 2.5em; /* Larger font size for the value */
+    font-weight: bold;
+    line-height: 1.1;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+ /* Reduces the space between the value and the label */
+    padding-top: 15px;
+    padding-bottom: -5px;
+}
+
+.data-box.large-box .value {
+    /* Pushes the label to the bottom by taking up all available space */
+    flex-grow: 1;
+    font-size: 3.5em; /* Much larger font for the main metrics */
+    font-weight: bold;
+    margin-top: 40px; /* Adjust vertical centering */
+}
+
+/* --- Label Text (The descriptions) --- */
+.label {
+    font-size: 1em; /* Smaller font for the label */
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #bbbbbb; /* Light gray for labels */
+/* Reduces the space between the value and the label */
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 /* .FuelRemaining-text {

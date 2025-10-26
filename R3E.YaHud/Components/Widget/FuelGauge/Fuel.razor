@@ -9,25 +9,40 @@
     <div id=@ElementId class="Fuel-widget">
         <div class="data-grid">
             <div class="data-box large-box">
-            <p class="FuelRemaining-text"style="color: @FRColor"> @FuelRemaining</p>
+                <p class="value"style="color: @FRColor"> @FuelRemaining</p>
+                <div class="label">Fuel Remaining</div>
             </div>
+
             <div class="data-box">
-            <p class="TimeEstimatedLeft-text">@TimeEstimatedLeft</p>
+                <p class="value"style="color: rgb(0, 128, 0)">@TimeEstimatedLeft</p>
+                <div class="label">Time Estimated Left</div>
             </div>
+
+
             <div class="data-box">
-            <p class="LapsEstimatedLeft-text">@LapsEstimatedLeft</p>
+                <p class="value"style="color: rgb(127, 127, 43)">@LastLapFuelUsage</p>
+                <div class="label">Last Lap Fuel Usage</div>
             </div>
-            <div class="data-box">
-            <p class="LastLapFuelUsage-text">@LastLapFuelUsage</p>
-            </div>
-            <div class="data-box">
-            <p class="FuelPerLap-text">@FuelPerLap</p>
-            </div>
+            
+
             <div class="data-box large-box">
-            <p class="FuelToEnd-text"style="color: @FTEColor">@FuelToEnd</p>
+                <p class="value"style="color: @FTEColor">@FuelToEnd</p>
+                <div class="label">Fuel to End</div>
             </div>
+
             <div class="data-box large-box">
-            <p class="FuelToAdd-text">@FuelToAdd</p>
+                <p class="value"style="color: rgb(0, 128, 0)">@FuelToAdd</p>
+                <div class="label">Fuel to Add</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value"style="color: rgb(0, 128, 0)">@LapsEstimatedLeft</p>
+                <div class="label">Laps Estimated Left</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value"style="color: rgb(127, 127, 43)">@FuelPerLap</p>
+                <div class="label">Fuel per Lap</div>
             </div>
         </div>
     </div>
@@ -62,6 +77,11 @@
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
         TelemetryService.NewLap += OnNewLap;
     }
 
