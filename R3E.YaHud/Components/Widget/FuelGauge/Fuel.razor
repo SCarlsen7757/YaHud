@@ -52,19 +52,23 @@
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
-          
+        //Start mapping of variables  
         SessionPhase = (Int16)data.SessionPhase;
         FuelRemaining = (Single)data.FuelLeft;
+        TimeEstimatedLeft = (Single)data.SessionTimeRemaining;
+        FuelPerLap = (Single)data.FuelPerLap;
+        LapsEstimatedLeft = (Single)data.FuelLeft / (Single)data.FuelPerLap;
+        
+        //Start calculating rest of variables from mapped variables
+
+        //Only on countdown map the following varibales as a "oneshot" so it doesn't occur throughout the race
         if (SessionPhase == 4)
         {
            oldFuelRemaining = FuelRemaining;
+           oldNumberOfLaps = (Int16)data.NumberOfLaps;
         }
 
-        TimeEstimatedLeft = (Single)data.SessionTimeRemaining;
-        FuelPerLap = (Single)data.FuelPerLap;
-
-        LapsEstimatedLeft = (Single)data.FuelLeft / (Single)data.FuelPerLap;
-        
+        //Based on the Session Format change the calculations
         switch (SessionLengthFormat)
           {
             // TimeBased
@@ -75,23 +79,24 @@
 
             // LapBased
             case 1:
-            FuelToEnd = (Single)data.NumberOfLaps / (Single)data.FuelPerLap;
+            FuelToEnd = (Int16)data.NumberOfLaps / (Single)data.FuelPerLap;
             FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining); 
             break;
 
-
             // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
             case 2:
-            FuelToEnd = ((Single)data.NumberOfLaps+1) / (Single)data.FuelPerLap;
+            FuelToEnd = ((Int16)data.NumberOfLaps+1) / (Single)data.FuelPerLap;
             FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining);       
             break;
-
           }  
 
-        if ((Single)data.NumberOfLaps != oldNumberOfLaps)
+
+        //Everytime we pass raceline NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
+        if ((Int16)data.NumberOfLaps != oldNumberOfLaps)
         {
             LastLapFuelUsage = oldFuelRemaining - FuelRemaining;
             oldFuelRemaining = (Single)data.FuelLeft;
+            oldNumberOfLaps = (Int16)data.NumberOfLaps;
         }
     }
 }
