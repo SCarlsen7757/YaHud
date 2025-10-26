@@ -7,9 +7,10 @@ namespace R3E.API
         private readonly ISharedSource sharedSource;
         private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
         private bool disposed;
+        private int oldNumberOfLaps;
 
         public event Action<TelemetryData>? DataUpdated;
-
+        public event Action<TelemetryData>? NewLap; 
         private readonly TelemetryData data = new();
         public TelemetryData Data { get => data; }
 
@@ -26,6 +27,13 @@ namespace R3E.API
             Data.Raw = raw;
             DataUpdated?.Invoke(Data);
             logger.LogDebug("Telemetry data updated");
+            if (raw.NumberOfLaps != oldNumberOfLaps)
+            {
+                oldNumberOfLaps = raw.NumberOfLaps;
+                NewLap?.Invoke(Data); 
+                logger.LogDebug("New lap detected");
+            }
+            
         }
 
         public void Dispose()

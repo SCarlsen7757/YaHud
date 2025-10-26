@@ -1,5 +1,6 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.API
+@using static R3E.Constant
 @inherits HudWidgetBase<FuelSettings>
 
 @if (Settings.Visible)
@@ -16,18 +17,18 @@
 }
 
 @code {
-    private Single FuelRemaining { get; set; } = 0.0f;
-    private Single TimeEstimatedLeft { get; set; } = 0.0f;
-    private Single LapsEstimatedLeft { get;  set; } = 0.0f;
-    private Single LastLapFuelUsage { get; set; } = 0.0f;
-    private Single FuelPerLap { get; set; } = 0.0f;
-    private Single FuelToEnd { get; set; } = 0.0f;
-    private Single FuelToAdd { get;  set; } = 0.0f;
-    private Int16 NumberOfLaps { get;  set; } = 0;
-    private Int16 oldNumberOfLaps = 0;
-    private Single oldFuelRemaining = 0.0f;
-    private Int16 SessionPhase = -1;
-    private Int16 SessionLengthFormat = -1;
+    private float FuelRemaining { get; set; } = 0.0f;
+    private float TimeEstimatedLeft { get; set; } = 0.0f;
+    private float LapsEstimatedLeft { get;  set; } = 0.0f;
+    private float LastLapFuelUsage { get; set; } = 0.0f;
+    private float FuelPerLap { get; set; } = 0.0f;
+    private float FuelToEnd { get; set; } = 0.0f;
+    private float FuelToAdd { get;  set; } = 0.0f;
+    private int NumberOfLaps { get;  set; } = 0;
+    private int oldNumberOfLaps = 0;
+    private float oldFuelRemaining = 0.0f;
+    private int SessionPhase = -1;
+    private SessionLengthFormat SessionLengthFormat = SessionLengthFormat.Unavailable;
     
 
 
@@ -46,6 +47,20 @@
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
+        TelemetryService.NewLap += OnNewLap;
+    }
+
+    private void OnNewLap(TelemetryData newData)
+    {
+        //Everytime we pass raceline NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
+        LastLapFuelUsage = oldFuelRemaining - FuelRemaining;
+        oldFuelRemaining = FuelRemaining;
+    }
+
+
+    public override void Dispose()
+    {
+       TelemetryService.NewLap -= OnNewLap; 
     }
 
     protected override void Update()
@@ -53,50 +68,46 @@
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
         //Start mapping of variables  
-        SessionPhase = (Int16)data.SessionPhase;
-        FuelRemaining = (Single)data.FuelLeft;
-        TimeEstimatedLeft = (Single)data.SessionTimeRemaining;
-        FuelPerLap = (Single)data.FuelPerLap;
-        LapsEstimatedLeft = (Single)data.FuelLeft / (Single)data.FuelPerLap;
-        
-        //Start calculating rest of variables from mapped variables
+        SessionPhase = data.SessionPhase;
+        FuelRemaining = data.FuelLeft;
+        TimeEstimatedLeft = data.SessionTimeRemaining;
+        FuelPerLap = data.FuelPerLap;
+        LapsEstimatedLeft = data.FuelLeft / data.FuelPerLap;
+        SessionLengthFormat = (SessionLengthFormat)data.SessionLengthFormat;
 
-        //Only on countdown map the following varibales as a "oneshot" so it doesn't occur throughout the race
+
+        //Start calculating rest of variables from mapped variables
+        //Only on countdown - map the following varibales as a "oneshot" so it doesn't occur throughout the race
         if (SessionPhase == 4)
         {
            oldFuelRemaining = FuelRemaining;
-           oldNumberOfLaps = (Int16)data.NumberOfLaps;
+           oldNumberOfLaps = data.NumberOfLaps;
         }
 
         //Based on the Session Format change the calculations
         switch (SessionLengthFormat)
           {
+            case SessionLengthFormat.Unavailable:
+            ; //Nothing to calculate
+            break;
+
             // TimeBased
-            case 0: 
-            FuelToEnd = (FuelPerLap / (Single)data.LapTimeCurrentSelf) * TimeEstimatedLeft;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining); 
+            case SessionLengthFormat.TimeBased: 
+            FuelToEnd = (FuelPerLap / data.LapTimeCurrentSelf) * TimeEstimatedLeft;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
             break;
 
             // LapBased
-            case 1:
-            FuelToEnd = (Int16)data.NumberOfLaps / (Single)data.FuelPerLap;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining); 
+            case SessionLengthFormat.LapBased:
+            FuelToEnd = data.NumberOfLaps / data.FuelPerLap;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
             break;
 
             // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
-            case 2:
-            FuelToEnd = ((Int16)data.NumberOfLaps+1) / (Single)data.FuelPerLap;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, (Single)data.FuelCapacity - FuelRemaining);       
+            case SessionLengthFormat.TimeAndLapBased:
+            FuelToEnd = (data.NumberOfLaps+1) / data.FuelPerLap;
+            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining);       
             break;
-          }  
-
-
-        //Everytime we pass raceline NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
-        if ((Int16)data.NumberOfLaps != oldNumberOfLaps)
-        {
-            LastLapFuelUsage = oldFuelRemaining - FuelRemaining;
-            oldFuelRemaining = (Single)data.FuelLeft;
-            oldNumberOfLaps = (Int16)data.NumberOfLaps;
-        }
+          }      
     }
 }
