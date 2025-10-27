@@ -57,7 +57,7 @@
         {
             // Eagerly load global settings once when JS is ready
             // This ensures settings are available before any widget tries to access them
-            await SettingsService.EnsureGlobalSettingsLoadedAsync();
+            await SettingsService.LoadGlobalSettings();
         }
     }
 
