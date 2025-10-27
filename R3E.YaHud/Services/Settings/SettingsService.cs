@@ -9,37 +9,17 @@ namespace R3E.YaHud.Services.Settings
         private IJSRuntime JS { get; set; }
         private readonly ILogger<SettingsService> logger;
 
-        private readonly Lazy<Task> globalSettingsLoader;
         private GlobalSettings? cachedGlobalSettings;
 
         public SettingsService(IJSRuntime js, ILogger<SettingsService>? logger = null)
         {
             JS = js;
             this.logger = logger ?? NullLogger<SettingsService>.Instance;
-
-            globalSettingsLoader = new Lazy<Task>(async () =>
-            {
-                var settings = await Load<GlobalSettings>(nameof(GlobalSettings));
-                if (settings is not null)
-                {
-                    cachedGlobalSettings = settings;
-                    this.logger.LogDebug("Global settings loaded");
-                }
-            });
         }
 
         public GlobalSettings GlobalSettings
         {
             get => cachedGlobalSettings ?? new GlobalSettings();
-        }
-
-        /// <summary>
-        /// Ensures global settings are loaded. Safe to call multiple times.
-        /// Call this in OnAfterRenderAsync of your root component to eagerly load settings when JS is ready.
-        /// </summary>
-        public async Task EnsureGlobalSettingsLoadedAsync()
-        {
-            await globalSettingsLoader.Value;
         }
 
         public List<IWidget> Widgets { get; private set; } = [];
@@ -101,6 +81,11 @@ namespace R3E.YaHud.Services.Settings
                 // Ignore during server-side prerendering
                 return null;
             }
+        }
+
+        public async Task LoadGlobalSettings()
+        {
+            cachedGlobalSettings = await Load<GlobalSettings>(nameof(GlobalSettings));
         }
 
         public async Task ClearAll()
