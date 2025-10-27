@@ -16,7 +16,7 @@ namespace R3E.YaHud.Services.Settings
             {
                 if (globalSettings is null)
                 {
-                    throw new InvalidOperationException("Global settings have not been loaded yet. Call LoadGlobalSettings() first.");
+                    throw new InvalidOperationException("Global settings have not been loaded yet. Ensure LoadGlobalSettings() has been awaited during initialization.");
                 }
                 return globalSettings;
             }
