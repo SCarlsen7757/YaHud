@@ -29,6 +29,13 @@ else
 // TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
 builder.Services.AddSingleton<TelemetryService>();
 
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
+    options.SingleLine = true;
+    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
