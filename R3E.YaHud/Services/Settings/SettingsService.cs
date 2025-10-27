@@ -91,11 +91,7 @@ namespace R3E.YaHud.Services.Settings
 
         public async Task LoadGlobalSettings()
         {
-            globalSettings = await Load<GlobalSettings>(nameof(GlobalSettings));
-            if (globalSettings is null)
-            {
-                throw new InvalidOperationException("Failed to load global settings");
-            }
+            globalSettings = await Load<GlobalSettings>(nameof(GlobalSettings)) ?? new GlobalSettings();
         }
 
         public async Task ClearAll()
