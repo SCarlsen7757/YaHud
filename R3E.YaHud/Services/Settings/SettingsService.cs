@@ -9,17 +9,23 @@ namespace R3E.YaHud.Services.Settings
         private IJSRuntime JS { get; set; }
         private readonly ILogger<SettingsService> logger;
 
-        private GlobalSettings? cachedGlobalSettings;
+        private GlobalSettings? globalSettings;
+        public GlobalSettings GlobalSettings
+        {
+            get
+            {
+                if (globalSettings is null)
+                {
+                    throw new InvalidOperationException("Global settings have not been loaded yet. Call LoadGlobalSettings() first.");
+                }
+                return globalSettings;
+            }
+        }
 
         public SettingsService(IJSRuntime js, ILogger<SettingsService>? logger = null)
         {
             JS = js;
             this.logger = logger ?? NullLogger<SettingsService>.Instance;
-        }
-
-        public GlobalSettings GlobalSettings
-        {
-            get => cachedGlobalSettings ?? new GlobalSettings();
         }
 
         public List<IWidget> Widgets { get; private set; } = [];
@@ -85,7 +91,11 @@ namespace R3E.YaHud.Services.Settings
 
         public async Task LoadGlobalSettings()
         {
-            cachedGlobalSettings = await Load<GlobalSettings>(nameof(GlobalSettings));
+            globalSettings = await Load<GlobalSettings>(nameof(GlobalSettings));
+            if (globalSettings is null)
+            {
+                throw new InvalidOperationException("Failed to load global settings");
+            }
         }
 
         public async Task ClearAll()
