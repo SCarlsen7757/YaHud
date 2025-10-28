@@ -7,7 +7,7 @@
     text-align: center;
     border-radius: 4px;
     width: 150px;              /* fixed width required by Reset position code */
-    height: auto;
+    height: 175px;      /* fill parent container height */
     background-color: rgba(2, 0, 0, 0.5);
     position: absolute;
     box-sizing: border-box;
@@ -23,9 +23,17 @@
     align-items: center;
     justify-content: flex-end;
     flex: 1 1 0;              /* evenly divide the fixed 150px width */
-    height: 120px;            /* height available for each vertical bar */
+    height: 100%;           /* fill available height from parent */
     padding: 0;
     box-sizing: border-box;
+}
+
+.value-label {
+    color: white;
+    font-size: 16px;
+    margin: 0 0 4px 0;
+    line-height: 1;
+    font-weight: bold;
 }
 
 /* small responsive tweak: shrink height on narrow containers */

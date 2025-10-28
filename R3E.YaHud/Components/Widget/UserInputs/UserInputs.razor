@@ -9,6 +9,7 @@
     @if (Settings.ShowClutch)
     {
         <div class="clutch-component">
+            <p class="value-label">@((int)(Clutch * 100))</p>
             <VerticalBar  
                 @key="Clutch"
                 Min="0.0d" 
@@ -19,6 +20,7 @@
         </div>
     }
         <div class="throttle-component">
+            <p class="value-label">@((int)(Throttle * 100))</p>
             <VerticalBar 
                 @key="Throttle"
                 Min="0.0d"
@@ -28,6 +30,7 @@
                 BackgroundColor="@BarBackgroundColor" />
         </div>
         <div class="brake-component">
+            <p class="value-label">@((int)(Brake * 100))</p>
             <VerticalBar 
                 @key="Brake"
                 Min="0.0d"
