@@ -1,0 +1,102 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest  # Windows needed for R3E.Relay
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'  # Adjust to your .NET version
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v0.10.2
+        id: gitversion
+
+      - name: Update project versions
+        run: |
+          echo "Updating projects to version ${{ steps.gitversion.outputs.semVer }}"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.sln
+
+      # Build R3E.Relay for Windows only
+      - name: Build R3E.Relay (Windows x64)
+        run: |
+          dotnet publish ./R3E.Relay/R3E.Relay.csproj  -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ steps.gitversion.outputs.semVer }} -o ./publish/R3E.Relay-win-x64
+
+      # Build R3E.YaHud for Windows
+      - name: Build R3E.YaHud (Windows x64)
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ steps.gitversion.outputs.semVer }} -o ./publish/R3E.YaHud-win-x64
+
+      # Build R3E.YaHud for Linux
+      - name: Build R3E.YaHud (Linux x64)
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:Version=${{ steps.gitversion.outputs.semVer }} -o ./publish/R3E.YaHud-linux-x64
+
+      # Create ZIP archives
+      - name: Create release archives
+        run: |
+          Compress-Archive -Path ./publish/R3E.Relay-win-x64/* -DestinationPath ./R3E.Relay-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+          Compress-Archive -Path ./publish/R3E.YaHud-win-x64/* -DestinationPath ./R3E.YaHud-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+          Compress-Archive -Path ./publish/R3E.YaHud-linux-x64/* -DestinationPath ./R3E.YaHud-linux-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+
+      # Generate release notes using GitHub's API (includes Copilot AI generation)
+      - name: Generate Release Notes
+        id: release_notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v${{ steps.gitversion.outputs.semVer }}'
+            });
+            return data.body;
+          result-encoding: string
+
+      # Create Draft Release
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          name: Release v${{ steps.gitversion.outputs.semVer }}
+          body: ${{ steps.release_notes.outputs.result }}
+          draft: true
+          prerelease: false
+          files: |
+            ./R3E.Relay-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+            ./R3E.YaHud-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+            ./R3E.YaHud-linux-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "🎉 Draft release v${{ steps.gitversion.outputs.semVer }} created successfully!"
+          echo "📦 Artifacts:"
+          echo "  - R3E.Relay (Windows x64)"
+          echo "  - R3E.YaHud (Windows x64)"
+          echo "  - R3E.YaHud (Linux x64)"
