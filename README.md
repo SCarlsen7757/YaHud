@@ -34,8 +34,9 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 ### Installation
 
 1. Download the latest release from the [Releases](../../releases) page
-   - `YaHud.zip` - Main HUD application
-   - `R3E.Relay.zip` - Relay service (required for Linux support)
+ - `YaHud-win-x64-v{version}.zip` - HUD application for Windows
+   - `YaHud-linux-x64-v{version}.zip` - HUD application for Linux
+   - `R3ERelay-win-x64-v{version}.zip` - Relay service (required for Linux support)
 2. Extract the files to your preferred location
 
 ### Configuration
@@ -54,7 +55,7 @@ To add launch options in Steam:
 
 Simply run the executable:
 ```bash
-R3E.YaHud.exe
+YaHud.exe
 ```
 
 The HUD will automatically connect to RaceRoom's shared memory.
@@ -63,23 +64,23 @@ The HUD will automatically connect to RaceRoom's shared memory.
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
-1. Extract `R3E.Relay.zip` to a location accessible from your Steam Proton prefix
+1. Extract `R3ERelay-win-x64-v{version}.zip` to a location accessible from your Steam Proton prefix
    An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
 
 2. Start the relay service in the Proton environment using the `Terminal` command:
    ```bash
    # Replace STEAM_COMPAT_CLIENT_INSTALL_PATH with your Linux user's name. Steam should be installed there unless you have chosen another place.
-   # Replace /path/to/R3E.Relay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
+   # Replace /path/to/R3ERelay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
    STEAM_COMPAT_CLIENT_INSTALL_PATH="/$HOME/.local/share/Steam" \
    STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
    "/$HOME/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
-   "C:\Program Files\R3EApiRelay\R3E.Relay.exe"
+   "C:\Program Files\R3EApiRelay\R3ERelay.exe"
    ```
    > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
 3. On your Linux machine, run the HUD application:
    ```bash
-   ./R3E.YaHud
+   ./YaHud
    ```
 
 The relay service forwards RaceRoom's shared memory data over UDP, allowing the HUD to run natively on Linux.
@@ -147,13 +148,13 @@ To create release builds:
 
 ```bash
 # Build YaHud for Windows
-dotnet publish R3E.YaHud/R3E.YaHud.csproj -c Release -r win-x64 --self-contained false
+dotnet publish R3E.YaHud/R3E.YaHud.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 
 # Build YaHud for Linux
-dotnet publish R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained false
+dotnet publish R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 
 # Build Relay service (Windows only, runs in Proton on Linux)
-dotnet publish R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained false
+dotnet publish R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
 ### Project Structure
