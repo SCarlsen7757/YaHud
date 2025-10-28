@@ -34,9 +34,9 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 ### Installation
 
 1. Download the latest release from the [Releases](../../releases) page
- - `YaHud-win-x64-v{version}.zip` - HUD application for Windows
-   - `YaHud-linux-x64-v{version}.zip` - HUD application for Linux
-   - `R3ERelay-win-x64-v{version}.zip` - Relay service (required for Linux support)
+   - `R3E.YaHud-win-x64-v{version}.zip` - HUD application for Windows
+   - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux
+   - `R3E.Relay-win-x64-v{version}.zip` - Relay service (required for Linux support)
 2. Extract the files to your preferred location
 
 ### Configuration
@@ -64,17 +64,17 @@ The HUD will automatically connect to RaceRoom's shared memory.
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
-1. Extract `R3ERelay-win-x64-v{version}.zip` to a location accessible from your Steam Proton prefix
-   An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/` so it is already located inside your proton env.
+1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix
+   An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/R3ERelay` so it is already located inside your proton env.
 
 2. Start the relay service in the Proton environment using the `Terminal` command:
    ```bash
    # Replace STEAM_COMPAT_CLIENT_INSTALL_PATH with your Linux user's name. Steam should be installed there unless you have chosen another place.
-   # Replace /path/to/R3ERelay with the actual path to the relay executable. If placed inside steams proton env you can use the Program Files path.
+   # Replace the path to match where you extracted R3ERelay. If placed inside steams proton env you can use the Program Files path.
    STEAM_COMPAT_CLIENT_INSTALL_PATH="/$HOME/.local/share/Steam" \
    STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
    "/$HOME/.local/share/Steam/compatibilitytools.d/GE-Proton10-4/proton" run \
-   "C:\Program Files\R3EApiRelay\R3ERelay.exe"
+   "C:\Program Files\R3ERelay\R3ERelay.exe"
    ```
    > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
