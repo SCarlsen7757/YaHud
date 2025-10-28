@@ -1,0 +1,44 @@
+name: PR Build Verification
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'  # Adjust to your .NET version
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v0.10.2
+        id: gitversion
+
+      - name: Display Version
+        run: echo "Building version ${{ steps.gitversion.outputs.semVer }}"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.sln
+
+      - name: Build Solution
+        run: dotnet build R3E.sln --configuration Release --no-restore
+
+      - name: PR Build Summary
+        run: |
+          echo "✅ Build verification passed for version ${{ steps.gitversion.outputs.semVer }}"
