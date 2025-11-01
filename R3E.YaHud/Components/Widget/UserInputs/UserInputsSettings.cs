@@ -10,6 +10,11 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             ViewMode = SettingsViewMode.Beginner)]
         public bool ShowSteering { get; set; } = true;
 
+        [SettingType("Steering Color", SettingsTypes.ColorPicker, 11,
+            Description = "Color of the steering input",
+            ViewMode = SettingsViewMode.Expert)]
+        public string SteeringColor { get; set; } = "#ffffff";
+
         [SettingType("Show Clutch", SettingsTypes.Checkbox, 15,
             Description = "Show clutch input",
             ViewMode = SettingsViewMode.Intermediate)]
