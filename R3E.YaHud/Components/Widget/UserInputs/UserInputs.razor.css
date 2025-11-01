@@ -65,7 +65,7 @@
 .value-label {
     color: white;
     font-size: 12px;
-    margin: 0;
+    margin: 0 0 4px 0;
     line-height: 1;
     font-weight: bold;
     white-space: nowrap;
