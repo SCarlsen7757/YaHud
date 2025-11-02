@@ -55,8 +55,6 @@ namespace R3E.YaHud.Components.Widget.UserInputs
         }
 
         private string clutchColor = "#ffdc1c";
-
-
         [SettingType("Clutch Color", SettingsTypes.ColorPicker, 20,
             Description = "Color of the RPM bar",
             ViewMode = SettingsViewMode.Expert)]
@@ -102,5 +100,23 @@ namespace R3E.YaHud.Components.Widget.UserInputs
                 NotifyPropertyChanged();
             }
         }
+
+        private string wheelStyle = "default";
+
+        public string WheelStyle
+        {
+            get => wheelStyle;
+            set
+            {
+                if (value == wheelStyle) return;
+                wheelStyle = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Gets the path to the wheel SVG file based on the selected style
+        /// </summary>
+        public string WheelSvgPath => $"/img/wheels/wheel-{WheelStyle}.svg";
     }
 }
