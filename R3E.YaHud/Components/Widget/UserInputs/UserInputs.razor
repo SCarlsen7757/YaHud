@@ -45,7 +45,7 @@
         @if (Settings.ShowSteering)
         {
             <div class="steering-component">
-                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; transform: rotate(@Steering);"></div>
+                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; -webkit-mask-image: url(@Settings.WheelSvgPath); mask-image: url(@Settings.WheelSvgPath); transform: rotate(@Steering);"></div>
             </div>
         }
     </div>
@@ -55,7 +55,7 @@
     private double Clutch { get; set; } = 1.0d;
     private double Throttle { get; set; } = 0.7d;
     private double Brake { get; set; } = 0.3d;
-    private string Steering { get; set; } = "0deg";
+    private string Steering { get; set; } = "30deg";
 
     private string BarBackgroundColor => "#454545";
 
