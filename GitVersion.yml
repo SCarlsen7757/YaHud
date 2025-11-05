@@ -1,4 +1,3 @@
-workflow: GitFlow/v1
 mode: ContinuousDelivery
 branches:
   main:
@@ -8,8 +7,8 @@ branches:
     track-merge-target: false
     is-main-branch: true
   develop:
-    regex: ^dev(elop)?(ment)?$
-    label: alpha
+    regex: ^develop$
+    label: beta
     increment: Minor
     track-merge-target: true
   feature:
@@ -17,6 +16,11 @@ branches:
     label: alpha
     increment: Minor
     track-merge-target: true
+  bugfix:
+    regex: ^bugfix(es)?[/-]
+    label: ""
+    increment: Patch
+    track-merge-target: false
   hotfix:
     regex: ^hotfix(es)?[/-]
     label: ""
