@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <ProjectReference Include="..\R3E\R3E.csproj" />
     <PackageReference Include="SharpHook" Version="7.0.3" />
   </ItemGroup>
