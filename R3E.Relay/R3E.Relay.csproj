@@ -12,4 +12,11 @@
     <ProjectReference Include="..\R3E\R3E.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="GitVersion.MsBuild" Version="6.4.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
