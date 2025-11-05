@@ -1,6 +1,8 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.API
 @using System.Drawing
+@using System.Runtime.InteropServices
+@using System.Diagnostics.Eventing.Reader
 @using static R3E.Constant
 @inherits HudWidgetBase<FuelSettings>
 
@@ -9,39 +11,37 @@
     <div id=@ElementId class="Fuel-widget">
         <div class="data-grid">
             <div class="data-box large-box">
-                <p class="value"style="color: @FRColor"> @FuelRemaining</p>
+                <p class="value"style="color: @FRColor"> @(FuelRemaining.ToString("F1"))</p>
                 <div class="label">Fuel Remaining</div>
             </div>
 
             <div class="data-box">
-                <p class="value"style="color: rgb(0, 128, 0)">@TimeEstimatedLeft</p>
-                <div class="label">Time Estimated Left</div>
+                <p class="value"style="color: @TELColor">@sTimeEstimatedLeft</p>
+                <div class="label">Time Estimated</div>
             </div>
-
 
             <div class="data-box">
-                <p class="value"style="color: rgb(127, 127, 43)">@LastLapFuelUsage</p>
-                <div class="label">Last Lap Fuel Usage</div>
+                <p class="value"style="color: rgb(127, 127, 43)">@(LastLapFuelUsage.ToString("F1"))</p>
+                <div class="label">Last Lap</div>
             </div>
             
-
             <div class="data-box large-box">
-                <p class="value"style="color: @FTEColor">@FuelToEnd</p>
+                <p class="value"style="color: @FTEColor">@(FuelToEnd.ToString("F1"))</p>
                 <div class="label">Fuel to End</div>
             </div>
 
             <div class="data-box large-box">
-                <p class="value"style="color: rgb(0, 128, 0)">@FuelToAdd</p>
+                <p class="value"style="color: rgb(0, 128, 0)">@(FuelToAdd.ToString("F1"))</p>
                 <div class="label">Fuel to Add</div>
             </div>
 
             <div class="data-box">
-                <p class="value"style="color: rgb(0, 128, 0)">@LapsEstimatedLeft</p>
-                <div class="label">Laps Estimated Left</div>
+                <p class="value"style="color: rgb(0, 128, 0)">@(LapsEstimatedLeft.ToString("F1"))</p>
+                <div class="label">Laps Estimated</div>
             </div>
 
             <div class="data-box">
-                <p class="value"style="color: rgb(127, 127, 43)">@FuelPerLap</p>
+                <p class="value"style="color: rgb(127, 127, 43)">@(FuelPerLap.ToString("F1"))</p>
                 <div class="label">Fuel per Lap</div>
             </div>
         </div>
@@ -52,7 +52,9 @@
     private float FuelRemaining { get; set; } = 0.0f;
     private string FRColor { get; set; } = "rgb(0, 128, 0)";
     private float FRColorSwitch { get; set; } = 0.0f;
-    private float TimeEstimatedLeft { get; set; } = 0.0f;
+    private int TimeEstimatedLeft { get; set; } = 0;
+    private string sTimeEstimatedLeft { get; set; } = "0";
+    private string TELColor { get; set; } = "rgb(0, 128, 0)";
     private float LapsEstimatedLeft { get;  set; } = 0.0f;
     private float LastLapFuelUsage { get; set; } = 0.0f;
     private float FuelPerLap { get; set; } = 0.0f;
@@ -105,7 +107,7 @@
         //Start mapping of variables  
         SessionPhase = data.SessionPhase;
         FuelRemaining = data.FuelLeft;
-        TimeEstimatedLeft = data.SessionTimeRemaining;
+        TimeEstimatedLeft = (int)data.SessionTimeRemaining;
         FuelPerLap = data.FuelPerLap;
         LapsEstimatedLeft = data.FuelLeft / data.FuelPerLap;
         SessionLengthFormat = (SessionLengthFormat)data.SessionLengthFormat;
@@ -119,7 +121,7 @@
            oldNumberOfLaps = data.NumberOfLaps;
            FuelCapacity = data.FuelCapacity;
         }
-
+        
         //Based on the Session Format change the calculations
         switch (SessionLengthFormat)
           {
@@ -131,6 +133,8 @@
             case SessionLengthFormat.TimeBased: 
             FuelToEnd = (FuelPerLap / data.LapTimeCurrentSelf) * TimeEstimatedLeft;
             FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
+            Console.WriteLine(data.LapTimeCurrentSelf);
+
             break;
 
             // LapBased
@@ -150,36 +154,45 @@
         FRColorSwitch = FuelRemaining / (FuelCapacity / 100);
         if (FRColorSwitch >= 50.0)
         {
-            //green
-            FRColor = "rgb(0, 128, 0)"; 
+            FRColor = Settings.green; 
         }   
         else if  (50.0 > FRColorSwitch && FRColorSwitch >= 35.0)
         {
-            //yellow
-            FRColor = "rgb(255, 251, 0)"; 
+            FRColor = Settings.yellow; 
         }
         else if  (35.0 > FRColorSwitch && FRColorSwitch >= 15.0)
         {
-            //orange
-            FRColor = "rgb(255, 102, 0);"; 
+            FRColor = Settings.orange; 
         }
         else if  (15.0 > FRColorSwitch && FRColorSwitch >= 0.0)
         {
-            //red
-            FRColor = "rgb(255, 0, 0)"; 
+            FRColor = Settings.red; 
         }
-
-
-
         if (FuelToEnd < FuelRemaining)
         {
-            //green
-            FTEColor = "rgb(0, 128, 0)"; 
+            FTEColor = Settings.green; 
         }   
         else 
         {
-            //red
-            FTEColor = "rgb(255, 0, 0)"; 
+            FTEColor = Settings.red; 
+        }
+        //ready variables for text to round or change format so it can be shown correctly
+
+        TimeSpan t = TimeSpan.FromSeconds(TimeEstimatedLeft);
+        if(t.Hours >= 1) 
+        {
+            sTimeEstimatedLeft = t.ToString(@"hh\:mm");
+            TELColor = Settings.green; 
+        }
+        else if(t.Minutes >= 1)
+        {
+            sTimeEstimatedLeft = t.ToString(@"mm\:ss");
+            TELColor = Settings.orange; 
+        }
+        else
+        {
+            sTimeEstimatedLeft = t.ToString(@"ss");
+            TELColor = Settings.red; 
         }
     }
 }

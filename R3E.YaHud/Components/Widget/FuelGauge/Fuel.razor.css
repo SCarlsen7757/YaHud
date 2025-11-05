@@ -1,72 +1,64 @@
 ﻿.Fuel-widget {
     display: flex;
-    flex-direction: row;   /* stack children horizontally */
-    align-items: center;      /* center horizontally */
+    flex-direction: row;
+    align-items: center;
     text-align: center;
-    border-radius: 4px;
-    width: auto;             /* fixed width */
-    height: auto;             /* height defined by contents */
-    background-color: rgba(2, 0, 0, 0.5);
-    position: absolute;       /* can still be placed absolutely */
+    border-radius: 0.4vmin;
+    height: 10vmin;  /* scales with whichever side is smaller */
+    width: auto;
+    /* scales with screen height */
+    position: absolute;
     box-sizing: border-box;
     overflow: hidden;
-    padding: 5px;
+    padding: 0.5vmin;
 }
 
-.data-grid{
+.data-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); 
-    gap: 5px; /* Spacing between the data boxes */
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5vmin;
 }
 
 .data-box {
-    background-color: rgba(0, 0, 0, 0.75); /* Dark, semi-transparent background */
-    border: 1px solid #111; /* Subtle border */
-    border-radius: 5px; /* Slightly rounded corners */
-    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 0.1vmin solid #111;
+    border-radius: 0.5vmin;
     text-align: center;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); /* Inner shadow for depth */
+    box-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
+    width: 8vw;
+    /* scales with screen width */
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* Reduces the space between the value and the label */
-    padding-top: 2px;
-    padding-bottom: 5px;
 }
 
 .data-box.large-box {
-    grid-row: span 2; 
-    /* The original image has them spanning two rows visually. */
+    grid-row: span 2;
 }
 
-/* --- Value Text (The main numbers) --- */
 .value {
-    font-size: 2.5em; /* Larger font size for the value */
+    font-size: clamp(0.8rem, 1.5vmin, 2rem);
     font-weight: bold;
     line-height: 1.1;
-    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
- /* Reduces the space between the value and the label */
-    padding-top: 15px;
-    padding-bottom: -5px;
+    text-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
+    padding-top: 0.3vmin;
+    margin-bottom: 0.7vmin;
 }
 
 .data-box.large-box .value {
-    /* Pushes the label to the bottom by taking up all available space */
     flex-grow: 1;
-    font-size: 3.5em; /* Much larger font for the main metrics */
+    font-size: clamp(1.5rem, 4vmin, 4rem);
     font-weight: bold;
-    margin-top: 40px; /* Adjust vertical centering */
+    margin-top: 1vmin;
+    margin-bottom: 1vmin;
 }
 
-/* --- Label Text (The descriptions) --- */
 .label {
-    font-size: 1em; /* Smaller font for the label */
+    font-size: clamp(0.5rem, 0.8vmin, 1rem);
     text-transform: uppercase;
     font-weight: bold;
-    color: #bbbbbb; /* Light gray for labels */
-/* Reduces the space between the value and the label */
-    padding-top: 5px;
-    padding-bottom: 5px;
+    color: #bbbbbb;
 }
 
 /* .FuelRemaining-text {
