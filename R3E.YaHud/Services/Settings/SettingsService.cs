@@ -4,16 +4,28 @@ using R3E.YaHud.Components.Widget.Core;
 
 namespace R3E.YaHud.Services.Settings
 {
-    public class SettingsService(IJSRuntime js, ILogger<SettingsService>? logger = null)
+    public class SettingsService
     {
-        private IJSRuntime JS { get; set; } = js;
-        private readonly ILogger<SettingsService> logger = logger ?? NullLogger<SettingsService>.Instance;
+        private IJSRuntime JS { get; set; }
+        private readonly ILogger<SettingsService> logger;
 
-        private GlobalSettings globalSettings = new();
-
+        private GlobalSettings? globalSettings;
         public GlobalSettings GlobalSettings
         {
-            get => globalSettings!;
+            get
+            {
+                if (globalSettings is null)
+                {
+                    throw new InvalidOperationException("Global settings have not been loaded yet. Ensure LoadGlobalSettings() has been awaited during initialization.");
+                }
+                return globalSettings;
+            }
+        }
+
+        public SettingsService(IJSRuntime js, ILogger<SettingsService>? logger = null)
+        {
+            JS = js;
+            this.logger = logger ?? NullLogger<SettingsService>.Instance;
         }
 
         public List<IWidget> Widgets { get; private set; } = [];
@@ -57,8 +69,6 @@ namespace R3E.YaHud.Services.Settings
 
         public async Task<TSettings?> Load<TSettings>(IWidget widget) where TSettings : BasicSettings, new()
         {
-            globalSettings ??= await Load<GlobalSettings>(nameof(GlobalSettings)) ?? new GlobalSettings();
-
             return await Load<TSettings>(widget.ElementId);
         }
 
@@ -77,6 +87,11 @@ namespace R3E.YaHud.Services.Settings
                 // Ignore during server-side prerendering
                 return null;
             }
+        }
+
+        public async Task LoadGlobalSettings()
+        {
+            globalSettings = await Load<GlobalSettings>(nameof(GlobalSettings)) ?? new GlobalSettings();
         }
 
         public async Task ClearAll()
