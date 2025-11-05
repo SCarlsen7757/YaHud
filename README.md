@@ -142,6 +142,15 @@ cd R3E.YaHud
 dotnet run
 ```
 
+### Versioning
+
+This project uses [GitVersion](https://gitversion.net/) for automatic semantic versioning based on Git history. The version is automatically calculated from:
+- Git tags
+- Branch names
+- Commit messages
+
+GitVersion.MsBuild is integrated into all projects and automatically sets assembly versions during build without manual intervention.
+
 ### Publishing for Distribution
 
 To create release builds:
@@ -156,6 +165,8 @@ dotnet publish R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contain
 # Build Relay service (Windows only, runs in Proton on Linux)
 dotnet publish R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
+
+**Note:** Versions are automatically injected by GitVersion.MsBuild during the build process.
 
 ### Project Structure
 

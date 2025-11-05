@@ -149,6 +149,36 @@ Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 - ✅ Only allow PRs from:
   - `feature/*` branches
 
+## GitFlow Diagram
+
+Below is a `gitGraph` diagram that visualizes the branching and release flow used in this repository.
+
+```mermaid
+gitGraph
+ commit tag:"v1.0.0"
+ branch hotfix
+ branch develop
+ branch feature_A
+ branch feature_B
+ checkout feature_A
+ commit
+ commit
+ checkout hotfix
+ commit
+ checkout main
+ merge hotfix tag:"v1.0.1"
+ checkout develop
+ merge feature_A tag:"v1.1.0-beta1"
+ checkout feature_B
+ commit
+ commit
+ commit
+ checkout develop
+ merge feature_B tag:"v1.1.0-beta2"
+ checkout main
+ merge develop tag:"v1.1.0"
+```
+
 ## 🤖 GitHub Actions Workflows
 
 ### 1. PR Build Validation (`pr-build.yml`)
@@ -193,7 +223,7 @@ git checkout develop
 git pull origin develop
 git checkout -b feature/your-feature
 
-# Start hotfix
+# Start hotfix/bugfix
 git checkout main
 git pull origin main
 git checkout -b hotfix/your-fix
