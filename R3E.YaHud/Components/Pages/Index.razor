@@ -42,12 +42,23 @@
     private bool showSettings = false;
     private bool showAbout = false;
     private bool locked;
+    
     protected override async Task OnInitializedAsync()
     {
         HudLockService.OnLockChanged += LockChanged;
         locked = HudLockService.Locked;
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Eagerly load global settings once when JS is ready
+            // This ensures settings are available before any widget tries to access them
+            await SettingsService.LoadGlobalSettings();
+        }
     }
 
     private void ShowSettings()
