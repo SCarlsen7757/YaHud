@@ -1,0 +1,111 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest # Windows needed for R3E.Relay
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.4.0'
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v4
+        id: gitversion
+
+      - name: Display Version
+        run: |
+          echo "### 🎉 Building Release v${{ steps.gitversion.outputs.semVer }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "**Version Details:**" >> $env:GITHUB_STEP_SUMMARY
+          echo "- SemVer: ``${{ steps.gitversion.outputs.semVer }}``" >> $env:GITHUB_STEP_SUMMARY
+          echo "- Full SemVer: ``${{ steps.gitversion.outputs.fullSemVer }}``" >> $env:GITHUB_STEP_SUMMARY
+          echo "- Branch: ``${{ steps.gitversion.outputs.branchName }}``" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.sln
+
+      # Build R3E.Relay for Windows only
+      - name: Build R3E.Relay (Windows x64)
+        run: |
+          dotnet publish ./R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.Relay-win-x64
+
+      # Build R3E.YaHud for Windows
+      - name: Build R3E.YaHud (Windows x64)
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.YaHud-win-x64
+
+      # Build R3E.YaHud for Linux
+      - name: Build R3E.YaHud (Linux x64)
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.YaHud-linux-x64
+
+      # Create ZIP archives
+      - name: Create release archives
+        run: |
+          Compress-Archive -Path ./publish/R3E.Relay-win-x64/* -DestinationPath ./R3E.Relay-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+          Compress-Archive -Path ./publish/R3E.YaHud-win-x64/* -DestinationPath ./R3E.YaHud-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+          Compress-Archive -Path ./publish/R3E.YaHud-linux-x64/* -DestinationPath ./R3E.YaHud-linux-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+
+      # Generate release notes using GitHub's API
+      - name: Generate Release Notes
+        id: release_notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v${{ steps.gitversion.outputs.semVer }}'
+            });
+            return data.body;
+          result-encoding: string
+
+      # Create Release
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          name: Release v${{ steps.gitversion.outputs.semVer }}
+          body: ${{ steps.release_notes.outputs.result }}
+          draft: true
+          prerelease: false
+          files: |
+            ./R3E.Relay-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+            ./R3E.YaHud-win-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+            ./R3E.YaHud-linux-x64-v${{ steps.gitversion.outputs.semVer }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "### 🎉 Release v${{ steps.gitversion.outputs.semVer }} Published!" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "**📦 Artifacts:**" >> $env:GITHUB_STEP_SUMMARY
+          echo "- R3E.Relay (Windows x64)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Windows x64)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Linux x64)" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "🔗 [View Release](${{ steps.create_release.outputs.url }})" >> $env:GITHUB_STEP_SUMMARY

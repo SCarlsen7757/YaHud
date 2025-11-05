@@ -1,0 +1,87 @@
+name: PR Version Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  version-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.1.0
+        with:
+          versionSpec: "6.x"
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v4.1.0
+        id: gitversion
+
+      - name: Comment PR with Version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### 🏷️ Version Preview
+
+            This PR will create release: **v${{ steps.gitversion.outputs.semVer }}**
+
+            **Version Details:**
+            - Full SemVer: \`${{ steps.gitversion.outputs.fullSemVer }}\`
+            - Major.Minor.Patch: \`${{ steps.gitversion.outputs.majorMinorPatch }}\`
+            - Branch: \`${{ steps.gitversion.outputs.branchName }}\`
+            - Pre-release Tag: \`${{ steps.gitversion.outputs.preReleaseTag }}\`
+
+            **What happens when merged:**
+            1. A GitHub release will be created with tag \`v${{ steps.gitversion.outputs.semVer }}\`
+            2. Build artifacts will be attached (Windows & Linux)
+            3. Release notes will be auto-generated
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Version Preview')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+
+      - name: Summary
+        run: |
+          echo "### 🏷️ Version: v${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: \`${{ steps.gitversion.outputs.branchName }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Full Version: \`${{ steps.gitversion.outputs.fullSemVer }}\`" >> $GITHUB_STEP_SUMMARY

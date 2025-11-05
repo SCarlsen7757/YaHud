@@ -1,0 +1,31 @@
+mode: ContinuousDelivery
+branches:
+  main:
+    regex: ^main$
+    label: ""
+    increment: Minor
+    track-merge-target: false
+    is-main-branch: true
+  develop:
+    regex: ^develop$
+    label: beta
+    increment: Minor
+    track-merge-target: true
+  feature:
+    regex: ^features?[/-]
+    label: alpha
+    increment: Minor
+    track-merge-target: true
+  bugfix:
+    regex: ^bugfix(es)?[/-]
+    label: ""
+    increment: Patch
+    track-merge-target: false
+  hotfix:
+    regex: ^hotfix(es)?[/-]
+    label: ""
+    increment: Patch
+    track-merge-target: false
+ignore:
+  sha: []
+merge-message-formats: {}
