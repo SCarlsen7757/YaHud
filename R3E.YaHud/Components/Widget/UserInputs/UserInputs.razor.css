@@ -40,6 +40,7 @@
 .steering-wheel {
     width: 70px;
     height: 70px;
+    -webkit-mask-size: contain;
     mask-size: contain;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
