@@ -56,7 +56,7 @@ namespace R3E.YaHud.Components.Widget.UserInputs
 
         private string clutchColor = "#ffdc1c";
         [SettingType("Clutch Color", SettingsTypes.ColorPicker, 20,
-            Description = "Color of the RPM bar",
+            Description = "Color of the clutch input",
             ViewMode = SettingsViewMode.Expert)]
         public string ClutchColor
         {
