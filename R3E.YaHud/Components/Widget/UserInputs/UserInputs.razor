@@ -20,16 +20,6 @@
                         BackgroundColor="@BarBackgroundColor" />
                 </div>
             }
-            <div class="throttle-component">
-                <p class="value-label">@((int)(Throttle * 100))</p>
-                <VerticalBar
-                    @key="Throttle"
-                    Min="0.0d"
-                    Max="1.0d"
-                    Value="@Throttle"
-                    PrimaryColor="@Settings.ThrottleColor"
-                    BackgroundColor="@BarBackgroundColor" />
-            </div>
             <div class="brake-component">
                 <p class="value-label">@((int)(Brake * 100))</p>
                 <VerticalBar
@@ -38,6 +28,16 @@
                     Max="1.0d"
                     Value="@Brake"
                     PrimaryColor="@Settings.BrakeColor"
+                    BackgroundColor="@BarBackgroundColor" />
+            </div>
+            <div class="throttle-component">
+                <p class="value-label">@((int)(Throttle * 100))</p>
+                <VerticalBar
+                    @key="Throttle"
+                    Min="0.0d"
+                    Max="1.0d"
+                    Value="@Throttle"
+                    PrimaryColor="@Settings.ThrottleColor"
                     BackgroundColor="@BarBackgroundColor" />
             </div>
         </div>
