@@ -5,14 +5,15 @@
  pointer-events: none;
  z-index: 9999;
  
- /* Subtle grid pattern - adjust opacity/spacing as needed */
+ /* Denser grid pattern with thicker, more visible lines */
  background-image: 
-  linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
- linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
- background-size: 40px 40px, 40px 40px;
+  linear-gradient(rgba(255, 255, 255, 0.22) 2px, transparent 2px),
+ linear-gradient(90deg, rgba(255, 255, 255, 0.22) 2px, transparent 2px);
+ /* smaller cell size (denser grid) */
+ background-size: 20px 20px, 20px 20px;
 }
 
-/* Optional: stronger grid lines every 5 cells (200px) */
+/* Stronger grid lines every 5 cells (100px) */
 .hud-grid-overlay::before {
  content: '';
  position: absolute;
@@ -21,9 +22,10 @@
  right: 0;
  bottom: 0;
  background-image: 
-  linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-       linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
- background-size: 200px 200px, 200px 200px;
+  linear-gradient(rgba(255, 255, 255, 0.36) 3px, transparent 3px),
+ linear-gradient(90deg, rgba(255, 255, 255, 0.36) 3px, transparent 3px);
+ /* match strong-line spacing to 5 * 20px = 100px */
+ background-size: 100px 100px, 100px 100px;
  background-position: 0 0, 0 0;
  pointer-events: none;
 }
