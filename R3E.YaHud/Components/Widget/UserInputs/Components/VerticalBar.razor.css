@@ -1,8 +1,9 @@
 ﻿.vertical-bar {
-    display: inline-flex;
+    display: flex;
     align-items: stretch;
-    width: 15px;          /* bar width */
-    height: 120px;        /* available height for the bar */
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     box-sizing: border-box;
 }
 
