@@ -6,36 +6,48 @@
 @if (Settings.Visible)
 {
     <div id=@ElementId class="user-inputs-widget text">
-    @if (Settings.ShowClutch)
-    {
-        <div class="clutch-component">
-            <VerticalBar  
-                @key="Clutch"
-                Min="0.0d" 
-                Max="1.0d"
-                Value="@Clutch"
-                PrimaryColor="@Settings.ClutchColor" 
-                BackgroundColor="@BarBackgroundColor" />
+        <div class="pedals-container">
+            @if (Settings.ShowClutch)
+            {
+                <div class="clutch-component">
+                    <p class="value-label">@((int)(Clutch * 100))</p>
+                    <VerticalBar
+                        @key="Clutch"
+                        Min="0.0d"
+                        Max="1.0d"
+                        Value="@Clutch"
+                        PrimaryColor="@Settings.ClutchColor"
+                        BackgroundColor="@BarBackgroundColor" />
+                </div>
+            }
+            <div class="brake-component">
+                <p class="value-label">@((int)(Brake * 100))</p>
+                <VerticalBar
+                    @key="Brake"
+                    Min="0.0d"
+                    Max="1.0d"
+                    Value="@Brake"
+                    PrimaryColor="@Settings.BrakeColor"
+                    BackgroundColor="@BarBackgroundColor" />
+            </div>
+            <div class="throttle-component">
+                <p class="value-label">@((int)(Throttle * 100))</p>
+                <VerticalBar
+                    @key="Throttle"
+                    Min="0.0d"
+                    Max="1.0d"
+                    Value="@Throttle"
+                    PrimaryColor="@Settings.ThrottleColor"
+                    BackgroundColor="@BarBackgroundColor" />
+            </div>
         </div>
-    }
-        <div class="throttle-component">
-            <VerticalBar 
-                @key="Throttle"
-                Min="0.0d"
-                Max="1.0d"
-                Value="@Throttle"
-                PrimaryColor="@Settings.ThrottleColor"
-                BackgroundColor="@BarBackgroundColor" />
-        </div>
-        <div class="brake-component">
-            <VerticalBar 
-                @key="Brake"
-                Min="0.0d"
-                Max="1.0d"
-                Value="@Brake"
-                PrimaryColor="@Settings.BrakeColor"
-                BackgroundColor="@BarBackgroundColor" />
-        </div>
+
+        @if (Settings.ShowSteering)
+        {
+            <div class="steering-component">
+                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; -webkit-mask-image: url(@Settings.WheelSvgPath); mask-image: url(@Settings.WheelSvgPath); transform: rotate(@Steering);"></div>
+            </div>
+        }
     </div>
 }
 
@@ -43,6 +55,7 @@
     private double Clutch { get; set; } = 0.0d;
     private double Throttle { get; set; } = 0.0d;
     private double Brake { get; set; } = 0.0d;
+    private string Steering { get; set; } = "";
 
     private string BarBackgroundColor => "#454545";
 
@@ -62,9 +75,10 @@
     protected override void Update()
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
-        
+
         Clutch = (double)data.Clutch;
         Throttle = (double)data.Throttle;
         Brake = (double)data.Brake;
+        Steering = ((double)data.SteerInputRaw * (double)data.SteerWheelRangeDegrees).ToString().Replace(",",".") + "deg";
     }
 }

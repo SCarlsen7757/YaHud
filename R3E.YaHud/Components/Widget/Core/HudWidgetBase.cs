@@ -74,8 +74,8 @@ namespace R3E.YaHud.Components.Widget.Core
                 {
                     visibleInitialized = false;
                 }
-                InvokeAsync(StateHasChanged);
             }
+            InvokeAsync(StateHasChanged);
         }
 
         [JSInvokable]
