@@ -19,7 +19,6 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    justify-content: space-evenly;
     gap: 6px;
     width: 100%;
     flex: 1 1 auto;
@@ -55,6 +54,7 @@
     align-items: center;
     justify-content: space-between;
     flex: 1 1 0;
+    min-width: 0;
     height: 100%;
     padding: 0;
     box-sizing: border-box;
@@ -68,13 +68,4 @@
     font-weight: bold;
     white-space: nowrap;
     flex-shrink: 0;
-}
-
-/* small responsive tweak: shrink height on narrow containers */
-@media (max-width: 360px) {
-    .clutch-component,
-    .throttle-component,
-    .brake-component {
-        height: 96px;
-    }
 }
