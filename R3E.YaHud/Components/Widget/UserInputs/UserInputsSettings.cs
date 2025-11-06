@@ -88,7 +88,7 @@ namespace R3E.YaHud.Components.Widget.UserInputs
         private string brakeColor = "#ff1e1e";
 
         [SettingType("Brake Color", SettingsTypes.ColorPicker, 22,
-            Description = "Color of the RPM bar",
+            Description = "Color of the brake input",
             ViewMode = SettingsViewMode.Expert)]
         public string BrakeColor
         {
