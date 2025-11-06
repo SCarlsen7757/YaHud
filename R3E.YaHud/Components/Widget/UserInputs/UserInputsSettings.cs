@@ -72,7 +72,7 @@ namespace R3E.YaHud.Components.Widget.UserInputs
         private string throttleColor = "#1ea5ff";
 
         [SettingType("Throttle Color", SettingsTypes.ColorPicker, 21,
-            Description = "Color of the RPM bar",
+            Description = "Color of the throttle input",
             ViewMode = SettingsViewMode.Expert)]
         public string ThrottleColor
         {
