@@ -27,6 +27,8 @@ namespace R3E.YaHud.Components.Widget.Core
         public abstract double DefaultXPercent { get; }
         public abstract double DefaultYPercent { get; }
 
+        public abstract bool Collidable { get; }
+
         BasicSettings IWidget.Settings => Settings;
 
         public TSettings Settings { get; set; } = new();
@@ -62,7 +64,7 @@ namespace R3E.YaHud.Components.Widget.Core
                 visibleInitialized = true;
                 objRef ??= DotNetObjectReference.Create(this);
                 // Register draggable and pass current lock state to decide if handlers are attached
-                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked);
+                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked, Collidable);
             }
         }
 

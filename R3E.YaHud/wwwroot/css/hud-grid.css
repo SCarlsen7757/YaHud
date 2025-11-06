@@ -1,0 +1,29 @@
+/* Grid overlay shown while dragging widgets */
+.hud-grid-overlay {
+ position: fixed;
+ inset: 0;
+ pointer-events: none;
+ z-index: 9999;
+ 
+ /* Subtle grid pattern - adjust opacity/spacing as needed */
+ background-image: 
+  linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+ background-size: 40px 40px, 40px 40px;
+}
+
+/* Optional: stronger grid lines every 5 cells (200px) */
+.hud-grid-overlay::before {
+ content: '';
+ position: absolute;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background-image: 
+  linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+       linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+ background-size: 200px 200px, 200px 200px;
+ background-position: 0 0, 0 0;
+ pointer-events: none;
+}
