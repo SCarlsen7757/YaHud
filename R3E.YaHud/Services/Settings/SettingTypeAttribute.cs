@@ -13,5 +13,17 @@
         public double Min { get; set; } = 0;
         public double Max { get; set; } = 100;
         public double Step { get; set; } = 1;
+
+        /// <summary>
+        /// Custom predicate function for visibility logic.
+        /// If set, this determines whether the setting should be visible.
+        /// Returns true if visible, false if hidden.
+        /// </summary>
+        public Func<bool> VisibilityPredicate { get; set; } = () => true;
+
+        /// <summary>
+        /// Checks if this setting should be visible based on the visibility predicate.
+        /// </summary>
+        public bool IsVisible() => VisibilityPredicate();
     }
 }
