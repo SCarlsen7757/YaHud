@@ -1,0 +1,34 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.UserInputs.Components
+@using R3E.API
+@inherits HudWidgetBase<StartLightSettings>
+
+@if (Settings.Visible)
+{
+	<div id=@ElementId class="start-light-widget text">
+		<div style="background:black">This is a test</div>
+	</div>
+}
+
+@code {
+
+	public override string ElementId { get => "startLightWidget"; }
+	public override string Name => "Start light";
+	public override string Category => "Telemetry";
+
+	public override double DefaultXPercent => 70;
+	public override double DefaultYPercent => 50;
+
+	public override bool Collidable => true;
+
+	public StartLight()
+	{
+		UseR3EData = true;
+		UpdateInterval = TimeSpan.FromMilliseconds(30);
+	}
+
+	protected override void Update()
+	{
+		R3E.Data.Shared data = TelemetryService.Data.Raw;
+	}
+}

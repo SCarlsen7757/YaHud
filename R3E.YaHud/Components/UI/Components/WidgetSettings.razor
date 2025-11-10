@@ -1,4 +1,6 @@
 ﻿@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Rendering
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Core
@@ -7,179 +9,227 @@
 @typeparam TSettings
 
 <div>
-    @foreach (var prop in Settings!.GetType().GetProperties()
-                 .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
-                 .Where(x => x.Attr != null)
-                 .OrderBy(x => x.Attr!.Order))
-    {
-        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) {continue;}
-        <div class="form-group mb-2">
-            <label>@prop.Attr!.DisplayName</label>
-            @RenderInput(prop.Prop, prop.Attr)
-        </div>
-    }
+	@foreach (var prop in Settings!.GetType().GetProperties()
+		.Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
+		.Where(x => x.Attr != null)
+		.OrderBy(x => x.Attr!.Order))
+	{
+		if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
+		
+		// Check if this setting should be visible based on its visibility predicate
+		if (!prop.Attr!.IsVisible()) { continue; }
+		
+		<div class="form-group mb-2">
+			<label>@prop.Attr!.DisplayName</label>
+			@RenderInput(prop.Prop, prop.Attr)
+		</div>
+	}
 </div>
 
 @code {
-    [Parameter] public required TSettings Settings { get; set; }
+	[Parameter] public required TSettings Settings { get; set; }
 
-    [Inject] public SettingsService SettingsService { get; set; } = default!;
+	[Inject] public SettingsService SettingsService { get; set; } = default!;
 
-    // mapping: property name -> picker container id
-    private readonly Dictionary<string, string> _pickerIds = new();
-    // reverse mapping: container id -> PropertyInfo
-    private readonly Dictionary<string, PropertyInfo> _pickerProps = new();
+	// mapping: property name -> picker container id
+	private readonly Dictionary<string, string> _pickerIds = new();
+	// reverse mapping: container id -> PropertyInfo
+	private readonly Dictionary<string, PropertyInfo> _pickerProps = new();
 
-    private DotNetObjectReference<WidgetSettings<TSettings>>? _objRef;
+	private DotNetObjectReference<WidgetSettings<TSettings>>? _objRef;
 
-    private string GetOrCreatePickerId(PropertyInfo prop)
-    {
-        if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
-        id = $"picker_{Settings.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
-        _pickerIds[prop.Name] = id;
-        _pickerProps[id] = prop;
-        return id;
-    }
+	private string GetOrCreatePickerId(PropertyInfo prop)
+	{
+		if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
+		id = $"picker_{Settings.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
+		_pickerIds[prop.Name] = id;
+		_pickerProps[id] = prop;
+		return id;
+	}
 
-    private RenderFragment RenderInput(PropertyInfo prop, SettingTypeAttribute attr) => builder =>
-    {
-        var value = prop.GetValue(Settings);
-        var seq = 0;
+	private RenderFragment RenderInput(PropertyInfo prop, SettingTypeAttribute attr) => builder =>
+	{
+		var value = prop.GetValue(Settings);
+		var seq = 0;
 
-        switch (attr.Type)
-        {
-            case SettingsTypes.Checkbox:
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "checkbox");
-                builder.AddAttribute(seq++, "checked", (bool?)value ?? false);
-                builder.AddAttribute(seq++, "onchange",
-                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
-                        prop.SetValue(Settings, e.Value)
-                    ));
-                builder.CloseElement();
-                break;
+		switch (attr.Type)
+		{
+			case SettingsTypes.Checkbox:
+				builder.OpenElement(seq++, "input");
+				builder.AddAttribute(seq++, "type", "checkbox");
+				builder.AddAttribute(seq++, "checked", (bool?)value ?? false);
+				builder.AddAttribute(seq++, "onchange",
+					EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+						prop.SetValue(Settings, e.Value)
+					));
+				builder.CloseElement();
+				break;
 
-            case SettingsTypes.Slider:
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "range");
-                builder.AddAttribute(seq++, "min", attr.Min);
-                builder.AddAttribute(seq++, "max", attr.Max);
-                builder.AddAttribute(seq++, "step", attr.Step);
-                builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
-                builder.AddAttribute(seq++, "oninput",
-                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
-                    {
-                        var val = Convert.ToDouble(e.Value);
-                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
-                    }));
-                builder.CloseElement();
+			case SettingsTypes.Slider:
+				builder.OpenElement(seq++, "input");
+				builder.AddAttribute(seq++, "type", "range");
+				builder.AddAttribute(seq++, "min", attr.Min);
+				builder.AddAttribute(seq++, "max", attr.Max);
+				builder.AddAttribute(seq++, "step", attr.Step);
+				builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
+				builder.AddAttribute(seq++, "oninput",
+					EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+					{
+						var val = Convert.ToDouble(e.Value);
+						prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
+					}));
+				builder.CloseElement();
 
-                // Optional: show current value
-                builder.AddContent(seq++, $" {value}");
-                break;
+				// Optional: show current value
+				builder.AddContent(seq++, $" {value}");
+				break;
 
-            case SettingsTypes.Number:
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "number");
-                builder.AddAttribute(seq++, "min", attr.Min);
-                builder.AddAttribute(seq++, "max", attr.Max);
-                builder.AddAttribute(seq++, "step", attr.Step);
-                builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
-                builder.AddAttribute(seq++, "onchange",
-                    EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
-                    {
-                        var val = Convert.ToDouble(e.Value);
-                        prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
-                    }));
-                builder.CloseElement();
-                break;
+			case SettingsTypes.Number:
+				builder.OpenElement(seq++, "input");
+				builder.AddAttribute(seq++, "type", "number");
+				builder.AddAttribute(seq++, "min", attr.Min);
+				builder.AddAttribute(seq++, "max", attr.Max);
+				builder.AddAttribute(seq++, "step", attr.Step);
+				builder.AddAttribute(seq++, "value", value?.ToString() ?? "0");
+				builder.AddAttribute(seq++, "onchange",
+					EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+					{
+						var val = Convert.ToDouble(e.Value);
+						prop.SetValue(Settings, Convert.ChangeType(val, prop.PropertyType));
+					}));
+				builder.CloseElement();
+				break;
 
-            case SettingsTypes.ColorPicker:
-                // use Coloris popover — render compact swatch-input that opens Coloris on click
-                var pickerId = GetOrCreatePickerId(prop);
-                var inputId = $"input_{pickerId}";
+			case SettingsTypes.ColorPicker:
+				// use Coloris popover — render compact swatch-input that opens Coloris on click
+				var pickerId = GetOrCreatePickerId(prop);
+				var inputId = $"input_{pickerId}";
 
-                // compact swatch (the Coloris input itself; Coloris attaches to inputs)
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "id", inputId);
-                builder.AddAttribute(seq++, "type", "text");
-                builder.AddAttribute(seq++, "class", "coloris coloris-swatch");
-                builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
-                // visually small; background shows current color
-                builder.AddAttribute(seq++, "style", $"width:30px; height:22px; padding:0; border-radius:4px; border:1px solid rgba(255,255,255,0.12); background:{value?.ToString() ?? "#ffffff"}; color:transparent; cursor:pointer;");
-                builder.CloseElement();
+				// compact swatch (the Coloris input itself; Coloris attaches to inputs)
+				builder.OpenElement(seq++, "input");
+				builder.AddAttribute(seq++, "id", inputId);
+				builder.AddAttribute(seq++, "type", "text");
+				builder.AddAttribute(seq++, "class", "coloris coloris-swatch");
+				builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
+				// visually small; background shows current color
+				builder.AddAttribute(seq++, "style", $"width:30px; height:22px; padding:0; border-radius:4px; border:1px solid rgba(255,255,255,0.12); background:{value?.ToString() ?? "#ffffff"}; color:transparent; cursor:pointer;");
+				builder.CloseElement();
 
-                // readonly hex display (optional)
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "text");
-                builder.AddAttribute(seq++, "readonly", true);
-                builder.AddAttribute(seq++, "id", $"hex_{pickerId}");
-                builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
-                builder.AddAttribute(seq++, "style", "width:90px; margin-left:0.5rem; text-align:center; background:transparent; border:1px solid rgba(255,255,255,0.12); color:inherit;");
-                builder.CloseElement();
+				// readonly hex display (optional)
+				builder.OpenElement(seq++, "input");
+				builder.AddAttribute(seq++, "type", "text");
+				builder.AddAttribute(seq++, "readonly", true);
+				builder.AddAttribute(seq++, "id", $"hex_{pickerId}");
+				builder.AddAttribute(seq++, "value", value?.ToString() ?? "#ffffff");
+				builder.AddAttribute(seq++, "style", "width:90px; margin-left:0.5rem; text-align:center; background:transparent; border:1px solid rgba(255,255,255,0.12); color:inherit;");
+				builder.CloseElement();
 
-                break;
-        }
-    };
+				break;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_objRef == null)
-        {
-            _objRef = DotNetObjectReference.Create(this);
-        }
+			case SettingsTypes.Enum:
+				// Render enum dropdown using EnumSelect component
+				RenderEnumDropdown(builder, prop, value, ref seq);
+				break;
+		}
+	};
 
-        // initialize Coloris for every color input rendered by this component
-        foreach (var kvp in _pickerProps)
-        {
-            var containerId = kvp.Key; // e.g. picker_Type_Property_guid
-            var prop = kvp.Value;
-            var currentValue = prop.GetValue(Settings)?.ToString() ?? "#ffffff";
-            var inputId = $"input_{containerId}";
+	private void RenderEnumDropdown(RenderTreeBuilder builder, PropertyInfo prop, object? value, ref int seq)
+	{
+		var enumType = prop.PropertyType;
+		if (!enumType.IsEnum) return;
 
-            // register the input with colorisHelper. JS will attach Coloris and call back NotifyColorChanged.
-            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, _objRef);
-        }
-    }
+		// Use reflection to call the generic method
+		var method = typeof(WidgetSettings<TSettings>).GetMethod(nameof(RenderEnumDropdownGeneric),
+			System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+	 .MakeGenericMethod(enumType);
 
-    [JSInvokable]
-    public Task NotifyColorChanged(string containerId, string hex)
-    {
-        if (containerId == null) return Task.CompletedTask;
+		method.Invoke(this, new object?[] { builder, prop, value, seq });
+	}
 
-        if (_pickerProps.TryGetValue(containerId, out var prop))
-        {
-            try
-            {
-                // persist value into settings object
-                var targetType = prop.PropertyType;
-                object? converted = targetType == typeof(string) ? hex : Convert.ChangeType(hex, targetType);
-                prop.SetValue(Settings, converted);
+	private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop, object? value, int seq) where TEnum : struct, Enum
+	{
+		var enumValue = (TEnum)(value ?? Activator.CreateInstance(typeof(TEnum)));
 
-                // update UI
-                _ = InvokeAsync(StateHasChanged);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"NotifyColorChanged error: {ex}");
-            }
-        }
+		// Create a generic EnumSelect component
+		var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));
+		builder.OpenComponent(seq++, componentType);
+		builder.AddAttribute(seq++, "Value", enumValue);
+		builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, (newValue) => 
+		{
+		   prop.SetValue(Settings, newValue);
+		   return Task.CompletedTask;
+		}));
+		builder.AddAttribute(seq++, "LabelProvider", new Func<TEnum, string>(v => GetEnumDisplayName(v)));
+		builder.CloseComponent();
+	}
 
-        return Task.CompletedTask;
-    }
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (_objRef == null)
+		{
+			_objRef = DotNetObjectReference.Create(this);
+		}
 
-    public void Dispose()
-    {
-        // destroy all Coloris bindings on the JS side
-        foreach (var id in _pickerProps.Keys)
-        {
-            try
-            {
-                _ = JS.InvokeVoidAsync("colorisHelper.unregister", id);
-            }
-            catch { /* ignore */ }
-        }
+		// initialize Coloris for every color input rendered by this component
+		foreach (var kvp in _pickerProps)
+		{
+			var containerId = kvp.Key; // e.g. picker_Type_Property_guid
+			var prop = kvp.Value;
+			var currentValue = prop.GetValue(Settings)?.ToString() ?? "#ffffff";
+			var inputId = $"input_{containerId}";
 
-        _objRef?.Dispose();
-    }
+			// register the input with colorisHelper. JS will attach Coloris and call back NotifyColorChanged.
+			await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, _objRef);
+		}
+	}
+
+	[JSInvokable]
+	public Task NotifyColorChanged(string containerId, string hex)
+	{
+		if (containerId == null) return Task.CompletedTask;
+
+		if (_pickerProps.TryGetValue(containerId, out var prop))
+		{
+			try
+			{
+				// persist value into settings object
+				var targetType = prop.PropertyType;
+				object? converted = targetType == typeof(string) ? hex : Convert.ChangeType(hex, targetType);
+				prop.SetValue(Settings, converted);
+
+				// update UI
+				_ = InvokeAsync(StateHasChanged);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"NotifyColorChanged error: {ex}");
+			}
+		}
+
+		return Task.CompletedTask;
+	}
+
+	private string GetEnumDisplayName<TEnum>(TEnum value) where TEnum : struct, Enum
+	{
+		var type = typeof(TEnum);
+		var name = Enum.GetName(type, value) ?? value.ToString();
+		var field = type.GetField(name);
+		var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
+		return displayAttr?.Name ?? name ?? value.ToString();
+	}
+
+	public void Dispose()
+	{
+		// destroy all Coloris bindings on the JS side
+		foreach (var id in _pickerProps.Keys)
+		{
+			try
+			{
+				_ = JS.InvokeVoidAsync("colorisHelper.unregister", id);
+			}
+			catch { /* ignore */ }
+		}
+
+		_objRef?.Dispose();
+	}
 }

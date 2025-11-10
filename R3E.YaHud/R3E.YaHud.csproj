@@ -27,4 +27,8 @@
     <PackageReference Include="SharpHook" Version="7.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\Widget\StartLight\Components\" />
+  </ItemGroup>
+
 </Project>
