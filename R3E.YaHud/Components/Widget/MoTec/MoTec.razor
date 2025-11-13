@@ -3,7 +3,7 @@
 @using R3E.API
 @inherits HudWidgetBase<MoTecSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="motec-widget text">
         <p class="gear-text">@Gear</p>
@@ -62,6 +62,6 @@
         MaxRps = (double)data.MaxEngineRps;
         var upshiftRps = (double)data.UpshiftRps;
 
-        RpsCurrentColor = Rps >= upshiftRps ? Settings.RpmUpshiftColor : Settings.RpmColor;
+        RpsCurrentColor = Rps >= upshiftRps ? Settings!.RpmUpshiftColor : Settings!.RpmColor;
     }
 }

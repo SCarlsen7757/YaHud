@@ -3,7 +3,7 @@
 @using R3E.API
 @inherits HudWidgetBase<StartLightSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
 	<div id=@ElementId class="start-light-widget text">
 		<div style="background:black">This is a test</div>

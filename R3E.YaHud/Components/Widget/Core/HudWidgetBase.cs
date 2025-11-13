@@ -31,7 +31,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
         BasicSettings IWidget.Settings => Settings;
 
-        public TSettings Settings { get; set; } = new();
+        public TSettings? Settings { get; set; } 
         public Type GetSettingsType() => typeof(TSettings);
 
         protected bool UseR3EData { get; set; } = true;
@@ -54,6 +54,7 @@ namespace R3E.YaHud.Components.Widget.Core
             {
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
+                Settings.InitializeVisibilityPredicates();
                 await InvokeAsync(StateHasChanged);
             }
 
@@ -125,7 +126,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public void InvokeUpdate()
         {
-            if (!Settings.Visible) return;
+            if (!Settings?.Visible ?? true) return;
             Update();
             InvokeAsync(StateHasChanged);
         }
