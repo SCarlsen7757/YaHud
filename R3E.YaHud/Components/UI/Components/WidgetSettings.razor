@@ -16,8 +16,8 @@
 	{
 		if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
 		
-		// Check if this setting should be visible based on its visibility predicate
-		if (!prop.Attr!.IsVisible()) { continue; }
+		// Check if this setting should be visible based on its visibility predicate (pass the PropertyInfo so attribute can consult registry)
+		if (!prop.Attr!.IsVisible(prop.Prop)) { continue; }
 		
 		<div class="form-group mb-2">
 			<label>@prop.Attr!.DisplayName</label>
@@ -41,7 +41,7 @@
 	private string GetOrCreatePickerId(PropertyInfo prop)
 	{
 		if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
-		id = $"picker_{Settings.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
+		id = $"picker_{Settings!.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
 		_pickerIds[prop.Name] = id;
 		_pickerProps[id] = prop;
 		return id;
@@ -148,7 +148,8 @@
 
 	private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop, object? value, int seq) where TEnum : struct, Enum
 	{
-		var enumValue = (TEnum)(value ?? Activator.CreateInstance(typeof(TEnum)));
+		var instance = value ?? Activator.CreateInstance(typeof(TEnum)) ?? default(TEnum);
+		var enumValue = (TEnum)instance;
 
 		// Create a generic EnumSelect component
 		var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));

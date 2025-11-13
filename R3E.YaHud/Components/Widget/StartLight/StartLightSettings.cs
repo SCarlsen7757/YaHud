@@ -15,8 +15,17 @@ namespace R3E.YaHud.Components.Widget.StartLight
 
     public class StartLightSettings : BasicSettings
     {
+        private StartLightBehavior behavior = StartLightBehavior.SequentialThenOff;
+
         [SettingType("Light Behavior", SettingsTypes.Enum, 20)]
-        public StartLightBehavior Behavior { get; set; } = StartLightBehavior.SequentialThenOff;
+        public StartLightBehavior Behavior { get => behavior; 
+            set
+            {
+                if(value == behavior) return;
+                behavior = value;
+                NotifyPropertyChanged(nameof(Behavior));
+            }
+        }
 
         [SettingType("Green light on duration (ms)", SettingsTypes.Slider, 21,
             Description = "Duration the green light stays on before turning off.",
@@ -26,22 +35,19 @@ namespace R3E.YaHud.Components.Widget.StartLight
             ViewMode = SettingsViewMode.Intermediate)]
         public int GreenLightDurationMs { get; set; } = 2500;
 
-        private void UpdateVisibilityPredicate()
+        private bool ShouldShowGreenLightDuration()
         {
-            var prop = this.GetType().GetProperty(nameof(GreenLightDurationMs));
-            if (prop != null)
-            {
-                var attr = prop.GetCustomAttribute<SettingTypeAttribute>();
-                if (attr != null)
-                {
-                    attr.VisibilityPredicate = () => this.Behavior == StartLightBehavior.SequentialThenGreenThenOff;
-                }
-            }
+            return Behavior == StartLightBehavior.SequentialThenGreenThenOff;
         }
 
-        public StartLightSettings()
+        public override void InitializeVisibilityPredicates()
         {
-            UpdateVisibilityPredicate();
+            base.InitializeVisibilityPredicates();
+            AddVisibilityPredicate(nameof(GreenLightDurationMs), ShouldShowGreenLightDuration);
+        }
+
+        public StartLightSettings() : base()
+        {
         }
     }
 }
