@@ -17,11 +17,15 @@ namespace R3E.YaHud.Components.Widget.StartLight
     {
         private StartLightBehavior behavior = StartLightBehavior.SequentialThenOff;
 
-        [SettingType("Light Behavior", SettingsTypes.Enum, 20)]
-        public StartLightBehavior Behavior { get => behavior; 
+        [SettingType("Light Behavior", SettingsTypes.Enum, 20,
+            Description = "Light on/off sequence behavior",
+            ViewMode = SettingsViewMode.Beginner)]
+        public StartLightBehavior Behavior
+        {
+            get => behavior;
             set
             {
-                if(value == behavior) return;
+                if (value == behavior) return;
                 behavior = value;
                 NotifyPropertyChanged(nameof(Behavior));
             }
@@ -32,22 +36,13 @@ namespace R3E.YaHud.Components.Widget.StartLight
             Max = 5000,
             Min = 1000,
             Step = 100,
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Intermediate,
+            VisibilityPredicateName = nameof(ShowGreenLightDuration))]
         public int GreenLightDurationMs { get; set; } = 2500;
 
-        private bool ShouldShowGreenLightDuration()
+        private bool ShowGreenLightDuration()
         {
             return Behavior == StartLightBehavior.SequentialThenGreenThenOff;
-        }
-
-        public override void InitializeVisibilityPredicates()
-        {
-            base.InitializeVisibilityPredicates();
-            AddVisibilityPredicate(nameof(GreenLightDurationMs), ShouldShowGreenLightDuration);
-        }
-
-        public StartLightSettings() : base()
-        {
         }
     }
 }
