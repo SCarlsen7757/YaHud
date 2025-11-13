@@ -29,9 +29,9 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public abstract bool Collidable { get; }
 
-        BasicSettings IWidget.Settings => Settings;
+        BasicSettings? IWidget.Settings => Settings;
 
-        public TSettings? Settings { get; set; } 
+        public TSettings? Settings { get; set; }
         public Type GetSettingsType() => typeof(TSettings);
 
         protected bool UseR3EData { get; set; } = true;
@@ -54,10 +54,10 @@ namespace R3E.YaHud.Components.Widget.Core
             {
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
-                Settings.InitializeVisibilityPredicates();
                 await InvokeAsync(StateHasChanged);
             }
 
+            if (Settings == null) return;
             if (Settings.Visible && firstRender || !visibleInitialized)
             {
                 await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
@@ -73,7 +73,7 @@ namespace R3E.YaHud.Components.Widget.Core
         {
             if (e.PropertyName == nameof(BasicSettings.Visible))
             {
-                if (Settings.Visible)
+                if (Settings?.Visible ?? false)
                 {
                     visibleInitialized = false;
                 }
@@ -138,7 +138,8 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ClearSettings()
         {
-            Settings.PropertyChanged -= Settings_PropertyChanged;
+            if (Settings != null)
+                Settings.PropertyChanged -= Settings_PropertyChanged;
 
             Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
             Settings.PropertyChanged += Settings_PropertyChanged;
@@ -151,6 +152,7 @@ namespace R3E.YaHud.Components.Widget.Core
         [JSInvokable]
         public async Task UpdateWidgetPosition(double xPercent, double yPercent)
         {
+            if (Settings == null) return;
             Settings.XPercent = xPercent;
             Settings.YPercent = yPercent;
             await SettingsService.Save(this);
@@ -159,6 +161,7 @@ namespace R3E.YaHud.Components.Widget.Core
         [JSInvokable]
         public async Task OnWindowResize()
         {
+            if (Settings == null) return;
             await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
         }
 

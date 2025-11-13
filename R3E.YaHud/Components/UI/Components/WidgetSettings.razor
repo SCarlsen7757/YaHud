@@ -6,7 +6,7 @@
 @using R3E.YaHud.Components.Widget.Core
 @inject IJSRuntime JS
 
-@typeparam TSettings
+@typeparam TSettings where TSettings : BasicSettings 
 
 <div>
 	@foreach (var prop in Settings!.GetType().GetProperties()
@@ -16,8 +16,8 @@
 	{
 		if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
 		
-		// Check if this setting should be visible based on its visibility predicate (pass the PropertyInfo so attribute can consult registry)
-		if (!prop.Attr!.IsVisible(prop.Prop)) { continue; }
+		// Ask concrete Settings instance to evaluate visibility each time
+		if (!Settings.IsPropertyVisible(prop.Prop.Name)) { continue; }
 		
 		<div class="form-group mb-2">
 			<label>@prop.Attr!.DisplayName</label>
