@@ -32,6 +32,25 @@
     transform: scale(0.95);
 }
 
+.icon-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: rgba(24, 24, 24, 0.5);
+}
+
+.icon-button:disabled:hover {
+    background-color: rgba(24, 24, 24, 0.5);
+}
+
+.icon-button:disabled:active {
+    transform: none;
+}
+
+.icon-button.active {
+    background-color: rgba(255, 165, 30, 0.5);
+    border: 2px solid rgba(255, 165, 30, 0.8);
+}
+
 .icon-button svg {
     width: 2.5rem;
     height: 2.5rem;

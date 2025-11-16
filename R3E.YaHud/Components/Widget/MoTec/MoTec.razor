@@ -64,4 +64,14 @@
 
         RpsCurrentColor = Rps >= upshiftRps ? Settings.RpmUpshiftColor : Settings.RpmColor;
     }
+
+    protected override void UpdateWithTestData()
+    {
+        Gear = "4";
+        Speed = UnitConverter.Convert(125.5f, SpeedUnit.KilometersPerHour, SettingsService.GlobalSettings.SpeedUnit);
+        Rps = 7500.0;
+        MaxRps = 9000.0;
+        
+        RpsCurrentColor = Settings.RpmUpshiftColor;
+    }
 }

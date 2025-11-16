@@ -39,6 +39,11 @@
         currentTime = DateTime.Now;
     }
 
+    protected override void UpdateWithTestData()
+    {
+        Update();
+    }
+
     public override void Dispose()
     {
         base.Dispose();

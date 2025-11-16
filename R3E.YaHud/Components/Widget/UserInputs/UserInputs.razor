@@ -83,4 +83,12 @@
         Brake = (double)data.Brake;
         Steering = ((double)data.SteerInputRaw * (double)data.SteerWheelRangeDegrees).ToString().Replace(",",".") + "deg";
     }
+
+    protected override void UpdateWithTestData()
+    {
+        Clutch = 0.35;
+        Throttle = 0.85;
+        Brake = 0.15;
+        Steering = "45deg";
+    }
 }
