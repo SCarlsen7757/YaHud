@@ -4,7 +4,7 @@
 
 @if (Settings.Visible)
 {
-    <div id=@ElementId class="clock-widget" >
+    <div id=@ElementId class="clock-widget">
         <span class="text" style="color: @Settings.TextColor">@currentTime.ToString("HH:mm:ss")</span>
     </div>
 }
@@ -15,7 +15,7 @@
     private Timer? timer;
 
     public override string ElementId { get => "clockWidget"; }
-    public override string Name => "Clock"; 
+    public override string Name => "Clock";
     public override string Category => "Utility";
 
     public override double DefaultXPercent => 50;

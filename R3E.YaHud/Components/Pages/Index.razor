@@ -1,4 +1,5 @@
 ﻿@page "/"
+@implements IDisposable
 @inject ShortcutService ShortcutClientService
 @inject HudLockService HudLockService
 @inject VisibilityService VisibilityService
@@ -150,5 +151,12 @@
         }
         this.locked = locked;
         await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        HudLockService.OnLockChanged -= LockChanged;
+        VisibilityService.OnVisibilityChanged -= VisibilityChanged;
+        TestModeService.OnTestModeChanged -= TestModeChanged;
     }
 }

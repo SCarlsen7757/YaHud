@@ -53,6 +53,7 @@ namespace R3E.YaHud.Services
             if (disposed) return;
             disposed = true;
 
+            OnTestModeChanged = null;
             logger.LogDebug("TestModeService disposed");
             GC.SuppressFinalize(this);
         }
