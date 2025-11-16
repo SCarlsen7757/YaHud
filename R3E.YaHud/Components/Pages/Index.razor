@@ -1,6 +1,9 @@
 ﻿@page "/"
+@implements IDisposable
 @inject ShortcutService ShortcutClientService
 @inject HudLockService HudLockService
+@inject VisibilityService VisibilityService
+@inject TestModeService TestModeService
 @inject SettingsService SettingsService
 @using R3E.API
 @using R3E.YaHud.Services
@@ -16,39 +19,65 @@
 {
     <div class="icon-button-stack">
         <button class="icon-button" @onclick="ShowSettings">
-            <svg class="fa-solid fa-gear"></svg>
+            <svg>
+                <Icon Name="gear" />
+            </svg>
+        </button>
+
+        <button class="icon-button @(!WidgetsVisible ? "active" : "")" @onclick="ToggleWidgetVisibility">
+            <svg>
+                <Icon @key='@WidgetsVisible' Name="@VisibilityIcon" />
+            </svg>
+        </button>
+
+        <button disabled="@(!WidgetsVisible)" class="icon-button @(testMode ? "active" : "")" @onclick="ToggleTestMode">
+            <svg>
+                <Icon @key="testMode" Name="@TestModeIcon" />
+            </svg>
         </button>
 
         <button class="icon-button" @onclick="ShowAbout">
-            <svg class="fa-solid fa-info"></svg>
+            <svg>
+                <Icon Name="info" />
+            </svg>
         </button>
     </div>
 }
 
-@if(showSettings)
+@if (showSettings)
 {
-    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings"/>
+    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings" />
 }
 
-@if(showAbout)
+@if (showAbout)
 {
     <About OnClose="HideAbout" />
 }
 
-<Clock />
-<MoTec />
-<UserInputs />
-<StartLight/>
+<!-- Widgets are always in the DOM but hidden via CSS based on visibility state -->
+<div style="display: @(WidgetsVisible ? "block" : "none");">
+    <Clock />
+    <MoTec />
+    <UserInputs />
+</div>
 
 @code {
     private bool showSettings = false;
     private bool showAbout = false;
     private bool locked;
-    
+    private bool testMode;
+
+    private bool WidgetsVisible => VisibilityService.WidgetsVisible;
+    private string VisibilityIcon => WidgetsVisible ? "eye" : "eye-slash";
+    private string TestModeIcon => testMode ? "flask-vial" : "flask";
+
     protected override async Task OnInitializedAsync()
     {
         HudLockService.OnLockChanged += LockChanged;
+        VisibilityService.OnVisibilityChanged += VisibilityChanged;
+        TestModeService.OnTestModeChanged += TestModeChanged;
         locked = HudLockService.Locked;
+        testMode = TestModeService.TestMode;
 
         await InvokeAsync(StateHasChanged);
     }
@@ -67,12 +96,21 @@
     {
         showSettings = true;
         InvokeAsync(StateHasChanged);
-    }   
+    }
 
     private async Task HideSettings()
     {
         await SettingsService.SaveAll();
         showSettings = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleWidgetVisibility()
+    {
+        if (WidgetsVisible) await SettingsService.SaveAll();
+
+        VisibilityService.ToggleVisibility();
+        if (!WidgetsVisible) TestModeService.SetTestMode(false);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -88,13 +126,38 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task ToggleTestMode()
+    {
+        TestModeService.ToggleTestMode();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void VisibilityChanged(bool isVisible)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void TestModeChanged(bool isTestMode)
+    {
+        testMode = isTestMode;
+        InvokeAsync(StateHasChanged);
+    }
+
     private async void LockChanged(bool locked)
     {
-        if(locked){
+        if (locked)
+        {
             await HideSettings();
             HideAbout();
         }
         this.locked = locked;
         await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        HudLockService.OnLockChanged -= LockChanged;
+        VisibilityService.OnVisibilityChanged -= VisibilityChanged;
+        TestModeService.OnTestModeChanged -= TestModeChanged;
     }
 }

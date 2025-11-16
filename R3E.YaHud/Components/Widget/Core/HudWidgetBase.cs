@@ -12,10 +12,12 @@ namespace R3E.YaHud.Components.Widget.Core
         [Inject] protected HudLockService LockService { get; set; } = default!;
         [Inject] protected TelemetryService TelemetryService { get; set; } = default!;
         [Inject] protected SettingsService SettingsService { get; set; } = default!;
+        [Inject] protected TestModeService TestModeService { get; set; } = default!;
         [Inject] protected ILogger<HudWidgetBase<TSettings>> Logger { get; set; } = default!;
 
 
         protected bool Locked => LockService.Locked;
+        protected bool TestMode => TestModeService.TestMode;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
         public abstract string ElementId { get; }
@@ -41,10 +43,13 @@ namespace R3E.YaHud.Components.Widget.Core
 
         protected abstract void Update();
 
+        protected abstract void UpdateWithTestData();
+
         protected override void OnInitialized()
         {
             SettingsService.RegisterWidget(this);
             LockService.OnLockChanged += OnLockChanged;
+            TestModeService.OnTestModeChanged += OnTestModeChanged;
             if (UseR3EData) TelemetryService.DataUpdated += OnTelemetryDataUpdated;
         }
 
@@ -57,8 +62,7 @@ namespace R3E.YaHud.Components.Widget.Core
                 await InvokeAsync(StateHasChanged);
             }
 
-            if (Settings == null) return;
-            if (Settings.Visible && firstRender || !visibleInitialized)
+            if (Settings.Visible && (firstRender || !visibleInitialized))
             {
                 await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
 
@@ -124,10 +128,24 @@ namespace R3E.YaHud.Components.Widget.Core
             InvokeUpdate();
         }
 
+        private void OnTestModeChanged(bool isTestMode)
+        {
+            InvokeUpdate();
+        }
+
         public void InvokeUpdate()
         {
-            if (!Settings?.Visible ?? true) return;
-            Update();
+            if (!Settings.Visible) return;
+
+            if (TestMode)
+            {
+                UpdateWithTestData();
+            }
+            else
+            {
+                Update();
+            }
+
             InvokeAsync(StateHasChanged);
         }
 
@@ -152,28 +170,90 @@ namespace R3E.YaHud.Components.Widget.Core
         [JSInvokable]
         public async Task UpdateWidgetPosition(double xPercent, double yPercent)
         {
-            if (Settings == null) return;
-            Settings.XPercent = xPercent;
-            Settings.YPercent = yPercent;
-            await SettingsService.Save(this);
+            try
+            {
+                // Guard against being called after component is disposed
+                if (disposed)
+                {
+                    Logger?.LogDebug("UpdateWidgetPosition called on disposed component (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                if (Settings == null)
+                {
+                    Logger?.LogWarning("UpdateWidgetPosition called with null Settings (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                Logger?.LogDebug("UpdateWidgetPosition called: {ElementId} xPercent={XPercent}, yPercent={YPercent}",
+                    ElementId, xPercent, yPercent);
+
+                Settings.XPercent = xPercent;
+                Settings.YPercent = yPercent;
+                await SettingsService.Save(this);
+
+                Logger?.LogDebug("UpdateWidgetPosition saved successfully for {ElementId}", ElementId);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                Logger?.LogDebug(ex, "Component disposed during UpdateWidgetPosition for {ElementId}", ElementId);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
+            {
+                Logger?.LogDebug(ex, "Widget {ElementId} is no longer available", ElementId);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Unexpected error in UpdateWidgetPosition for widget {ElementId}", ElementId);
+            }
         }
 
         [JSInvokable]
         public async Task OnWindowResize()
         {
-            if (Settings == null) return;
-            await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
+            try
+            {
+                // Guard against being called after component is disposed
+                if (disposed || Settings == null)
+                {
+                    Logger?.LogDebug("OnWindowResize called on disposed component or with null settings");
+                    return;
+                }
+
+                await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
+            }
+            catch (JSDisconnectedException)
+            {
+                Logger?.LogDebug("JS interop failed: Circuit disconnected during OnWindowResize for widget {ElementId}", ElementId);
+            }
+            catch (JSException ex)
+            {
+                Logger?.LogWarning(ex, "JS interop error in OnWindowResize for widget {ElementId}", ElementId);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                Logger?.LogDebug(ex, "Component disposed during OnWindowResize for widget {ElementId}", ElementId);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
+            {
+                Logger?.LogDebug(ex, "Widget {ElementId} is no longer available", ElementId);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Unexpected error in OnWindowResize for widget {ElementId}", ElementId);
+            }
         }
 
-        private bool _disposed;
+        private volatile bool disposed;
 
         public virtual void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (disposed) return;
+            disposed = true;
 
             SettingsService.UnregisterWidget(this);
             LockService.OnLockChanged -= OnLockChanged;
+            TestModeService.OnTestModeChanged -= OnTestModeChanged;
             TelemetryService.DataUpdated -= OnTelemetryDataUpdated;
             objRef?.Dispose();
             GC.SuppressFinalize(this);
