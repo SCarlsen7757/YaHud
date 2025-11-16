@@ -117,6 +117,6 @@ namespace R3E.YaHud.Components.Widget.UserInputs
         /// <summary>
         /// Gets the path to the wheel SVG file based on the selected style
         /// </summary>
-        public string WheelSvgPath => $"/img/wheels/wheel-{WheelStyle}.svg";
+        public string WheelSvgPath => $"assets/img/wheels/wheel-{WheelStyle}.svg";
     }
 }
