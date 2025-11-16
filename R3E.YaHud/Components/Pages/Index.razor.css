@@ -1,19 +1,19 @@
 ﻿.icon-button-stack {
-    position: fixed;      
-    top: 20%;              
-    left: 20px;           
+    position: fixed;
+    top: 20%;
+    left: 20px;
     display: flex;
-    flex-direction: column;  
-    align-items: center;      
-    gap: 10px;                /* Space between buttons */
-    z-index: 900;   
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Space between buttons */
+    z-index: 900;
 }
 
 .icon-button {
-    background-color: rgba(24, 24, 24, 0.5);  
-    color: #ffffff;              
+    background-color: rgba(24, 24, 24, 0.5);
+    color: #ffffff;
     border: none;
-    border-radius: 50%;         
+    border-radius: 50%;
     padding: 0;
     width: 60px;
     height: 60px;
@@ -24,15 +24,34 @@
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.icon-button:hover {
-    background-color: rgba(68, 68, 68, 0.5);
-}
+    .icon-button:hover {
+        background-color: rgba(68, 68, 68, 0.5);
+    }
 
-.icon-button:active {
-    transform: scale(0.95);
-}
+    .icon-button:active {
+        transform: scale(0.95);
+    }
 
-.icon-button svg {
-    width: 2.5rem;
-    height: 2.5rem;
-}
+    .icon-button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background-color: rgba(24, 24, 24, 0.5);
+    }
+
+        .icon-button:disabled:hover {
+            background-color: rgba(24, 24, 24, 0.5);
+        }
+
+        .icon-button:disabled:active {
+            transform: none;
+        }
+
+    .icon-button.active {
+        background-color: rgba(255, 165, 30, 0.5);
+        border: 2px solid rgba(255, 165, 30, 0.8);
+    }
+
+    .icon-button svg {
+        width: 2.5rem;
+        height: 2.5rem;
+    }

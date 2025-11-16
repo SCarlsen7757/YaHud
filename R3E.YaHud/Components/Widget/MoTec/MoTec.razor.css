@@ -1,13 +1,13 @@
 ﻿.motec-widget {
     display: flex;
-    flex-direction: column;   /* stack children vertically */
-    align-items: center;      /* center horizontally */
+    flex-direction: column; /* stack children vertically */
+    align-items: center; /* center horizontally */
     text-align: center;
     border-radius: 4px;
-    width: 150px;             /* fixed width */
-    height: 175px;             /* fixed height */
+    width: 150px; /* fixed width */
+    height: 175px; /* fixed height */
     background-color: rgba(2, 0, 0, 0.5);
-    position: absolute;       /* can still be placed absolutely */
+    position: absolute; /* can still be placed absolutely */
     box-sizing: border-box;
     overflow: hidden;
     padding: 5px;
@@ -16,22 +16,22 @@
 .gear-text {
     color: white;
     font-size: 100px;
-    margin: 0;                 /* remove default spacing */
-    line-height: 0.9;          /* tighten vertical spacing */
+    margin: 0; /* remove default spacing */
+    line-height: 0.9; /* tighten vertical spacing */
 }
 
 .speed-text {
     color: white;
     font-size: 48px;
-    margin: 0;                 /* remove default spacing */
-    line-height: 1;             /* adjust as needed */
-    margin-top: 5px;            /* small spacing from Gear */
+    margin: 0; /* remove default spacing */
+    line-height: 1; /* adjust as needed */
+    margin-top: 5px; /* small spacing from Gear */
 }
 
 .rpm-component {
     /*display: flex;*/
     justify-content: center; /* center the bar horizontally */
     width: 95%;
-    height: 20px; 
+    height: 20px;
     padding: 5px 0 0 0; /* small spacing above the bar */
 }
