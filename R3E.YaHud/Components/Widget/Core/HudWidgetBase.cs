@@ -172,7 +172,7 @@ namespace R3E.YaHud.Components.Widget.Core
             try
             {
                 // Guard against being called after component is disposed
-                if (_disposed)
+                if (disposed)
                 {
                     Logger?.LogDebug("UpdateWidgetPosition called on disposed component (ElementId: {ElementId})", ElementId);
                     return;
@@ -213,7 +213,7 @@ namespace R3E.YaHud.Components.Widget.Core
             try
             {
                 // Guard against being called after component is disposed
-                if (_disposed || Settings == null)
+                if (disposed || Settings == null)
                 {
                     Logger?.LogDebug("OnWindowResize called on disposed component or with null settings");
                     return;
@@ -243,12 +243,12 @@ namespace R3E.YaHud.Components.Widget.Core
             }
         }
 
-        private bool _disposed;
+        private volatile bool disposed;
 
         public virtual void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (disposed) return;
+            disposed = true;
 
             SettingsService.UnregisterWidget(this);
             LockService.OnLockChanged -= OnLockChanged;

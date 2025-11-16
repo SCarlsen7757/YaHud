@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace R3E.YaHud.Services
@@ -56,6 +55,7 @@ namespace R3E.YaHud.Services
             if (disposed) return;
             disposed = true;
 
+            OnVisibilityChanged = null;
             logger.LogDebug("VisibilityService disposed");
             GC.SuppressFinalize(this);
         }

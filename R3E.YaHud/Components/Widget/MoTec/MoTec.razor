@@ -8,20 +8,21 @@
     <div id=@ElementId class="motec-widget text">
         <p class="gear-text">@Gear</p>
         <p class="speed-text">@Speed.ToString("0")</p>
-        <div class="rpm-component"><HorizontalBar  
-                @key="Rps"
-            Min="0.0d" 
-            Max="@MaxRps"
-                Value="@Rps"
-            PrimaryColor="@RpsCurrentColor" 
-            BackgroundColor="@RpsBarBackgroundColor" /></div>
+        <div class="rpm-component">
+            <HorizontalBar @key="Rps"
+                           Min="0.0d"
+                           Max="@MaxRps"
+                           Value="@Rps"
+                           PrimaryColor="@RpsCurrentColor"
+                           BackgroundColor="@RpsBarBackgroundColor" />
+        </div>
     </div>
 }
 
 @code {
     private string Gear { get; set; } = "N";
     private double Speed { get; set; } = 0.0f;
-    private double Rps { get;  set; } = 3000.0f;
+    private double Rps { get; set; } = 3000.0f;
     private double MaxRps { get; set; } = 9000.0f;
 
     private string RpsBarBackgroundColor => "#454545";
@@ -71,7 +72,7 @@
         Speed = UnitConverter.Convert(125.5f, SpeedUnit.KilometersPerHour, SettingsService.GlobalSettings.SpeedUnit);
         Rps = 7500.0;
         MaxRps = 9000.0;
-        
+
         RpsCurrentColor = Settings.RpmUpshiftColor;
     }
 }
