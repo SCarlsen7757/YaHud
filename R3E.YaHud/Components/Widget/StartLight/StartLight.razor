@@ -23,4 +23,108 @@
 }
 
 @code {
-    private string ContentAssetsBase => "/img/lights/countdown/";    private string Img(string name)    {        return $"{ContentAssetsBase}{name}";    }    private int startLightRaw = 3;    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Countdown;    private DateTime? greenShownAt;    // Public widget metadata    public override string ElementId { get => "startLightWidget"; }    public override string Name => "Start light";    public override string Category => "Telemetry";    public override double DefaultXPercent => 70;    public override double DefaultYPercent => 50;    public override bool Collidable => false;    public StartLight()    {        UseR3EData = true;        UpdateInterval = TimeSpan.FromMilliseconds(30);    }    protected override void Update()    {        if (Settings is null) return;        R3E.Data.Shared data = TelemetryService.Data.Raw;        startLightRaw = data.StartLights;        sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;        // If engine/game reports green (either via StartLights==6 or session phase becomes Green)        // and settings want a timed green -> record timestamp so we can hide after duration        if ((startLightRaw == 6) && Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)        {            if (!greenShownAt.HasValue)            {                greenShownAt = DateTime.UtcNow;            }        }        else        {            // reset timer when not in green period            greenShownAt = null;        }    }    // Whether we are showing the "countdown/cooldown" lights (per request)    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown;    // When behavior chooses to show green then turn off after a duration, and we are in green phase,    // determine whether the green period is active. We treat either StartLights==6 or session phase == Green as green.    private bool IsGreenPeriodActive()    {        if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;        // require either reported green state or green session phase        if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;        if (Settings == null) return false;        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)        {            if (Settings.GreenLightDurationMs > 0 && greenShownAt.HasValue)            {                var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;                return elapsed <= Settings.GreenLightDurationMs;            }            return true;        }        return false;    }    // returns the image path for a given light position (1..5)    private string LightImageForPosition(int pos)    {        // If green period active, show green for all five lights        if (IsGreenPeriodActive())        {            return Img("green.png");        }        // If the incoming raw value is -1 or 0 -> off state for all        if (startLightRaw <= 0 || startLightRaw == -1)        {            return Img("off.png");        }        // startLightRaw in 1..5: treat as number of red lights currently active        if (startLightRaw >= 1 && startLightRaw <= 5)        {            // lights 1..startLightRaw are red, the rest off            if (pos <= startLightRaw)                return Img("red.png");            else                return Img("off.png");        }        // If raw reports green but behavior doesn't show green, or any other case -> off        return Img("off.png");    }}
+
+    private string ContentAssetsBase => "/img/lights/countdown/";
+
+    private string Img(string name)
+    {
+        return $"{ContentAssetsBase}{name}";
+    }
+
+    private int startLightRaw = 3;
+    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Countdown;
+    private DateTime? greenShownAt;
+
+    // Public widget metadata
+    public override string ElementId { get => "startLightWidget"; }
+    public override string Name => "Start light";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 70;
+    public override double DefaultYPercent => 50;
+
+    public override bool Collidable => false;
+
+    public StartLight()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void Update()
+    {
+        if (Settings is null) return;
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+
+        startLightRaw = data.StartLights;
+        sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+
+        // If engine/game reports green (either via StartLights==6 or session phase becomes Green)
+        // and settings want a timed green -> record timestamp so we can hide after duration
+        if ((startLightRaw == 6) && Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        {
+            if (!greenShownAt.HasValue)
+            {
+                greenShownAt = DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            // reset timer when not in green period
+            greenShownAt = null;
+        }
+    }
+
+    // Whether we are showing the "countdown/cooldown" lights (per request)
+    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown;
+
+    // When behavior chooses to show green then turn off after a duration, and we are in green phase,
+    // determine whether the green period is active. We treat either StartLights==6 or session phase == Green as green.
+    private bool IsGreenPeriodActive()
+    {
+        if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
+        // require either reported green state or green session phase
+        if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
+        if (Settings == null) return false;
+
+        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        {
+            if (Settings.GreenLightDurationMs > 0 && greenShownAt.HasValue)
+            {
+                var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
+                return elapsed <= Settings.GreenLightDurationMs;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // returns the image path for a given light position (1..5)
+    private string LightImageForPosition(int pos)
+    {
+        // If green period active, show green for all five lights
+        if (IsGreenPeriodActive())
+        {
+            return Img("green.png");
+        }
+
+        // If the incoming raw value is -1 or 0 -> off state for all
+        if (startLightRaw <= 0 || startLightRaw == -1)
+        {
+            return Img("off.png");
+        }
+
+        // startLightRaw in 1..5: treat as number of red lights currently active
+        if (startLightRaw >= 1 && startLightRaw <= 5)
+        {
+            // lights 1..startLightRaw are red, the rest off
+            if (pos <= startLightRaw)
+                return Img("red.png");
+            else
+                return Img("off.png");
+        }
+
+        // If raw reports green but behavior doesn't show green, or any other case -> off
+        return Img("off.png");
+    }
+}

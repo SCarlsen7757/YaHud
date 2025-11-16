@@ -1,6 +1,5 @@
 ﻿using R3E.YaHud.Components.Widget.Core;
 using R3E.YaHud.Services.Settings;
-using System.Reflection;
 
 namespace R3E.YaHud.Components.Widget.StartLight
 {

@@ -17,23 +17,23 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.6);
 }
 
-/* Start light specific styles moved from inline <style> block */
-.start-light-widget .lights {
-    display: flex;
-    gap: 0px;
-    align-items: center;
-    justify-content: center;
-    padding: 0px;
-    user-select: none; /* prevent selection in container */
-}
+    /* Start light specific styles moved from inline <style> block */
+    .start-light-widget .lights {
+        display: flex;
+        gap: 0px;
+        align-items: center;
+        justify-content: center;
+        padding: 0px;
+        user-select: none; /* prevent selection in container */
+    }
 
-.start-light-widget .light img {
-    width: 94px;
-    height: 90px;
-    display: block;
-    -webkit-user-drag: none; /* Chrome / Safari */
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE10+/Edge */
-    user-select: none; /* Standard */
-}
+    .start-light-widget .light img {
+        width: 94px;
+        height: 90px;
+        display: block;
+        -webkit-user-drag: none; /* Chrome / Safari */
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE10+/Edge */
+        user-select: none; /* Standard */
+    }
