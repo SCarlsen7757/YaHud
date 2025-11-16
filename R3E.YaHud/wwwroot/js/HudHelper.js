@@ -134,7 +134,7 @@
         return diagonalResult;
     }
 
-    function attachHandlers(entry) {
+    function attachHandlers(entry = {}) {
         if (!entry || entry.handlersAttached) return;
         const el = entry.el;
         const dotnetHelper = entry.dotNetRef;
@@ -212,10 +212,14 @@
             // hide grid overlay
             try { hideGrid(); } catch (ex) { console.warn('HudHelper: hideGrid failed', ex); }
 
+            console.log('HudHelper.onMouseUp: calling UpdateWidgetPosition for', entry.id, 'with x=', leftPercent, 'y=', topPercent);
             try {
-                dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent);
+                dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent)
+                    .catch(err => {
+                        console.error('HudHelper: Failed to update widget position (async)', err);
+                    });
             } catch (ex) {
-                console.error('HudHelper: Failed to update widget position', ex);
+                console.error('HudHelper: Failed to update widget position (sync)', ex);
             }
         }
 
@@ -236,7 +240,10 @@
 
         function onResize() {
             try {
-                dotnetHelper.invokeMethodAsync('OnWindowResize');
+                dotnetHelper.invokeMethodAsync('OnWindowResize')
+                    .catch(err => {
+                        console.warn('HudHelper: OnWindowResize failed (widget may be disposed)', err);
+                    });
             } catch (ex) {
                 console.error('HudHelper: Failed to notify resize', ex);
             }
