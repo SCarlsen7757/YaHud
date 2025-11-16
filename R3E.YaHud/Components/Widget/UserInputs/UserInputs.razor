@@ -11,34 +11,31 @@
             {
                 <div class="clutch-component">
                     <p class="value-label">@((int)(Clutch * 100))</p>
-                    <VerticalBar
-                        @key="Clutch"
-                        Min="0.0d"
-                        Max="1.0d"
-                        Value="@Clutch"
-                        PrimaryColor="@Settings.ClutchColor"
-                        BackgroundColor="@BarBackgroundColor" />
+                    <VerticalBar @key="Clutch"
+                                 Min="0.0d"
+                                 Max="1.0d"
+                                 Value="@Clutch"
+                                 PrimaryColor="@Settings.ClutchColor"
+                                 BackgroundColor="@BarBackgroundColor" />
                 </div>
             }
             <div class="brake-component">
                 <p class="value-label">@((int)(Brake * 100))</p>
-                <VerticalBar
-                    @key="Brake"
-                    Min="0.0d"
-                    Max="1.0d"
-                    Value="@Brake"
-                    PrimaryColor="@Settings.BrakeColor"
-                    BackgroundColor="@BarBackgroundColor" />
+                <VerticalBar @key="Brake"
+                             Min="0.0d"
+                             Max="1.0d"
+                             Value="@Brake"
+                             PrimaryColor="@Settings.BrakeColor"
+                             BackgroundColor="@BarBackgroundColor" />
             </div>
             <div class="throttle-component">
                 <p class="value-label">@((int)(Throttle * 100))</p>
-                <VerticalBar
-                    @key="Throttle"
-                    Min="0.0d"
-                    Max="1.0d"
-                    Value="@Throttle"
-                    PrimaryColor="@Settings.ThrottleColor"
-                    BackgroundColor="@BarBackgroundColor" />
+                <VerticalBar @key="Throttle"
+                             Min="0.0d"
+                             Max="1.0d"
+                             Value="@Throttle"
+                             PrimaryColor="@Settings.ThrottleColor"
+                             BackgroundColor="@BarBackgroundColor" />
             </div>
         </div>
 
@@ -81,6 +78,14 @@
         Clutch = (double)data.Clutch;
         Throttle = (double)data.Throttle;
         Brake = (double)data.Brake;
-        Steering = ((double)data.SteerInputRaw * (double)data.SteerWheelRangeDegrees).ToString().Replace(",",".") + "deg";
+        Steering = ((double)data.SteerInputRaw * (double)data.SteerWheelRangeDegrees).ToString().Replace(",", ".") + "deg";
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        Clutch = 0.35;
+        Throttle = 0.85;
+        Brake = 0.15;
+        Steering = "45deg";
     }
 }
