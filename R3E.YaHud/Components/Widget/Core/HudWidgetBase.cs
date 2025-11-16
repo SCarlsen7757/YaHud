@@ -135,7 +135,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public void InvokeUpdate()
         {
-            if (!Settings.Visible) return;
+            if (Settings == null || !Settings.Visible) return;
 
             if (TestMode)
             {
