@@ -5,10 +5,8 @@
 
 @if (Settings?.Visible ?? false)
 {
-    <div id=@ElementId class="start-light-widget text">
-
-        @if (IsCountdownPhase)
-        {
+    <div style="display: @(IsCountdownPhase ? "block" : "none");">
+        <div id=@ElementId class="start-light-widget text">
             <div class="lights" aria-label="Start lights (countdown)">
                 @for (int i = 1; i <= 5; i++)
                 {
@@ -18,7 +16,7 @@
                     </div>
                 }
             </div>
-        }
+        </div>
     </div>
 }
 
@@ -31,8 +29,8 @@
         return $"{ContentAssetsBase}{name}";
     }
 
-    private int startLightRaw = 3;
-    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Countdown;
+    private int startLightRaw = 0;
+    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Unavailable;
     private DateTime? greenShownAt;
 
     // Public widget metadata
@@ -40,8 +38,8 @@
     public override string Name => "Start light";
     public override string Category => "Telemetry";
 
-    public override double DefaultXPercent => 70;
-    public override double DefaultYPercent => 50;
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 25;
 
     public override bool Collidable => false;
 
@@ -75,8 +73,13 @@
         }
     }
 
+    protected override void UpdateWithTestData()
+    {
+        startLightRaw = 3;
+    }
+
     // Whether we are showing the "countdown/cooldown" lights (per request)
-    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown;
+    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
 
     // When behavior chooses to show green then turn off after a duration, and we are in green phase,
     // determine whether the green period is active. We treat either StartLights==6 or session phase == Green as green.
