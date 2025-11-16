@@ -22,7 +22,7 @@
 
         <button class="icon-button" @onclick="ToggleWidgets">
             <svg>
-                <Icon @key='@showWidgets' Name="@VisabletyIcon" />
+                <Icon @key='@showWidgets' Name="@VisibilityIcon" />
             </svg>
         </button>
 
@@ -57,7 +57,7 @@
     private bool showAbout = false;
     private bool locked;
 
-    private string VisabletyIcon => showWidgets ? "eye" : "eye-slash";
+    private string VisibilityIcon => showWidgets ? "eye" : "eye-slash";
 
     protected override async Task OnInitializedAsync()
     {
