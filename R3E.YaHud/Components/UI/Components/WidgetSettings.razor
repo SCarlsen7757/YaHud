@@ -155,11 +155,7 @@
 		var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));
 		builder.OpenComponent(seq++, componentType);
 		builder.AddAttribute(seq++, "Value", enumValue);
-		builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, (newValue) => 
-		{
-		   prop.SetValue(Settings, newValue);
-		   return Task.CompletedTask;
-		}));
+		builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, newValue => prop.SetValue(Settings, newValue)));
 		builder.AddAttribute(seq++, "LabelProvider", new Func<TEnum, string>(v => GetEnumDisplayName(v)));
 		builder.CloseComponent();
 	}
