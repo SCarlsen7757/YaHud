@@ -89,7 +89,7 @@
                 var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
                 return elapsed <= Settings.GreenLightDurationMs;
             }
-            return true;
+            return greenShownAt != null;
         }
         return false;
     }
