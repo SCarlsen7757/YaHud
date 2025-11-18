@@ -212,7 +212,7 @@
 		var name = Enum.GetName(type, value) ?? value.ToString();
 		var field = type.GetField(name);
 		var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
-		return displayAttr?.Name ?? name ?? value.ToString();
+		return displayAttr?.Name ?? name;
 	}
 
 	public void Dispose()
