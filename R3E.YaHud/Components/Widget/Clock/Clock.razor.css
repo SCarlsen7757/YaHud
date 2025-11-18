@@ -1,4 +1,5 @@
 ﻿.clock-widget {
+    z-index: 5000;
     text-align: center;
     width: 300px;
     position: absolute;
