@@ -143,10 +143,18 @@
             .GetMethod(nameof(RenderEnumDropdownGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
             .MakeGenericMethod(enumType);
 
-        method.Invoke(this, new object?[] { builder, prop, value, seq });
+        // For ref parameter we pass boxed args and read back the updated seq after Invoke.
+        var args = new object?[] { builder, prop, value, seq };
+        method.Invoke(this, args);
+
+        // update the caller's seq from the possibly modified boxed argument
+        if (args.Length > 3 && args[3] is int updatedSeq)
+        {
+            seq = updatedSeq;
+        }
     }
 
-    private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop, object? value, int seq) where TEnum : struct, Enum
+    private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop, object? value, ref int seq) where TEnum : struct, Enum
     {
         var instance = value ?? Activator.CreateInstance(typeof(TEnum)) ?? default(TEnum);
         var enumValue = (TEnum)instance;
