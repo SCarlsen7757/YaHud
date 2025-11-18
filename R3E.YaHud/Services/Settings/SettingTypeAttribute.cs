@@ -1,7 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Reflection;
-
-namespace R3E.YaHud.Services.Settings
+﻿namespace R3E.YaHud.Services.Settings
 {
     [AttributeUsage(AttributeTargets.Property)]
     public class SettingTypeAttribute(string displayName, SettingsTypes type, uint order) : Attribute
