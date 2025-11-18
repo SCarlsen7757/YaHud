@@ -32,18 +32,18 @@
     [Inject] public SettingsService SettingsService { get; set; } = default!;
 
     // mapping: property name -> picker container id
-    private readonly Dictionary<string, string> _pickerIds = new();
+    private readonly Dictionary<string, string> pickerIds = new();
     // reverse mapping: container id -> PropertyInfo
-    private readonly Dictionary<string, PropertyInfo> _pickerProps = new();
+    private readonly Dictionary<string, PropertyInfo> pickerProps = new();
 
-    private DotNetObjectReference<WidgetSettings<TSettings>>? _objRef;
+    private DotNetObjectReference<WidgetSettings<TSettings>>? objRef;
 
     private string GetOrCreatePickerId(PropertyInfo prop)
     {
-        if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
+        if (pickerIds.TryGetValue(prop.Name, out var id)) return id;
         id = $"picker_{Settings!.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
-        _pickerIds[prop.Name] = id;
-        _pickerProps[id] = prop;
+        pickerIds[prop.Name] = id;
+        pickerProps[id] = prop;
         return id;
     }
 
@@ -162,13 +162,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_objRef == null)
+        if (objRef == null)
         {
-            _objRef = DotNetObjectReference.Create(this);
+            objRef = DotNetObjectReference.Create(this);
         }
 
         // initialize Coloris for every color input rendered by this component
-        foreach (var kvp in _pickerProps)
+        foreach (var kvp in pickerProps)
         {
             var containerId = kvp.Key; // e.g. picker_Type_Property_guid
             var prop = kvp.Value;
@@ -176,7 +176,7 @@
             var inputId = $"input_{containerId}";
 
             // register the input with colorisHelper. JS will attach Coloris and call back NotifyColorChanged.
-            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, _objRef);
+            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, objRef);
         }
     }
 
@@ -185,7 +185,7 @@
     {
         if (containerId == null) return Task.CompletedTask;
 
-        if (_pickerProps.TryGetValue(containerId, out var prop))
+        if (pickerProps.TryGetValue(containerId, out var prop))
         {
             try
             {
@@ -215,7 +215,7 @@
     public void Dispose()
     {
         // destroy all Coloris bindings on the JS side
-        foreach (var id in _pickerProps.Keys)
+        foreach (var id in pickerProps.Keys)
         {
             try
             {
@@ -224,6 +224,6 @@
             catch (Exception ex) { Console.Error.WriteLine($"Dispose error while unregistering {id}: {ex}"); }
         }
 
-        _objRef?.Dispose();
+        objRef?.Dispose();
     }
 }
