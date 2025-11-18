@@ -1,10 +1,7 @@
 ﻿using R3E.YaHud.Services.Settings;
-using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
 
 namespace R3E.YaHud.Components.Widget.Core
 {
