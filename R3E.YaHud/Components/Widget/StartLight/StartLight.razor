@@ -10,9 +10,9 @@
             <div class="lights" aria-label="Start lights (countdown)">
                 @for (int i = 1; i <= 5; i++)
                 {
-                    var src = LightImageForPosition(i);
+                    var src = ImageForPosition(i);
                     <div class="light">
-                        <img src=@src alt=@($"light-{i}") draggable="false" ondragstart="return false;" />
+                        <img src=@src draggable="false" ondragstart="return false;" />
                     </div>
                 }
             </div>
@@ -22,18 +22,17 @@
 
 @code {
 
-    private string ContentAssetsBase => "/img/lights/countdown/";
+    private string ImageAssetsBase => "/img/lights/countdown/";
 
-    private string Img(string name)
+    private string Image(string name)
     {
-        return $"{ContentAssetsBase}{name}";
+        return $"{ImageAssetsBase}{name}";
     }
 
     private int startLightRaw = 0;
     private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Unavailable;
     private DateTime? greenShownAt;
 
-    // Public widget metadata
     public override string ElementId { get => "startLightWidget"; }
     public override string Name => "Start light";
     public override string Category => "Telemetry";
@@ -57,18 +56,15 @@
         startLightRaw = data.StartLights;
         sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
 
-        // If engine/game reports green (either via StartLights==6 or session phase becomes Green)
-        // and settings want a timed green -> record timestamp so we can hide after duration
-        if ((startLightRaw == 6) && Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff && (startLightRaw == 6))
         {
-            if (!greenShownAt.HasValue)
+            if (greenShownAt == null)
             {
                 greenShownAt = DateTime.UtcNow;
             }
         }
         else
         {
-            // reset timer when not in green period
             greenShownAt = null;
         }
     }
@@ -78,21 +74,17 @@
         startLightRaw = 3;
     }
 
-    // Whether we are showing the "countdown/cooldown" lights (per request)
     private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
 
-    // When behavior chooses to show green then turn off after a duration, and we are in green phase,
-    // determine whether the green period is active. We treat either StartLights==6 or session phase == Green as green.
     private bool IsGreenPeriodActive()
     {
         if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
-        // require either reported green state or green session phase
         if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
         if (Settings == null) return false;
 
         if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
         {
-            if (Settings.GreenLightDurationMs > 0 && greenShownAt.HasValue)
+            if (Settings.GreenLightDurationMs > 0 && greenShownAt != null)
             {
                 var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
                 return elapsed <= Settings.GreenLightDurationMs;
@@ -102,32 +94,23 @@
         return false;
     }
 
-    // returns the image path for a given light position (1..5)
-    private string LightImageForPosition(int pos)
+    private string ImageForPosition(int pos)
     {
-        // If green period active, show green for all five lights
         if (IsGreenPeriodActive())
         {
-            return Img("green.png");
+            return Image("green.png");
         }
 
-        // If the incoming raw value is -1 or 0 -> off state for all
-        if (startLightRaw <= 0 || startLightRaw == -1)
+        if (startLightRaw <= 0)
         {
-            return Img("off.png");
+            return Image("off.png");
         }
 
-        // startLightRaw in 1..5: treat as number of red lights currently active
         if (startLightRaw >= 1 && startLightRaw <= 5)
         {
-            // lights 1..startLightRaw are red, the rest off
-            if (pos <= startLightRaw)
-                return Img("red.png");
-            else
-                return Img("off.png");
+            return pos <= startLightRaw ? Image("red.png") : Image("off.png");
         }
 
-        // If raw reports green but behavior doesn't show green, or any other case -> off
-        return Img("off.png");
+        return Image("off.png");
     }
 }
