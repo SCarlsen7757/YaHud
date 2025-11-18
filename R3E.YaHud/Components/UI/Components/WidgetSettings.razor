@@ -139,9 +139,9 @@
         if (!enumType.IsEnum) return;
 
         // Use reflection to call the generic method
-        var method = typeof(WidgetSettings<TSettings>).GetMethod(nameof(RenderEnumDropdownGeneric),
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-     .MakeGenericMethod(enumType);
+        var method = typeof(WidgetSettings<TSettings>)
+            .GetMethod(nameof(RenderEnumDropdownGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .MakeGenericMethod(enumType);
 
         method.Invoke(this, new object?[] { builder, prop, value, seq });
     }
@@ -197,10 +197,7 @@
                 // update UI
                 _ = InvokeAsync(StateHasChanged);
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"NotifyColorChanged error: {ex}");
-            }
+            catch (Exception ex) { Console.Error.WriteLine($"NotifyColorChanged error: {ex}"); }
         }
 
         return Task.CompletedTask;
