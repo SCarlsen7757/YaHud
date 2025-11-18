@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components.Server;
 using R3E.API;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
@@ -8,8 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+#if DEBUG
+builder.Services.Configure<CircuitOptions>(options =>
+{
+    options.DetailedErrors = true;
+});
+#endif
+
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
+builder.Services.AddScoped<VisibilityService>();
+builder.Services.AddScoped<TestModeService>();
 builder.Services.AddSingleton<ShortcutService>();
 
 // Register appropriate ISharedSource based on OS
@@ -48,6 +58,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<R3E.YaHud.Components.App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .WithStaticAssets();
 
 app.Run();

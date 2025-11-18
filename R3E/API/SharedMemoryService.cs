@@ -209,10 +209,10 @@ namespace R3E.API
             disposed = true;
             logger.LogInformation("Disposing SharedMemoryService asynchronously");
             file?.Dispose();
-            
+
             // BackgroundService doesn't implement IAsyncDisposable, so just dispose synchronously
             base.Dispose();
-            
+
             GC.SuppressFinalize(this);
             return ValueTask.CompletedTask;
         }

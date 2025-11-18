@@ -1,18 +1,49 @@
 ﻿.user-inputs-widget {
     display: flex;
-    flex-direction: row;        /* place children side-by-side */
-    align-items: flex-end;     /* align bars to bottom so they look aligned */
-    justify-content: center;
-    gap: 8px;                  /* spacing between bars */
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
     text-align: center;
     border-radius: 4px;
-    width: 150px;              /* fixed width required by Reset position code */
-    height: auto;
+    width: 80px;
+    height: 175px;
     background-color: rgba(2, 0, 0, 0.5);
     position: absolute;
     box-sizing: border-box;
     overflow: hidden;
-    padding: 6px;
+    padding: 4px;
+}
+
+.pedals-container {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+}
+
+.steering-component {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 70px;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.steering-wheel {
+    width: 70px;
+    height: 70px;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mask-position: center;
 }
 
 .clutch-component,
@@ -21,18 +52,20 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    flex: 1 1 0;              /* evenly divide the fixed 150px width */
-    height: 120px;            /* height available for each vertical bar */
+    justify-content: space-between;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* small responsive tweak: shrink height on narrow containers */
-@media (max-width: 360px) {
-    .clutch-component,
-    .throttle-component,
-    .brake-component {
-        height: 96px;
-    }
+.value-label {
+    color: white;
+    font-size: 12px;
+    margin: 0 0 4px 0;
+    line-height: 1;
+    font-weight: bold;
+    white-space: nowrap;
+    flex-shrink: 0;
 }

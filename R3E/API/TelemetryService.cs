@@ -10,7 +10,7 @@ namespace R3E.API
         private int oldNumberOfLaps;
 
         public event Action<TelemetryData>? DataUpdated;
-        public event Action<TelemetryData>? NewLap; 
+        public event Action<TelemetryData>? NewLap;
         private readonly TelemetryData data = new();
         public TelemetryData Data { get => data; }
 
@@ -30,10 +30,10 @@ namespace R3E.API
             if (raw.NumberOfLaps != oldNumberOfLaps)
             {
                 oldNumberOfLaps = raw.NumberOfLaps;
-                NewLap?.Invoke(Data); 
+                NewLap?.Invoke(Data);
                 logger.LogDebug("New lap detected");
             }
-            
+
         }
 
         public void Dispose()

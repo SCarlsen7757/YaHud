@@ -73,7 +73,7 @@
     public override string Category => "Telemetry";
     public override double DefaultXPercent => 50;
     public override double DefaultYPercent => 50;
-
+    public override bool Collidable => true;
 
     public Fuel()
     {
@@ -97,7 +97,7 @@
 
     public override void Dispose()
     {
-       TelemetryService.NewLap -= OnNewLap; 
+        TelemetryService.NewLap -= OnNewLap; 
     }
 
     protected override void Update()
@@ -117,38 +117,38 @@
         //Only on countdown - map the following varibales as a "oneshot" so it doesn't occur throughout the race
         if (SessionPhase == 4)
         {
-           oldFuelRemaining = FuelRemaining;
-           oldNumberOfLaps = data.NumberOfLaps;
-           FuelCapacity = data.FuelCapacity;
+            oldFuelRemaining = FuelRemaining;
+            oldNumberOfLaps = data.NumberOfLaps;
+            FuelCapacity = data.FuelCapacity;
         }
-        
+
         //Based on the Session Format change the calculations
         switch (SessionLengthFormat)
-          {
+        {
             case SessionLengthFormat.Unavailable:
-            ; //Nothing to calculate
-            break;
+                ; //Nothing to calculate
+                break;
 
             // TimeBased
             case SessionLengthFormat.TimeBased: 
-            FuelToEnd = (FuelPerLap / data.LapTimeCurrentSelf) * TimeEstimatedLeft;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
-            Console.WriteLine(data.LapTimeCurrentSelf);
+                FuelToEnd = (FuelPerLap / data.LapTimeCurrentSelf) * TimeEstimatedLeft;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
+                Console.WriteLine(data.LapTimeCurrentSelf);
 
-            break;
+                break;
 
             // LapBased
             case SessionLengthFormat.LapBased:
-            FuelToEnd = data.NumberOfLaps / data.FuelPerLap;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
-            break;
+                FuelToEnd = data.NumberOfLaps / data.FuelPerLap;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
+                break;
 
             // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
             case SessionLengthFormat.TimeAndLapBased:
-            FuelToEnd = (data.NumberOfLaps+1) / data.FuelPerLap;
-            FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining);       
-            break;
-          }  
+                FuelToEnd = (data.NumberOfLaps+1) / data.FuelPerLap;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining);       
+                break;
+        }  
 
 
         FRColorSwitch = FuelRemaining / (FuelCapacity / 100);
@@ -194,5 +194,10 @@
             sTimeEstimatedLeft = t.ToString(@"ss");
             TELColor = Settings.red; 
         }
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        //TODO: Add test data
     }
 }
