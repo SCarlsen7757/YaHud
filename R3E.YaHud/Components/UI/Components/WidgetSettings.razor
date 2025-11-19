@@ -1,18 +1,24 @@
 ﻿@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Rendering
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Core
 @inject IJSRuntime JS
 
-@typeparam TSettings
+@typeparam TSettings where TSettings : BasicSettings
 
 <div>
     @foreach (var prop in Settings!.GetType().GetProperties()
-                 .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
-                 .Where(x => x.Attr != null)
-                 .OrderBy(x => x.Attr!.Order))
+        .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
+        .Where(x => x.Attr != null)
+        .OrderBy(x => x.Attr!.Order))
     {
-        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) {continue;}
+        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
+
+        // Ask concrete Settings instance to evaluate visibility each time
+        if (!Settings.IsPropertyVisible(prop.Prop.Name)) { continue; }
+
         <div class="form-group mb-2">
             <label>@prop.Attr!.DisplayName</label>
             @RenderInput(prop.Prop, prop.Attr)
@@ -26,18 +32,18 @@
     [Inject] public SettingsService SettingsService { get; set; } = default!;
 
     // mapping: property name -> picker container id
-    private readonly Dictionary<string, string> _pickerIds = new();
+    private readonly Dictionary<string, string> pickerIds = new();
     // reverse mapping: container id -> PropertyInfo
-    private readonly Dictionary<string, PropertyInfo> _pickerProps = new();
+    private readonly Dictionary<string, PropertyInfo> pickerProps = new();
 
-    private DotNetObjectReference<WidgetSettings<TSettings>>? _objRef;
+    private DotNetObjectReference<WidgetSettings<TSettings>>? objRef;
 
     private string GetOrCreatePickerId(PropertyInfo prop)
     {
-        if (_pickerIds.TryGetValue(prop.Name, out var id)) return id;
-        id = $"picker_{Settings.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
-        _pickerIds[prop.Name] = id;
-        _pickerProps[id] = prop;
+        if (pickerIds.TryGetValue(prop.Name, out var id)) return id;
+        id = $"picker_{Settings!.GetType().Name}_{prop.Name}_{Guid.NewGuid():N}";
+        pickerIds[prop.Name] = id;
+        pickerProps[id] = prop;
         return id;
     }
 
@@ -119,18 +125,58 @@
                 builder.CloseElement();
 
                 break;
+
+            case SettingsTypes.Enum:
+                // Render enum dropdown using EnumSelect component
+                RenderEnumDropdown(builder, prop, value, ref seq);
+                break;
         }
     };
 
+    private void RenderEnumDropdown(RenderTreeBuilder builder, PropertyInfo prop, object? value, ref int seq)
+    {
+        var enumType = prop.PropertyType;
+        if (!enumType.IsEnum) return;
+
+        // Use reflection to call the generic method
+        var method = typeof(WidgetSettings<TSettings>)
+            .GetMethod(nameof(RenderEnumDropdownGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .MakeGenericMethod(enumType);
+
+        // For ref parameter we pass boxed args and read back the updated seq after Invoke.
+        var args = new object?[] { builder, prop, value, seq };
+        method.Invoke(this, args);
+
+        // update the caller's seq from the possibly modified boxed argument
+        if (args.Length > 3 && args[3] is int updatedSeq)
+        {
+            seq = updatedSeq;
+        }
+    }
+
+    private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop, object? value, ref int seq) where TEnum : struct, Enum
+    {
+        var instance = value ?? Activator.CreateInstance(typeof(TEnum)) ?? default(TEnum);
+        var enumValue = (TEnum)instance;
+
+        // Create a generic EnumSelect component
+        var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));
+        builder.OpenComponent(seq++, componentType);
+        builder.AddAttribute(seq++, "Value", enumValue);
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, newValue => prop.SetValue(Settings, newValue)));
+        builder.AddAttribute(seq++, "LabelProvider", new Func<TEnum, string>(v => GetEnumDisplayName(v)));
+        builder.CloseComponent();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_objRef == null)
+        if (objRef == null)
         {
-            _objRef = DotNetObjectReference.Create(this);
+            objRef = DotNetObjectReference.Create(this);
         }
 
         // initialize Coloris for every color input rendered by this component
-        foreach (var kvp in _pickerProps)
+        foreach (var kvp in pickerProps)
         {
             var containerId = kvp.Key; // e.g. picker_Type_Property_guid
             var prop = kvp.Value;
@@ -138,7 +184,7 @@
             var inputId = $"input_{containerId}";
 
             // register the input with colorisHelper. JS will attach Coloris and call back NotifyColorChanged.
-            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, _objRef);
+            await JS.InvokeVoidAsync("colorisHelper.register", containerId, inputId, currentValue, objRef);
         }
     }
 
@@ -147,7 +193,7 @@
     {
         if (containerId == null) return Task.CompletedTask;
 
-        if (_pickerProps.TryGetValue(containerId, out var prop))
+        if (pickerProps.TryGetValue(containerId, out var prop))
         {
             try
             {
@@ -159,27 +205,33 @@
                 // update UI
                 _ = InvokeAsync(StateHasChanged);
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"NotifyColorChanged error: {ex}");
-            }
+            catch (Exception ex) { Console.Error.WriteLine($"NotifyColorChanged error: {ex}"); }
         }
 
         return Task.CompletedTask;
     }
 
+    private string GetEnumDisplayName<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        var type = typeof(TEnum);
+        var name = Enum.GetName(type, value) ?? value.ToString();
+        var field = type.GetField(name);
+        var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
+        return displayAttr?.Name ?? name;
+    }
+
     public void Dispose()
     {
         // destroy all Coloris bindings on the JS side
-        foreach (var id in _pickerProps.Keys)
+        foreach (var id in pickerProps.Keys)
         {
             try
             {
                 _ = JS.InvokeVoidAsync("colorisHelper.unregister", id);
             }
-            catch { /* ignore */ }
+            catch (Exception ex) { Console.Error.WriteLine($"Dispose error while unregistering {id}: {ex}"); }
         }
 
-        _objRef?.Dispose();
+        objRef?.Dispose();
     }
 }

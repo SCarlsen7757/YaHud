@@ -3,7 +3,7 @@
 @using R3E.API
 @inherits HudWidgetBase<UserInputsSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="user-inputs-widget text">
         <div class="pedals-container">
