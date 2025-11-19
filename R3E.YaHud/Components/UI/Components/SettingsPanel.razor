@@ -42,13 +42,11 @@
 
         <!-- Footer -->
         <div class="panel-footer button-group">
-            <div class="footer-actions">
-                <button class="btn-primary" @onclick="OnClose">Close</button>
-                @if (CurrentViewMode == SettingsViewMode.Expert)
-                {
-                    <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
-                }
-            </div>
+            <button class="btn-primary" @onclick="OnClose">Close</button>
+            @if (CurrentViewMode == SettingsViewMode.Expert)
+            {
+                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+            }
         </div>
     </div>
 </div>
