@@ -4,7 +4,7 @@
 @using R3E.YaHud.Components.Widget.Core
 
 <div class="overlay">
-    <div class="overlay-panel">
+    <div class="overlay-panel settings-panel">
         <!-- Header -->
         <div class="panel-header">
             <h3>Widget Settings</h3>
@@ -17,24 +17,18 @@
 
         <!-- Scrollable body -->
         <div class="panel-body">
-            <div class="settings-columns" style="display: flex; gap: 2rem;">
-                @foreach (var group in Widgets.GroupBy(w => w.Category))
+            <div class="groups-grid">
+                @foreach (var widget in Widgets)
                 {
-                    <div class="settings-column" style="min-width: 220px;">
-                        <h4>@group.Key</h4>
-                        <ul style="list-style: none; padding-left: 0;">
-                            @foreach (var widget in group)
-                            {
-                                <li style="margin-bottom: 1em;">
-                                    <strong>@widget.Name</strong>
-
-                                    <WidgetSettings Settings="widget.Settings" />
-
-                                    <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
-                                        <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
-                                    </div>
-                                </li>
-                            }
+                    <div class="group-column">
+                        <ul class="group-list">
+                            <li class="group-item">
+                                <strong>@widget.Name</strong>
+                                <WidgetSettings Settings="widget.Settings" />
+                                <div class="item-actions">
+                                    <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 }
@@ -43,11 +37,13 @@
 
         <!-- Footer -->
         <div class="panel-footer button-group">
-            <button class="btn-primary" @onclick="OnClose">Close</button>
-            @if (CurrentViewMode == SettingsViewMode.Expert)
-            {
-                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
-            }
+            <div class="footer-actions">
+                <button class="btn-primary" @onclick="OnClose">Close</button>
+                @if (CurrentViewMode == SettingsViewMode.Expert)
+                {
+                    <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+                }
+            </div>
         </div>
     </div>
 </div>
