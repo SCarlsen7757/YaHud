@@ -6,7 +6,7 @@
 @using static R3E.Constant
 @inherits HudWidgetBase<FuelSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="Fuel-widget">
         <div class="data-grid">
