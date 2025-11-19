@@ -62,7 +62,7 @@ namespace R3E.YaHud.Components.Widget.Core
                 await InvokeAsync(StateHasChanged);
             }
 
-            if (Settings.Visible && (firstRender || !visibleInitialized))
+            if (Settings!.Visible && (firstRender || !visibleInitialized))
             {
                 await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
 
