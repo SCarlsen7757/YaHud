@@ -6,5 +6,6 @@
         Slider,
         Number,
         ColorPicker,
+        Enum,
     }
 }

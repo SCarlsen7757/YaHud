@@ -1,0 +1,116 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.UserInputs.Components
+@using R3E.API
+@inherits HudWidgetBase<StartLightSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div style="display: @(IsCountdownPhase ? "block" : "none");">
+        <div id=@ElementId class="start-light-widget text">
+            <div class="lights" aria-label="Start lights (countdown)">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    var src = ImageForPosition(i);
+                    <div class="light">
+                        <img src=@src draggable="false" ondragstart="return false;" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private string ImageAssetsBase => "/img/lights/countdown/";
+
+    private string Image(string name)
+    {
+        return $"{ImageAssetsBase}{name}";
+    }
+
+    private int startLightRaw = 0;
+    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Unavailable;
+    private DateTime? greenShownAt;
+
+    public override string ElementId { get => "startLightWidget"; }
+    public override string Name => "Start light";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 25;
+
+    public override bool Collidable => false;
+
+    public StartLight()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void Update()
+    {
+        if (Settings is null) return;
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+
+        startLightRaw = data.StartLights;
+        sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+
+        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff && (startLightRaw == 6))
+        {
+            if (greenShownAt == null)
+            {
+                greenShownAt = DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            greenShownAt = null;
+        }
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        startLightRaw = 3;
+    }
+
+    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
+
+    private bool IsGreenPeriodActive()
+    {
+        if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
+        if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
+        if (Settings == null) return false;
+
+        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        {
+            if (Settings.GreenLightDurationMs > 0 && greenShownAt != null)
+            {
+                var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
+                return elapsed <= Settings.GreenLightDurationMs;
+            }
+            return greenShownAt != null;
+        }
+        return false;
+    }
+
+    private string ImageForPosition(int pos)
+    {
+        if (IsGreenPeriodActive())
+        {
+            return Image("green.png");
+        }
+
+        if (startLightRaw <= 0)
+        {
+            return Image("off.png");
+        }
+
+        if (startLightRaw >= 1 && startLightRaw <= 5)
+        {
+            return pos <= startLightRaw ? Image("red.png") : Image("off.png");
+        }
+
+        return Image("off.png");
+    }
+}

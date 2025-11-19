@@ -8,17 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="R3E.YaHud.Client\**" />
-    <Compile Remove="R3E.YaHud\**" />
-    <Content Remove="R3E.YaHud.Client\**" />
-    <Content Remove="R3E.YaHud\**" />
-    <EmbeddedResource Remove="R3E.YaHud.Client\**" />
-    <EmbeddedResource Remove="R3E.YaHud\**" />
-    <None Remove="R3E.YaHud.Client\**" />
-    <None Remove="R3E.YaHud\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="GitVersion.MsBuild" Version="6.4.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
