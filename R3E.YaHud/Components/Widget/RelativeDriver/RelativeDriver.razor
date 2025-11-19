@@ -1,0 +1,38 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.API
+@using R3E.YaHud.Components.Widget.RelativeDriver
+@inherits HudWidgetBase<RelativeDriverSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="relative-driver-widget">
+
+    </div>
+}
+
+@code {
+    public override string ElementId { get => "relativeDriverWidget"; }
+    public override string Name => "Relative driver";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 90;
+    public override double DefaultYPercent => 90;
+
+    public override bool Collidable => true;
+
+    public RelativeDriver()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(100);
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        
+    }
+}
