@@ -2,6 +2,8 @@
 @using R3E.YaHud.Components.UI.Components
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Core
+@using System.ComponentModel
+@implements IDisposable
 
 <div class="overlay">
     <div class="overlay-panel settings-panel">
@@ -25,7 +27,7 @@
                             <li class="group-item">
                                 <strong>@widget.Name</strong>
                                 <WidgetSettings Settings="widget.Settings" />
-                                <div class="item-actions">
+                                <div class="item-actions" style="display: @(widget.Settings!.Visible ? "block" : "none");">
                                     <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
                                 </div>
                             </li>
@@ -62,7 +64,6 @@
             if (SettingsService.GlobalSettings.ViewMode != value)
             {
                 SettingsService.GlobalSettings.ViewMode = value;
-                // Trigger UI update
                 StateHasChanged();
             }
         }
@@ -72,5 +73,45 @@
     {
         CurrentViewMode = v;
         return Task.CompletedTask;
+    }
+
+    private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsHandlers = new();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        var currentSettings = Widgets?
+            .Select(w => w.Settings)
+            .Where(s => s is not null)
+            .Cast<BasicSettings>()
+            .ToList() ?? new List<BasicSettings>();
+
+        foreach (var s in currentSettings)
+        {
+            if (!settingsHandlers.ContainsKey(s))
+            {
+                PropertyChangedEventHandler handler = (sender, args) =>
+                {
+                    if (string.IsNullOrEmpty(args?.PropertyName) || args.PropertyName == nameof(BasicSettings.Visible))
+                    {
+                        InvokeAsync(StateHasChanged);
+                    }
+                };
+
+                s.PropertyChanged += handler;
+                settingsHandlers[s] = handler;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var kv in settingsHandlers)
+        {
+            kv.Key.PropertyChanged -= kv.Value;
+        }
+
+        settingsHandlers.Clear();
     }
 }

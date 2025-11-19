@@ -14,6 +14,7 @@
         .Where(x => x.Attr != null)
         .OrderBy(x => x.Attr!.Order))
     {
+        if (prop.Prop.Name != nameof(BasicSettings.Visible) && !Settings.Visible) { continue; }
         if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
 
         // Ask concrete Settings instance to evaluate visibility each time
