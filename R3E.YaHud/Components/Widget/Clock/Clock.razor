@@ -2,7 +2,7 @@
 @inherits HudWidgetBase<ClockSettings>
 @implements IDisposable
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="clock-widget">
         <span class="text" style="color: @Settings.TextColor">@currentTime.ToString("HH:mm:ss")</span>

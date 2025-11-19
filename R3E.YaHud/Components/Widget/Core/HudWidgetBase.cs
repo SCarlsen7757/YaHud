@@ -31,9 +31,9 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public abstract bool Collidable { get; }
 
-        BasicSettings IWidget.Settings => Settings;
+        BasicSettings? IWidget.Settings => Settings;
 
-        public TSettings Settings { get; set; } = new();
+        public TSettings? Settings { get; set; }
         public Type GetSettingsType() => typeof(TSettings);
 
         protected bool UseR3EData { get; set; } = true;
@@ -77,7 +77,7 @@ namespace R3E.YaHud.Components.Widget.Core
         {
             if (e.PropertyName == nameof(BasicSettings.Visible))
             {
-                if (Settings.Visible)
+                if (Settings?.Visible ?? false)
                 {
                     visibleInitialized = false;
                 }
@@ -135,7 +135,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public void InvokeUpdate()
         {
-            if (!Settings.Visible) return;
+            if (Settings == null || !Settings.Visible) return;
 
             if (TestMode)
             {
@@ -156,7 +156,8 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ClearSettings()
         {
-            Settings.PropertyChanged -= Settings_PropertyChanged;
+            if (Settings != null)
+                Settings.PropertyChanged -= Settings_PropertyChanged;
 
             Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
             Settings.PropertyChanged += Settings_PropertyChanged;
