@@ -30,7 +30,7 @@
                                     <span class="widget-category">@widget.Category</span>
                                 </div>
                                 <WidgetSettings Settings="widget.Settings" />
-                                <div class="item-actions" style="display: @(widget.Settings!.Visible ? "block" : "none");">
+                                <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
                                     <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
                                 </div>
                             </li>
