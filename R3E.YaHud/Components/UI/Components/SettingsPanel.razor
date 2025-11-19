@@ -42,10 +42,10 @@
 
         <!-- Footer -->
         <div class="panel-footer button-group">
-            <button class="btn-primary" @onclick="OnClose">Close</button>
+            <button class="btn-primary" @onclick="OnClose" aria-label="Close settings panel">Close</button>
             @if (CurrentViewMode == SettingsViewMode.Expert)
             {
-                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()" aria-label="Clear all settings">Clear settings</button>
             }
         </div>
     </div>
