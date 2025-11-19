@@ -76,7 +76,7 @@
         return Task.CompletedTask;
     }
 
-    private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsHandlers = new();
+    private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsPropertyChangedHandlers = new();
 
     protected override void OnParametersSet()
     {
@@ -88,9 +88,16 @@
             .Cast<BasicSettings>()
             .ToList() ?? new List<BasicSettings>();
 
+        var toRemove = settingsPropertyChangedHandlers.Keys.Except(currentSettings).ToList();
+        foreach (var s in toRemove)
+        {
+            s.PropertyChanged -= settingsPropertyChangedHandlers[s];
+            settingsPropertyChangedHandlers.Remove(s);
+        }
+
         foreach (var s in currentSettings)
         {
-            if (!settingsHandlers.ContainsKey(s))
+            if (!settingsPropertyChangedHandlers.ContainsKey(s))
             {
                 PropertyChangedEventHandler handler = (sender, args) =>
                 {
@@ -101,18 +108,18 @@
                 };
 
                 s.PropertyChanged += handler;
-                settingsHandlers[s] = handler;
+                settingsPropertyChangedHandlers[s] = handler;
             }
         }
     }
 
     public void Dispose()
     {
-        foreach (var kv in settingsHandlers)
+        foreach (var kv in settingsPropertyChangedHandlers)
         {
             kv.Key.PropertyChanged -= kv.Value;
         }
 
-        settingsHandlers.Clear();
+        settingsPropertyChangedHandlers.Clear();
     }
 }
