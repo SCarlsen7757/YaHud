@@ -1,0 +1,129 @@
+﻿.settings-panel {
+    background-color: rgba(33,33,33,0.95);
+    color: #fff;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(1200px, 95%);
+    max-height: 90vh;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+    .settings-panel .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        background: rgba(33,33,33,0.95);
+        flex: 0 0 auto;
+        position: relative;
+        z-index: 2;
+    }
+
+    .settings-panel h3,
+    .settings-panel h4 {
+        color: #fff;
+        margin: 0;
+    }
+
+    .settings-panel .panel-body {
+        flex: 1 1 auto;
+        overflow: auto;
+        padding: 1rem 1.25rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .settings-panel .panel-footer {
+        border-top: 1px solid rgba(255,255,255,0.04);
+        padding: 0.75rem 1.25rem;
+        background: rgba(33,33,33,0.95);
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .settings-panel .btn-primary {
+        color: #f1f1f1;
+        background-color: rgba(0, 0, 0, 0.8);
+        border-radius: 1.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+        .settings-panel .btn-primary:active,
+        .settings-panel .btn-primary:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+        }
+
+    .settings-panel .panel-body::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .settings-panel .panel-body::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.06);
+        border-radius: 10px;
+    }
+
+.groups-grid {
+    column-width: 280px;
+    column-gap: 1.5rem;
+}
+
+.group-column {
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 1.5rem;
+    break-inside: avoid;
+}
+
+.group-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: block;
+}
+
+.group-item {
+    padding: 0.5rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+    color: #fff;
+    display: block;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+    .item-actions.hidden {
+        display: none;
+    }
+
+/* New widget header styles */
+.widget-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.widget-name {
+    font-size: 1rem;
+}
+
+.widget-category {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
