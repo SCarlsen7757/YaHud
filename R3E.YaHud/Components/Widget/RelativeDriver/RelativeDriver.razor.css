@@ -1,0 +1,11 @@
+﻿.relative-driver-widget {
+    text-align: center;
+    border-radius: 4px;
+    width: 300px; /* fixed width */
+    height: 175px; /* fixed height */
+    background-color: rgba(2, 0, 0, 0.5);
+    position: absolute; /* can still be placed absolutely */
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 5px;
+}
