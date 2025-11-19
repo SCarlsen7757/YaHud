@@ -25,7 +25,10 @@
                     <div class="group-column">
                         <ul class="group-list">
                             <li class="group-item">
-                                <strong>@widget.Name</strong>
+                                <div class="widget-header">
+                                    <strong class="widget-name">@widget.Name</strong>
+                                    <span class="widget-category">@widget.Category</span>
+                                </div>
                                 <WidgetSettings Settings="widget.Settings" />
                                 <div class="item-actions" style="display: @(widget.Settings!.Visible ? "block" : "none");">
                                     <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
