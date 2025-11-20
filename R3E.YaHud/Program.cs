@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Server;
 using R3E.API;
+using R3E.API.Image;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -15,6 +16,9 @@ builder.Services.Configure<CircuitOptions>(options =>
     options.DetailedErrors = true;
 });
 #endif
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IImageService, ImageService>();
 
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
