@@ -1,11 +1,83 @@
 ﻿.relative-driver-widget {
-    text-align: center;
+    text-align: left;
     border-radius: 4px;
-    width: 300px; /* fixed width */
-    height: 175px; /* fixed height */
-    background-color: rgba(2, 0, 0, 0.5);
-    position: absolute; /* can still be placed absolutely */
+    width: 400px;
+    height: 175px;
+    position: absolute;
     box-sizing: border-box;
     overflow: hidden;
     padding: 5px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: rgba(42, 42, 42, 0.9);
+}
+
+.driver-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 2px;
+}
+
+.driver-row {
+    display: grid;
+    grid-template-columns: 32px 40px 1fr 80px 32px 60px;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    min-height: 22px;
+    transition: background-color 0.2s;
+}
+
+    .driver-row.player-row {
+        font-weight: bold;
+    }
+
+.class-icon,
+.manufacturer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 22px;
+}
+
+    .class-icon img,
+    .manufacturer-icon img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+.car-number {
+    font-weight: bold;
+    text-align: center;
+    font-size: 14px;
+}
+
+.driver-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rating {
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.gap {
+    font-size: 13px;
+    font-weight: bold;
+    text-align: right;
+}
+
+.no-data {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 14px;
 }

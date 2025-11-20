@@ -1,12 +1,60 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.API
+@using R3E.API.Image
 @using R3E.YaHud.Components.Widget.RelativeDriver
 @inherits HudWidgetBase<RelativeDriverSettings>
+@inject IImageService ImageService
 
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="relative-driver-widget">
+        @if (displayDrivers.Count > 0)
+        {
+            <div class="driver-table">
+                @foreach (var driver in displayDrivers)
+                {
+                    <div class="driver-row @(driver.IsPlayer ? "player-row" : "")"
+                         style="@GetRowStyle(driver)">
 
+                        <div class="class-icon">
+                            @if (!string.IsNullOrEmpty(driver.ClassImageUrl))
+                            {
+                                <img src="@driver.ClassImageUrl" alt="Class" />
+                            }
+                        </div>
+
+                        <div class="car-number" style="color: @Settings.TextColor">
+                            @driver.CarNumber
+                        </div>
+
+                        <div class="driver-name" style="color: @Settings.TextColor">
+                            @driver.Name
+                        </div>
+
+                        <div class="rating" style="color: @Settings.TextColor">
+                            @driver.Rating.ToString("F1")K / @driver.Reputation.ToString("F1")
+                        </div>
+
+                        <div class="manufacturer-icon">
+                            @if (!string.IsNullOrEmpty(driver.ManufacturerImageUrl))
+                            {
+                                <img src="@driver.ManufacturerImageUrl" alt="Manufacturer" />
+                            }
+                        </div>
+
+                        <div class="gap" style="color: @GetGapColor(driver)">
+                            @FormatGap(driver)
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="no-data" style="color: @Settings.TextColor">
+                No data available
+            </div>
+        }
     </div>
 }
 
@@ -20,19 +68,177 @@
 
     public override bool Collidable => true;
 
+
+
+    private List<DisplayDriver> displayDrivers = new();
+    private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
+
+    private class DisplayDriver
+    {
+        public required string Name { get; set; }
+        public required int CarNumber { get; set; }
+        public required float Rating { get; set; }
+        public required float Reputation { get; set; }
+        public required TimeSpan TimeGap { get; set; }
+        public required float DistanceGap { get; set; }
+        public required bool IsPlayer { get; set; }
+        public required int LapDifference { get; set; }
+        public required bool IsOutLap { get; set; }
+        public required bool IsInvalidLap { get; set; }
+        public required string ClassImageUrl { get; set; }
+        public required string ManufacturerImageUrl { get; set; }
+    }
+
     public RelativeDriver()
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(100);
     }
 
-    protected override void Update()
+    protected override async void Update()
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
+
+        if (data.NumCars <= 0 || data.DriverData == null)
+        {
+            displayDrivers.Clear();
+            return;
+        }
+
+        var relativeDrivers = TelemetryService.Data.GetRelativeDrivers(ahead: 3, behind: 3);
+
+        List<DisplayDriver> newDisplayDrivers = [];
+
+        foreach (var relDriver in relativeDrivers)
+        {
+            var driver = relDriver.DriverData;
+
+            var displayDriver = new DisplayDriver
+            {
+                Name = TelemetryData.GetDriverName(driver.DriverInfo.Name),
+                CarNumber = driver.DriverInfo.CarNumber,
+                Rating = driver.DriverInfo.Rating,
+                Reputation = driver.DriverInfo.Reputation,
+                IsPlayer = relDriver.IsPlayer,
+                LapDifference = relDriver.LapDifference,
+                IsOutLap = IsQualifying && driver.CurrentLapValid == 0 && driver.LapTimeCurrentSelf < 0.1f,
+                IsInvalidLap = IsQualifying && driver.CurrentLapValid == 0 && driver.LapTimeCurrentSelf > 0.1f,
+                TimeGap = relDriver.TimeGap,
+                DistanceGap = relDriver.DistanceGap,
+                ClassImageUrl = "",
+                ManufacturerImageUrl = ""
+            };
+
+            // Load images asynchronously (ImageService handles caching internally)
+            await LoadImagesForDriver(driver.DriverInfo, displayDriver);
+
+            newDisplayDrivers.Add(displayDriver);
+        }
+
+        displayDrivers = newDisplayDrivers;
+    }
+
+    private async Task LoadImagesForDriver(R3E.Data.DriverInfo driverInfo, DisplayDriver displayDriver)
+    {
+        try
+        {
+            // ImageService has built-in caching, so we don't need to cache here
+            displayDriver.ClassImageUrl = await ImageService.GetClassImageAsync(driverInfo.ClassId, ImageSize.Small);
+            displayDriver.ManufacturerImageUrl = await ImageService.GetManufacturerImageAsync(driverInfo.ManufacturerId, ImageSize.Small);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load images for driver {DriverName}", TelemetryData.GetDriverName(driverInfo.Name));
+            displayDriver.ClassImageUrl = "";
+            displayDriver.ManufacturerImageUrl = "";
+        }
     }
 
     protected override void UpdateWithTestData()
     {
-        
+        // Create test data with real driver names and realistic ratings
+        displayDrivers = new List<DisplayDriver>
+        {
+            new() { Name = "Kevin Magnussen", CarNumber = 15, Rating = 4922f, Reputation = 98.8f, TimeGap = TimeSpan.FromSeconds(-32.5), DistanceGap = -450.0f, IsPlayer = false, LapDifference = 1, IsOutLap = true, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
+            new() { Name = "Mirko Bortolotti", CarNumber = 63, Rating = 4756f, Reputation = 95.2f, TimeGap = TimeSpan.FromSeconds(-31.2), DistanceGap = -430.0f, IsPlayer = false, LapDifference = 1, IsOutLap = false, IsInvalidLap = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp" },
+            new() { Name = "Kévin Estre", CarNumber = 6, Rating = 4834f, Reputation = 96.7f, TimeGap = TimeSpan.FromSeconds(-10.5), DistanceGap = -145.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
+            new() { Name = "You", CarNumber = 007, Rating = 3245f, Reputation = 82.5f, TimeGap = TimeSpan.Zero, DistanceGap = 0f, IsPlayer = true, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
+            new() { Name = "Maro Engel", CarNumber = 5, Rating = 4623f, Reputation = 93.4f, TimeGap = TimeSpan.FromSeconds(0.8), DistanceGap = 11.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
+            new() { Name = "Oliver Jarvis", CarNumber = 77, Rating = 4512f, Reputation = 91.8f, TimeGap = TimeSpan.FromSeconds(61.5), DistanceGap = 850.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/mazda-mx-5-cup-10977-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
+            new() { Name = "Nick Cassidy", CarNumber = 37, Rating = 4689f, Reputation = 94.1f, TimeGap = TimeSpan.FromSeconds(122.2), DistanceGap = 1690.0f, IsPlayer = false, LapDifference = -1, IsOutLap = false, IsInvalidLap = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/nsu-tts-cup-4813-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
+        };
+    }
+
+    private string GetRowStyle(DisplayDriver driver)
+    {
+        if (driver.IsPlayer)
+        {
+            return $"background-color: {Settings?.PlayerRowColor}40;";
+        }
+
+        // Race mode: lap difference colors
+        if (!IsQualifying)
+        {
+            if (driver.LapDifference > 0)
+            {
+                return $"color: {Settings?.LapAheadColor};";
+            }
+            else if (driver.LapDifference < 0)
+            {
+                return $"color: {Settings?.LapBehindColor};";
+            }
+        }
+        // Qualifying mode: lap status colors
+        else
+        {
+            if (driver.IsOutLap)
+            {
+                return $"color: {Settings?.OutLapColor};";
+            }
+            else if (driver.IsInvalidLap)
+            {
+                return $"color: {Settings?.InvalidLapColor};";
+            }
+        }
+
+        return "";
+    }
+
+    private string GetGapColor(DisplayDriver driver)
+    {
+        if (Settings?.GapMode == GapDisplayMode.Time)
+        {
+            if (driver.TimeGap == TimeSpan.Zero) return Settings?.TextColor ?? "#FFFFFFFF";
+            return driver.TimeGap > TimeSpan.Zero ? Settings?.GapPositiveColor ?? "#FFFF5252" : Settings?.GapNegativeColor ?? "#FF4CAF50";
+        }
+        else
+        {
+            if (driver.DistanceGap == 0f) return Settings?.TextColor ?? "#FFFFFFFF";
+            return driver.DistanceGap > 0f ? Settings?.GapPositiveColor ?? "#FFFF5252" : Settings?.GapNegativeColor ?? "#FF4CAF50";
+        }
+    }
+
+    private string FormatGap(DisplayDriver driver)
+    {
+        if (Settings?.GapMode == GapDisplayMode.Time)
+        {
+            var gap = driver.TimeGap;
+            if (gap == TimeSpan.Zero) return "--";
+
+            var absGap = Math.Abs(gap.TotalSeconds);
+            if (absGap >= 60)
+            {
+                var minutes = (int)(absGap / 60);
+                var seconds = absGap % 60;
+                return $"{(gap > TimeSpan.Zero ? "+" : "-")}{minutes}:{seconds:00.0}";
+            }
+            return $"{gap.TotalSeconds:+0.0;-0.0}s";
+        }
+        else
+        {
+            var distance = driver.DistanceGap;
+            if (distance == 0f) return "--";
+            return $"{distance:+0.0;-0.0}m";
+        }
     }
 }
