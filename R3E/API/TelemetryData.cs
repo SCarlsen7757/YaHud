@@ -66,14 +66,11 @@ namespace R3E.API
         /// </summary>
         /// <param name="maxDrivers">Maximum total number of drivers to display (default 7, includes player)</param>
         /// <returns>List of drivers sorted by track position (leader first)</returns>
-        public List<RelativeDriverInfo> GetRelativeDrivers(int maxDrivers = 7)
+        public IList<RelativeDriverInfo> GetRelativeDrivers(int maxDrivers = 7)
         {
             List<RelativeDriverInfo> result = [];
 
-            if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0)
-            {
-                return result;
-            }
+            if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0) return result;
 
             var playerSlotId = Raw.VehicleInfo.SlotId;
             var playerLapFraction = Raw.LapDistanceFraction;
@@ -86,7 +83,7 @@ namespace R3E.API
                 .OrderByDescending(x => x.LapDistanceFraction)
                 .ToList();
 
-            var test = sortedDrivers.Select(x => new { Name = x.DriverInfo.Name.ToNullTerminatedString() });
+            var test = sortedDrivers.Select(x => x.DriverInfo.Name.ToNullTerminatedString());
 
 
 
