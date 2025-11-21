@@ -5,108 +5,176 @@ namespace R3E.API
 {
     public class DataPointService : IDisposable
     {
-        private readonly ILogger<DataPointService> _logger;
-        private readonly ISharedSource _sharedSource;
+        private readonly ILogger<DataPointService> logger;
+        private readonly ISharedSource sharedSource;
 
         // Dictionary to hold history for every car.
-        // Key = SlotId (Unique ID for the driver in the session), NOT the array index.
-        private readonly Dictionary<int, CarHistory> _carHistories = [];
+        // Key = SlotId (Unique ID for the driver in the session).
+        private readonly Dictionary<int, CarHistory> carHistories = [];
+        private readonly Lock @lock = new(); // Lock for thread safety
 
-        private double _lastPruneTime = 0;
+        private double lastPruneTime = 0;
         private const double PruneIntervalSeconds = 10.0; // Clean up data every 10 seconds
+        private float trackLength = 0;
 
         public DataPointService(ILogger<DataPointService> logger, ISharedSource sharedSource)
         {
-            _logger = logger;
-            _sharedSource = sharedSource;
-            _sharedSource.DataUpdated += OnDataUpdated;
+            this.logger = logger;
+            this.sharedSource = sharedSource;
+            this.sharedSource.DataUpdated += OnDataUpdated;
 
-            _logger.LogInformation("DataPointService initialized");
+            this.logger.LogInformation("DataPointService initialized");
         }
 
         /// <summary>
-        /// Returns the time gap in seconds between two cars.
+        /// Returns the absolute time gap in seconds between two cars (including lap differences).
         /// Positive value means 'subject' is BEHIND 'target'.
         /// </summary>
         public float GetTimeGap(int subjectSlotId, int targetSlotId)
         {
-            // We need the subject's current location
-            if (!_carHistories.TryGetValue(subjectSlotId, out var subjectHistory) ||
-                !_carHistories.TryGetValue(targetSlotId, out var targetHistory))
+            lock (@lock)
             {
-                return 0f;
+                // We need the subject's current location
+                if (!carHistories.TryGetValue(subjectSlotId, out var subjectHistory) ||
+                    !carHistories.TryGetValue(targetSlotId, out var targetHistory))
+                {
+                    return 0f;
+                }
+
+                // Get the exact current total distance of the subject car
+                double subjectTotalDistance = subjectHistory.LastKnownDistance;
+                double currentSessionTime = subjectHistory.LastKnownTime;
+
+                // Find when the target car was at this specific distance
+                double targetTimeAtDist = targetHistory.GetTimeAtDistance(subjectTotalDistance);
+
+                if (targetTimeAtDist <= 0)
+                    return 0f; // Data not found (target hasn't reached here yet or history missing)
+
+                // Gap = Current Time - Time Target Was Here
+                return (float)(currentSessionTime - targetTimeAtDist);
             }
+        }
 
-            // Get the exact current total distance of the subject car
-            double subjectTotalDistance = subjectHistory.LastKnownDistance;
-            double currentSessionTime = subjectHistory.LastKnownTime;
+        /// <summary>
+        /// Returns the relative time gap in seconds between two cars, IGNORING lap count.
+        /// Calculates the gap as if both cars are on the same lap, based on physical track position.
+        /// Positive value means 'subject' is BEHIND 'target' on the track map.
+        /// Negative value means 'subject' is AHEAD of 'target' on the track map.
+        /// </summary>
+        public float GetTimeGapRelative(int subjectSlotId, int targetSlotId)
+        {
+            lock (@lock)
+            {
+                if (trackLength <= 0) return 0f;
+                if (!carHistories.TryGetValue(subjectSlotId, out var subject) ||
+                    !carHistories.TryGetValue(targetSlotId, out var target))
+                {
+                    return 0f;
+                }
 
-            // Find when the target car was at this specific distance
-            double targetTimeAtDist = targetHistory.GetTimeAtDistance(subjectTotalDistance);
+                double sDist = subject.LastKnownDistance;
+                double tDist = target.LastKnownDistance;
 
-            if (targetTimeAtDist <= 0)
-                return 0f; // Data not found (target hasn't reached here yet or history missing)
+                // Calculate position within the lap (0 to TrackLength)
+                double sLapDist = sDist % trackLength;
+                double tLapDist = tDist % trackLength;
 
-            // Gap = Current Time - Time Target Was Here
-            return (float)(currentSessionTime - targetTimeAtDist);
+                // Determine shortest arc on the circular track
+                // Delta > 0 means Target is ahead in linear meters, but we need to check wrapping
+                double delta = (tLapDist - sLapDist + trackLength) % trackLength;
+                double halfTrack = trackLength / 2.0;
+
+                if (delta < halfTrack)
+                {
+                    // CASE: Target is physically AHEAD (Subject is BEHIND)
+                    // Example: T=1000, S=900. Delta=100.
+                    // We want to know when Target was at Subject's physical position.
+
+                    // Calculate the total distance in Target's history that corresponds to Subject's position
+                    // It is Target's current TotalDist minus the physical gap
+                    double lookupDist = tDist - delta;
+
+                    double tTime = target.GetTimeAtDistance(lookupDist);
+
+                    if (tTime <= 0) return 0f;
+
+                    // Gap = Time(Now) - Time(Target was at S_Pos)
+                    // Use Target's LastKnownTime to ensure we compare apples to apples (sim time)
+                    return (float)(target.LastKnownTime - tTime);
+                }
+                else
+                {
+                    // CASE: Subject is physically AHEAD (Target is BEHIND)
+                    // Example: T=100, S=Track-100. Delta = 200. 
+                    // Or T=900, S=1000.
+                    // We want to know when Subject was at Target's physical position.
+
+                    double reverseDelta = (sLapDist - tLapDist + trackLength) % trackLength;
+                    double lookupDist = sDist - reverseDelta;
+
+                    double sTime = subject.GetTimeAtDistance(lookupDist);
+
+                    if (sTime <= 0) return 0f;
+
+                    // Gap is negative because Subject is ahead
+                    return -(float)(subject.LastKnownTime - sTime);
+                }
+            }
         }
 
         private void OnDataUpdated(Shared data)
         {
             // 1. Get Global Simulation Time (High precision double)
-            // Using Player.GameSimulationTime is reliable for the "Current Time" of the frame.
             double currentSimTime = data.Player.GameSimulationTime;
 
             // 2. Validate Data
             if (data.NumCars <= 0 || data.LayoutLength <= 0) return;
 
-            float trackLength = data.LayoutLength;
+            // Cache track length for relative calculations
+            trackLength = data.LayoutLength;
 
             // 3. Update History for All Cars
-            // Note: We iterate only up to NumCars
-            for (int i = 0; i < data.NumCars; i++)
+            lock (@lock)
             {
-                var driver = data.DriverData[i];
-
-                // CRITICAL: Use SlotId, because the DriverData array is sorted by Position
-                // and drivers change indices when they overtake.
-                int slotId = driver.DriverInfo.SlotId;
-
-                // Calculate absolute total distance (Laps * TrackLength + DistanceIntoLap)
-                // We use CompletedLaps (int) and LapDistance (float)
-                float totalDistance = (driver.CompletedLaps * trackLength) + driver.LapDistance;
-
-                if (!_carHistories.TryGetValue(slotId, out CarHistory? value))
+                for (int i = 0; i < data.NumCars; i++)
                 {
-                    _logger.LogDebug("Creating new CarHistory for SlotId {SlotId}, Name {Name}", slotId, driver.DriverInfo.Name.ToNullTerminatedString());
-                    value = new CarHistory();
-                    _carHistories[slotId] = value;
+                    var driver = data.DriverData[i];
+                    int slotId = driver.DriverInfo.SlotId;
+
+                    // Calculate absolute total distance (Laps * TrackLength + DistanceIntoLap)
+                    float totalDistance = (driver.CompletedLaps * trackLength) + driver.LapDistance;
+
+                    if (!carHistories.TryGetValue(slotId, out CarHistory? value))
+                    {
+                        logger.LogDebug("Creating new CarHistory for SlotId {SlotId}, Name {Name}", slotId, driver.DriverInfo.Name.ToNullTerminatedString());
+                        value = new CarHistory();
+                        carHistories[slotId] = value;
+                    }
+
+                    value.RecordSnapshot(totalDistance, currentSimTime);
                 }
 
-                value.RecordSnapshot(totalDistance, currentSimTime);
-            }
-
-            // 4. Periodic Cleanup (Pruning)
-            // We don't want to do this every 16ms
-            if (currentSimTime - _lastPruneTime > PruneIntervalSeconds)
-            {
-                PruneHistories();
-                _lastPruneTime = currentSimTime;
+                // 4. Periodic Cleanup (Pruning)
+                if (currentSimTime - lastPruneTime > PruneIntervalSeconds)
+                {
+                    PruneHistories();
+                    lastPruneTime = currentSimTime;
+                }
             }
         }
 
         private void PruneHistories()
         {
-            if (_carHistories.Count == 0) return;
+            if (carHistories.Count == 0) return;
 
             // Find the distance of the car that is furthest back
-            double minDistance = _carHistories.Values.Min(x => x.LastKnownDistance);
+            double minDistance = carHistories.Values.Min(x => x.LastKnownDistance);
 
             // Keep a buffer (e.g. 5000 meters or 1 lap) behind the last car
-            // We delete anything older than that because no car will ever ask for it.
             double deleteThreshold = minDistance - 5000.0;
 
-            foreach (var history in _carHistories.Values)
+            foreach (var history in carHistories.Values)
             {
                 history.PruneOldData(deleteThreshold);
             }
@@ -118,9 +186,9 @@ namespace R3E.API
         {
             if (_disposed) return;
             _disposed = true;
-            if (_sharedSource != null)
+            if (sharedSource != null)
             {
-                _sharedSource.DataUpdated -= OnDataUpdated;
+                sharedSource.DataUpdated -= OnDataUpdated;
             }
 
             GC.SuppressFinalize(this);
@@ -138,7 +206,7 @@ namespace R3E.API
             public double SessionTime;
         }
 
-        private readonly List<TelemetrySnapshot> _history = new List<TelemetrySnapshot>(10000);
+        private readonly List<TelemetrySnapshot> history = new(10000);
 
         public double LastKnownDistance { get; private set; }
         public double LastKnownTime { get; private set; }
@@ -149,13 +217,12 @@ namespace R3E.API
             LastKnownTime = sessionTime;
 
             // Optimization: Only add if distance has increased (prevent adding data when sitting in pits or reversing)
-            // Also simple noise filter
-            if (_history.Count > 0 && totalDistance <= _history[_history.Count - 1].TotalDistance)
+            if (history.Count > 0 && totalDistance <= history[history.Count - 1].TotalDistance)
             {
                 return;
             }
 
-            _history.Add(new TelemetrySnapshot
+            history.Add(new TelemetrySnapshot
             {
                 TotalDistance = totalDistance,
                 SessionTime = sessionTime
@@ -164,27 +231,25 @@ namespace R3E.API
 
         public double GetTimeAtDistance(double targetDistance)
         {
-            if (_history.Count < 2) return 0;
+            if (history.Count < 2) return 0;
 
-            // If the target distance is beyond our recorded history (e.g. the chaser is actually AHEAD), return 0
-            if (targetDistance > _history[_history.Count - 1].TotalDistance) return 0;
+            // If the target distance is beyond our recorded history, return 0
+            if (targetDistance > history[history.Count - 1].TotalDistance) return 0;
 
-            // If the target distance is before our history starts (we deleted it), return 0
-            if (targetDistance < _history[0].TotalDistance) return 0;
+            // If the target distance is before our history starts (pruned), return 0
+            if (targetDistance < history[0].TotalDistance) return 0;
 
-            // Binary Search to find the index
+            // Binary Search
             int index = BinarySearch(targetDistance);
 
-            if (index == -1 || index >= _history.Count - 1) return 0;
+            if (index == -1 || index >= history.Count - 1) return 0;
 
-            var p1 = _history[index];
-            var p2 = _history[index + 1];
+            var p1 = history[index];
+            var p2 = history[index + 1];
 
             // Linear Interpolation
-            // Formula: Time = T1 + (DistanceFraction * (T2 - T1))
             double totalDistDiff = p2.TotalDistance - p1.TotalDistance;
 
-            // Prevent divide by zero
             if (totalDistDiff < 0.0001) return p1.SessionTime;
 
             double fraction = (targetDistance - p1.TotalDistance) / totalDistDiff;
@@ -195,23 +260,15 @@ namespace R3E.API
 
         public void PruneOldData(double thresholdDistance)
         {
-            // Find the last index that is smaller than threshold
-            int removeCount = 0;
-
-            // Simple check from start since we are removing from start
-            // A binary search could be used here too for perf, but usually we only prune a few items at a time
-            // unless the interval is huge. Let's use FindIndex for simplicity.
-
-            int index = _history.FindIndex(x => x.TotalDistance > thresholdDistance);
+            int index = history.FindIndex(x => x.TotalDistance > thresholdDistance);
 
             if (index > 0)
             {
                 // Keep 1 point before the threshold to ensure interpolation still works 
-                // for someone exactly at the threshold limit
                 int safeRemoveCount = index - 1;
                 if (safeRemoveCount > 0)
                 {
-                    _history.RemoveRange(0, safeRemoveCount);
+                    history.RemoveRange(0, safeRemoveCount);
                 }
             }
         }
@@ -219,14 +276,14 @@ namespace R3E.API
         private int BinarySearch(double targetDist)
         {
             int left = 0;
-            int right = _history.Count - 1;
+            int right = history.Count - 1;
             int resultIndex = -1;
 
             while (left <= right)
             {
                 int mid = left + (right - left) / 2;
 
-                if (_history[mid].TotalDistance <= targetDist)
+                if (history[mid].TotalDistance <= targetDist)
                 {
                     resultIndex = mid;
                     left = mid + 1;
