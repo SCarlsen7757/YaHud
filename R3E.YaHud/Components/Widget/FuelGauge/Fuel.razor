@@ -150,71 +150,69 @@
                 break;
         }  
 
-
         FRColorSwitch = FuelRemaining / (FuelCapacity / 100);
         if (FRColorSwitch >= 50.0)
         {
-            FRColor = Settings.green; 
+            FRColor = Settings!.green;
         }   
         else if  (50.0 > FRColorSwitch && FRColorSwitch >= 35.0)
         {
-            FRColor = Settings.yellow; 
+            FRColor = Settings!.yellow; 
         }
         else if  (35.0 > FRColorSwitch && FRColorSwitch >= 15.0)
         {
-            FRColor = Settings.orange; 
+            FRColor = Settings!.orange; 
         }
         else if  (15.0 > FRColorSwitch && FRColorSwitch >= 0.0)
         {
-            FRColor = Settings.red; 
+            FRColor = Settings!.red;
         }
         if (FuelToEnd < FuelRemaining)
         {
-            FTEColor = Settings.green; 
+            FTEColor = Settings!.green; 
         }   
         else 
         {
-            FTEColor = Settings.red; 
+            FTEColor = Settings!.red; 
         }
         //ready variables for text to round or change format so it can be shown correctly
 
         TimeSpan t = TimeSpan.FromSeconds(TimeEstimatedLeft);
         if(t.Hours >= 1) 
         {
-            sTimeEstimatedLeft = t.ToString(@"hh\:mm");
-            TELColor = Settings.green; 
+            sTimeEstimatedLeft = t.ToString(format: @"hh\:mm");
+            TELColor = Settings!.green; 
         }
         else if(t.Minutes >= 1)
         {
             sTimeEstimatedLeft = t.ToString(@"mm\:ss");
-            TELColor = Settings.orange; 
+            TELColor = Settings!.orange; 
         }
         else
         {
             sTimeEstimatedLeft = t.ToString(@"ss");
-            TELColor = Settings.red; 
+            TELColor = Settings!.red; 
         }
     }
 
     protected override void UpdateWithTestData()
     {
 
-        FRColor = "rgb(0, 128, 0)";
+        FRColor = Settings!.green;
         SessionPhase = 4;
         FuelRemaining = 50.0f;
         TimeEstimatedLeft = 20;
         sTimeEstimatedLeft = "20";
-        TELColor = "rgb(0, 128, 0)";
         FuelPerLap = 50.0f;
         LapsEstimatedLeft = 5.0f;
         LastLapFuelUsage = 20.0f;
         FuelToEnd = 20.0f;
-        FTEColor = "rgb(0, 128, 0)";
+        FTEColor = Settings!.green;
         FuelToAdd = 20.0f;
         FuelCapacity = 20.0f;
         NumberOfLaps = 3;
         oldNumberOfLaps = 2;
         oldFuelRemaining = 10.0f;
-        TELColor = Settings.green;
+        TELColor = Settings!.green;
     }
 }
