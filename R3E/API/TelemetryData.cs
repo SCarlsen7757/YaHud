@@ -70,6 +70,8 @@ namespace R3E.API
         {
             List<RelativeDriverInfo> result = [];
 
+            if (dataPointService == null)
+                throw new InvalidOperationException("DataPointService not set. Call SetDataPointService() before using GetRelativeDrivers().");
             if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0) return result;
 
             var playerSlotId = Raw.VehicleInfo.SlotId;
@@ -83,9 +85,7 @@ namespace R3E.API
                 .OrderByDescending(x => x.LapDistanceFraction)
                 .ToList();
 
-            var test = sortedDrivers.Select(x => x.DriverInfo.Name.ToNullTerminatedString());
-
-
+            var driverNames = sortedDrivers.Select(x => x.DriverInfo.Name.ToNullTerminatedString());
 
             var playerIndex = sortedDrivers.FindIndex(d => d.DriverInfo.SlotId == playerSlotId);
             if (playerIndex < 0)
@@ -97,20 +97,42 @@ namespace R3E.API
             int maxAheadSlots = slotsForOthers / 2;
             int defaultBehind = slotsForOthers - maxAheadSlots;
 
+            const double timeGapThresholdSeconds = 10.0d;
+
             // Count how many cars ahead are within 10 seconds (up to maxAheadSlots)
-            int carsAheadWithin10s = 0;
-            for (int i = playerIndex - 1; i >= Math.Max(0, playerIndex - maxAheadSlots); i--)
+            List<DriverData> carsAheadWithin10s = [];
+            for (int i = playerIndex - 1; i >= 0; i--)
             {
                 var driver = sortedDrivers[i];
-                var timeGap = Math.Abs(driver.TimeDeltaBehind);
+                var timeGap = dataPointService.GetTimeGap(driver.DriverInfo.SlotId, playerSlotId);
 
-                if (timeGap <= 10.0)
+                if (timeGap <= timeGapThresholdSeconds)
                 {
-                    carsAheadWithin10s++;
+                    carsAheadWithin10s.Add(driver);
+                    if (carsAheadWithin10s.Count >= maxAheadSlots) break;
                 }
             }
 
-            int actualAhead = Math.Min(carsAheadWithin10s, maxAheadSlots);
+            // See if any cars that are physically ahead but "behind" in LapDistanceFraction are within 10s
+            if (carsAheadWithin10s.Count < maxAheadSlots)
+            {
+                for (int i = sortedDrivers.Count - 1; i > playerIndex; i--)
+                {
+                    var driver = sortedDrivers[i];
+                    var timeGap = dataPointService.GetTimeGap(driver.DriverInfo.SlotId, playerSlotId);
+                    //TODO: Maybe make a GetTimeGapRelative() method in DataPointService that handles this logic internally. So GetTimeGap is the abosult time gap based on CompletedLaps and LapDistanceFraction, while GetTimeGapRelative() accounts for physical position.
+                    //TODO: Make sure that DataPointService.GetTimeGap() handles this case correctly. When a car is physically ahead but may be behind in CompletedLaps or LapDistanceFraction, the time gap calculation needs to account for that.
+
+                    // Check if the driver is physically ahead of the player
+                    if (timeGap <= timeGapThresholdSeconds)
+                    {
+                        carsAheadWithin10s.Add(driver);
+                        if (carsAheadWithin10s.Count >= maxAheadSlots) break;
+                    }
+                }
+            }
+
+            int actualAhead = carsAheadWithin10s.Count;
             int actualBehind = slotsForOthers - actualAhead;
 
             // Get drivers in range
@@ -127,31 +149,58 @@ namespace R3E.API
                 if (isPlayer) ahead = false;
 
                 // Calculate time gap using DataPointService if available, otherwise fall back to raw data
-                TimeSpan timeGap;
-                if (dataPointService != null && !isPlayer)
+                TimeSpan timeGap = TimeSpan.Zero;
+                if (!isPlayer)
                 {
                     // Use DataPointService to get more accurate time gap based on position history
-                    var playerSlotId_local = playerSlotId;
                     var driverSlotId = driver.DriverInfo.SlotId;
 
                     if (ahead)
                     {
                         // Driver is ahead, get time gap from DataPointService
-                        float gap = dataPointService.GetTimeGap(playerSlotId_local, driverSlotId);
+                        float gap = dataPointService.GetTimeGap(playerSlotId, driverSlotId);
                         timeGap = TimeSpan.FromSeconds(-Math.Abs(gap)); // Negative because ahead
                     }
                     else
                     {
                         // Driver is behind, get time gap from DataPointService
-                        float gap = dataPointService.GetTimeGap(driverSlotId, playerSlotId_local);
+                        float gap = dataPointService.GetTimeGap(driverSlotId, playerSlotId);
                         timeGap = TimeSpan.FromSeconds(Math.Abs(gap)); // Positive because behind
+                    }
+                }
+
+                // Make distance gap calculation for cars ahead and behind
+                float distanceGap;
+                float lapFractionDiff = driver.LapDistanceFraction - playerLapFraction;
+                if (isPlayer)
+                {
+                    distanceGap = 0f;
+                }
+                else if (ahead)
+                {
+                    // Driver is ahead on the same lap
+                    if (lapFractionDiff >= 0)
+                    {
+                        distanceGap = lapFractionDiff * trackLength;
+                    }
+                    else
+                    {
+                        // Driver is on next lap
+                        distanceGap = (1 + lapFractionDiff) * trackLength;
                     }
                 }
                 else
                 {
-                    // Fall back to raw TimeDelta values from shared memory
-                    var rawTimeGap = ahead ? driver.TimeDeltaBehind : driver.TimeDeltaFront;
-                    timeGap = TimeSpan.FromSeconds(rawTimeGap);
+                    // Driver is behind on the same lap
+                    if (lapFractionDiff <= 0)
+                    {
+                        distanceGap = -lapFractionDiff * trackLength;
+                    }
+                    else
+                    {
+                        // Driver is on previous lap
+                        distanceGap = (1 - lapFractionDiff) * trackLength;
+                    }
                 }
 
                 var relativeInfo = new RelativeDriverInfo
@@ -159,8 +208,8 @@ namespace R3E.API
                     DriverData = driver,
                     IsPlayer = isPlayer,
                     LapDifference = driver.CompletedLaps - Raw.CompletedLaps,
-                    DistanceGap = isPlayer ? 0f : 0f,
-                    TimeGap = isPlayer ? TimeSpan.Zero : timeGap
+                    DistanceGap = distanceGap,
+                    TimeGap = timeGap,
                 };
 
                 result.Add(relativeInfo);
