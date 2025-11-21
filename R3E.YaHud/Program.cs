@@ -40,8 +40,11 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
+builder.Services.AddSingleton<DataPointService>();
+
 // TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
 builder.Services.AddSingleton<TelemetryService>();
+
 
 builder.Logging.AddSimpleConsole(options =>
 {
