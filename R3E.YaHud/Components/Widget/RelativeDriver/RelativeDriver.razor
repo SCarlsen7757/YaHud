@@ -1,9 +1,11 @@
-﻿@using R3E.YaHud.Components.Widget.Core
-@using R3E.API
+﻿@using R3E.API
 @using R3E.API.Image
+@using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
+nts.Widget.RelativeDriver
 @inherits HudWidgetBase<RelativeDriverSettings>
 @inject IImageService ImageService
+@inject DataPointService DataPointService
 
 @if (Settings?.Visible ?? false)
 {
@@ -105,7 +107,7 @@
             return;
         }
 
-        var relativeDrivers = TelemetryService.Data.GetRelativeDrivers(ahead: 3, behind: 3);
+        var relativeDrivers = TelemetryService.Data.GetRelativeDrivers(7);
 
         List<DisplayDriver> newDisplayDrivers = [];
 
