@@ -2,22 +2,28 @@ using R3E.Data;
 
 namespace R3E.API
 {
-    public class TelemetryService : IDisposable, IAsyncDisposable
+    public class TelemetryService : IDisposable
     {
         private readonly ISharedSource sharedSource;
-        private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
+        private readonly DataPointService dataPointService;
+        private readonly ILogger<TelemetryService> logger;
         private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
 
         private readonly TelemetryData data = new();
         public TelemetryData Data { get => data; }
+        public DataPointService DataPoints { get => dataPointService; }
 
-        public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
+        public TelemetryService(ILogger<TelemetryService> logger,
+                                ISharedSource sharedSource,
+                                DataPointService dataPointService)
         {
-            this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
-            this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
+            this.logger = logger;
+            this.sharedSource = sharedSource;
+            this.dataPointService = dataPointService;
             Data.Raw = sharedSource.Data;
+            Data.SetDataPointService(dataPointService);
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
@@ -38,12 +44,6 @@ namespace R3E.API
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }

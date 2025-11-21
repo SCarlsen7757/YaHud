@@ -1,5 +1,5 @@
 ﻿using R3E.Data;
-using System.Text;
+using R3E.Extensions;
 
 namespace R3E.API
 {
@@ -7,6 +7,13 @@ namespace R3E.API
     {
         // Raw telemetry struct
         public Shared Raw { get; internal set; }
+
+        private DataPointService? dataPointService;
+
+        public void SetDataPointService(DataPointService dataPointService)
+        {
+            this.dataPointService = dataPointService;
+        }
 
         public TelemetryData()
         {
@@ -54,59 +61,109 @@ namespace R3E.API
 
         /// <summary>
         /// Gets drivers relative to the player based on physical track position.
-        /// Returns up to 'ahead' cars in front and 'behind' cars behind the player on track.
+        /// Dynamically allocates display slots based on time gaps - if cars ahead are >10s away,
+        /// their slots are reallocated to show more cars behind.
         /// </summary>
-        /// <param name="ahead">Number of cars ahead to retrieve (default 3)</param>
-        /// <param name="behind">Number of cars behind to retrieve (default 3)</param>
+        /// <param name="maxDrivers">Maximum total number of drivers to display (default 7, includes player)</param>
         /// <returns>List of drivers sorted by track position (leader first)</returns>
-        public List<RelativeDriverInfo> GetRelativeDrivers(int ahead = 3, int behind = 3)
+        public List<RelativeDriverInfo> GetRelativeDrivers(int maxDrivers = 7)
         {
-            var result = new List<RelativeDriverInfo>();
+            List<RelativeDriverInfo> result = [];
 
-            if (Raw.NumCars <= 0 || Raw.DriverData == null)
+            if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0)
             {
                 return result;
             }
 
             var playerSlotId = Raw.VehicleInfo.SlotId;
+            var playerLapFraction = Raw.LapDistanceFraction;
             var trackLength = Raw.LayoutLength;
-            var playerTotalDistance = (Raw.CompletedLaps * trackLength) + Raw.LapDistance;
 
-            // Sort by physical track position (not race position)
+            // Sort by physical track position
             var sortedDrivers = Raw.DriverData
                 .Take(Raw.NumCars)
                 .Where(d => d.DriverInfo.SlotId >= 0)
-                .Select(d => new
-                {
-                    Driver = d,
-                    TotalDistance = (d.CompletedLaps * trackLength) + d.LapDistance
-                })
-                .OrderByDescending(x => x.TotalDistance)
+                .OrderByDescending(x => x.LapDistanceFraction)
                 .ToList();
 
-            var playerIndex = sortedDrivers.FindIndex(d => d.Driver.DriverInfo.SlotId == playerSlotId);
+            var test = sortedDrivers.Select(x => new { Name = x.DriverInfo.Name.ToNullTerminatedString() });
+
+
+
+            var playerIndex = sortedDrivers.FindIndex(d => d.DriverInfo.SlotId == playerSlotId);
             if (playerIndex < 0)
+                throw new InvalidDataException("Player driver not found in DriverData");
+
+            var playerDriver = sortedDrivers[playerIndex];
+
+            int slotsForOthers = maxDrivers - 1; // Reserve 1 slot for player
+            int maxAheadSlots = slotsForOthers / 2;
+            int defaultBehind = slotsForOthers - maxAheadSlots;
+
+            // Count how many cars ahead are within 10 seconds (up to maxAheadSlots)
+            int carsAheadWithin10s = 0;
+            for (int i = playerIndex - 1; i >= Math.Max(0, playerIndex - maxAheadSlots); i--)
             {
-                return result;
+                var driver = sortedDrivers[i];
+                var timeGap = Math.Abs(driver.TimeDeltaBehind);
+
+                if (timeGap <= 10.0)
+                {
+                    carsAheadWithin10s++;
+                }
             }
 
+            int actualAhead = Math.Min(carsAheadWithin10s, maxAheadSlots);
+            int actualBehind = slotsForOthers - actualAhead;
+
             // Get drivers in range
-            var startIndex = Math.Max(0, playerIndex - ahead);
-            var endIndex = Math.Min(sortedDrivers.Count - 1, playerIndex + behind);
+            var startIndex = Math.Max(0, playerIndex - actualAhead);
+            var endIndex = Math.Min(sortedDrivers.Count - 1, playerIndex + actualBehind);
+
+            var ahead = true;
 
             for (int i = startIndex; i <= endIndex; i++)
             {
-                var driver = sortedDrivers[i].Driver;
-                var driverTotalDistance = sortedDrivers[i].TotalDistance;
+                var driver = sortedDrivers[i];
                 var isPlayer = driver.DriverInfo.SlotId == playerSlotId;
+
+                if (isPlayer) ahead = false;
+
+                // Calculate time gap using DataPointService if available, otherwise fall back to raw data
+                TimeSpan timeGap;
+                if (dataPointService != null && !isPlayer)
+                {
+                    // Use DataPointService to get more accurate time gap based on position history
+                    var playerSlotId_local = playerSlotId;
+                    var driverSlotId = driver.DriverInfo.SlotId;
+
+                    if (ahead)
+                    {
+                        // Driver is ahead, get time gap from DataPointService
+                        float gap = dataPointService.GetTimeGap(playerSlotId_local, driverSlotId);
+                        timeGap = TimeSpan.FromSeconds(-Math.Abs(gap)); // Negative because ahead
+                    }
+                    else
+                    {
+                        // Driver is behind, get time gap from DataPointService
+                        float gap = dataPointService.GetTimeGap(driverSlotId, playerSlotId_local);
+                        timeGap = TimeSpan.FromSeconds(Math.Abs(gap)); // Positive because behind
+                    }
+                }
+                else
+                {
+                    // Fall back to raw TimeDelta values from shared memory
+                    var rawTimeGap = ahead ? driver.TimeDeltaBehind : driver.TimeDeltaFront;
+                    timeGap = TimeSpan.FromSeconds(rawTimeGap);
+                }
 
                 var relativeInfo = new RelativeDriverInfo
                 {
                     DriverData = driver,
                     IsPlayer = isPlayer,
                     LapDifference = driver.CompletedLaps - Raw.CompletedLaps,
-                    DistanceGap = isPlayer ? 0f : (float)(driverTotalDistance - playerTotalDistance),
-                    TimeGap = CalculateTimeGap(driver, driverTotalDistance, playerTotalDistance, isPlayer)
+                    DistanceGap = isPlayer ? 0f : 0f,
+                    TimeGap = isPlayer ? TimeSpan.Zero : timeGap
                 };
 
                 result.Add(relativeInfo);
@@ -115,23 +172,23 @@ namespace R3E.API
             return result;
         }
 
-        private TimeSpan CalculateTimeGap(DriverData driver, double driverTotalDistance, double playerTotalDistance, bool isPlayer)
-        {
-            if (isPlayer) return TimeSpan.Zero;
+        //private TimeSpan CalculateTimeGap(DriverData driver, double driverTotalDistance, double playerTotalDistance, bool isPlayer)
+        //{
+        //    if (isPlayer) return TimeSpan.Zero;
 
-            var distanceDiff = driverTotalDistance - playerTotalDistance;
+        //    var distanceDiff = driverTotalDistance - playerTotalDistance;
 
-            if (distanceDiff > 0)
-            {
-                // Driver is ahead - use negative time
-                return TimeSpan.FromSeconds(-Math.Abs(driver.TimeDeltaBehind));
-            }
-            else
-            {
-                // Driver is behind - use positive time
-                return TimeSpan.FromSeconds(Math.Abs(driver.TimeDeltaBehind));
-            }
-        }
+        //    if (distanceDiff > 0)
+        //    {
+        //        // Driver is ahead - use negative time
+        //        return TimeSpan.FromSeconds(-Math.Abs(driver.TimeDeltaBehind));
+        //    }
+        //    else
+        //    {
+        //        // Driver is behind - use positive time
+        //        return TimeSpan.FromSeconds(Math.Abs(driver.TimeDeltaBehind));
+        //    }
+        //}
 
         /// <summary>
         /// Gets the driver name from a DriverInfo name byte array.
@@ -140,29 +197,7 @@ namespace R3E.API
         /// <returns>Driver name as string, or "" if invalid</returns>
         public static string GetDriverName(byte[] nameBytes)
         {
-            return ByteArrayToString(nameBytes);
-        }
-
-        /// <summary>
-        /// Converts a null-terminated UTF-8 byte array to a string.
-        /// </summary>
-        /// <param name="bytes">UTF-8 encoded byte array</param>
-        /// <returns>Decoded string</returns>
-        private static string ByteArrayToString(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            // Find the null terminator
-            var endIndex = Array.IndexOf(bytes, (byte)0);
-            if (endIndex < 0)
-            {
-                endIndex = bytes.Length;
-            }
-
-            return Encoding.UTF8.GetString(bytes, 0, endIndex);
+            return nameBytes.ToNullTerminatedString();
         }
     }
 
