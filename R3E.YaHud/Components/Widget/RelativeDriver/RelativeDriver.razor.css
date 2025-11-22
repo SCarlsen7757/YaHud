@@ -25,7 +25,6 @@
     gap: 8px;
     padding: 2px 4px;
     border-radius: 2px;
-    min-height: 22px;
     transition: background-color 0.2s;
 }
 
