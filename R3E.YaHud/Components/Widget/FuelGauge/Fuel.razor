@@ -12,7 +12,7 @@
         <div class="data-grid">
             <div class="data-box large-box">
                 <p class="value"style="color: @FRColor"> @(FuelRemaining.ToString("F1"))</p>
-                <div class="label">Fuel Remaining</div>
+                <div class="label">Fuel<br />Remaining</div>
             </div>
 
             <div class="data-box">
@@ -27,17 +27,17 @@
             
             <div class="data-box large-box">
                 <p class="value"style="color: @FTEColor">@(FuelToEnd.ToString("F1"))</p>
-                <div class="label">Fuel to End</div>
+                <div class="label">Fuel<br />to End</div>
             </div>
 
             <div class="data-box large-box">
                 <p class="value"style="color: rgb(0, 128, 0)">@(FuelToAdd.ToString("F1"))</p>
-                <div class="label">Fuel to Add</div>
+                <div class="label">Fuel<br />to Add</div>
             </div>
 
             <div class="data-box">
                 <p class="value"style="color: rgb(0, 128, 0)">@(LapsEstimatedLeft.ToString("F1"))</p>
-                <div class="label">Laps Estimated</div>
+                <div class="label">Laps Est.</div>
             </div>
 
             <div class="data-box">
@@ -52,7 +52,7 @@
     private float FuelRemaining { get; set; } = 0.0f;
     private string FRColor { get; set; } = "rgb(0, 128, 0)";
     private float FRColorSwitch { get; set; } = 0.0f;
-    private int TimeEstimatedLeft { get; set; } = 0;
+    private float TimeEstimatedLeft { get; set; } = 0;
     private string sTimeEstimatedLeft { get; set; } = "0";
     private string TELColor { get; set; } = "rgb(0, 128, 0)";
     private float LapsEstimatedLeft { get;  set; } = 0.0f;
@@ -64,6 +64,7 @@
     private float FuelToAdd { get;  set; } = 0.0f;
     private float FuelCapacity { get;  set; } = 0.0f;
     private int NumberOfLaps { get;  set; } = 0;
+    private float LastLapTime { get;  set; } = 0.0f;
     private int oldNumberOfLaps = 0;
     private float oldFuelRemaining = 0.0f;
     private int SessionPhase = -1;
@@ -80,6 +81,7 @@
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
     }
+    
 
     protected override void OnInitialized()
     {
@@ -107,10 +109,11 @@
         //Start mapping of variables  
         SessionPhase = data.SessionPhase;
         FuelRemaining = data.FuelLeft;
-        TimeEstimatedLeft = (int)data.SessionTimeRemaining;
+        TimeEstimatedLeft = (FuelRemaining / FuelPerLap) * LastLapTime;
         FuelPerLap = data.FuelPerLap;
         LapsEstimatedLeft = data.FuelLeft / data.FuelPerLap;
         SessionLengthFormat = (SessionLengthFormat)data.SessionLengthFormat;
+        LastLapTime = data.LapTimeBestSelf;
 
 
         //Start calculating rest of variables from mapped variables
@@ -122,6 +125,7 @@
             FuelCapacity = data.FuelCapacity;
         }
 
+
         //Based on the Session Format change the calculations
         switch (SessionLengthFormat)
         {
@@ -131,22 +135,21 @@
 
             // TimeBased
             case SessionLengthFormat.TimeBased: 
-                FuelToEnd = (FuelPerLap / data.LapTimeCurrentSelf) * TimeEstimatedLeft;
-                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
-                Console.WriteLine(data.LapTimeCurrentSelf);
+                FuelToEnd = (data.SessionTimeRemaining / LastLapTime) * FuelPerLap;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, FuelCapacity - FuelRemaining); 
 
                 break;
 
             // LapBased
             case SessionLengthFormat.LapBased:
-                FuelToEnd = data.NumberOfLaps / data.FuelPerLap;
-                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining); 
+                FuelToEnd = NumberOfLaps / FuelPerLap;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, FuelCapacity - FuelRemaining); 
                 break;
 
             // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
             case SessionLengthFormat.TimeAndLapBased:
-                FuelToEnd = (data.NumberOfLaps+1) / data.FuelPerLap;
-                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, data.FuelCapacity - FuelRemaining);       
+                FuelToEnd = (NumberOfLaps+1) / FuelPerLap;
+                FuelToAdd =  Math.Min(FuelToEnd - FuelRemaining, FuelCapacity - FuelRemaining);       
                 break;
         }  
 
@@ -202,7 +205,7 @@
         SessionPhase = 4;
         FuelRemaining = 50.0f;
         TimeEstimatedLeft = 20;
-        sTimeEstimatedLeft = "20";
+        sTimeEstimatedLeft = "20:00";
         FuelPerLap = 50.0f;
         LapsEstimatedLeft = 5.0f;
         LastLapFuelUsage = 20.0f;
