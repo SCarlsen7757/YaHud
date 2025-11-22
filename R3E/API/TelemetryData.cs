@@ -8,7 +8,7 @@ namespace R3E.API
         // Raw telemetry struct
         public Shared Raw { get; internal set; } = new();
 
-        private readonly DataPointService? dataPointService;
+        private DataPointService? dataPointService;
 
         public TelemetryData(DataPointService dataPointService)
         {
@@ -49,7 +49,7 @@ namespace R3E.API
         }
 
         /// <summary>
-        /// Gets drivers relative to the player based on physical track position.
+        /// Gets drivers relative to the player based on physical track position (circular logic).
         /// Dynamically allocates display slots based on time gaps.
         /// </summary>
         /// <param name="maxDrivers">Maximum total number of drivers to display</param>
@@ -66,107 +66,112 @@ namespace R3E.API
             var playerLapFraction = Raw.LapDistanceFraction;
             var trackLength = Raw.LayoutLength;
 
-            // Sort by physical track position
-            var sortedDrivers = Raw.DriverData
+            // 1. Calculate standardized circular relative difference for ALL drivers
+            // This handles the start/finish line wrap-around correctly.
+            var relativeDrivers = Raw.DriverData
                 .Take(Raw.NumCars)
                 .Where(d => d.DriverInfo.SlotId >= 0)
-                .OrderByDescending(x => x.LapDistanceFraction)
+                .Select(d =>
+                {
+                    double diff = d.LapDistanceFraction - playerLapFraction;
+
+                    // Normalize diff to range [-0.5, 0.5] to find shortest path on circle
+                    if (diff > 0.5) diff -= 1.0;
+                    else if (diff < -0.5) diff += 1.0;
+
+                    return new { Driver = d, RelativeDiff = diff };
+                })
+                .OrderByDescending(x => x.RelativeDiff) // Sort Descending: Ahead (+ve) -> Player (0) -> Behind (-ve)
                 .ToList();
 
-            var playerIndex = sortedDrivers.FindIndex(d => d.DriverInfo.SlotId == playerSlotId);
-            if (playerIndex < 0)
-                throw new InvalidDataException("Player driver not found in DriverData");
+            // Find Player in the sorted list
+            var playerIndex = relativeDrivers.FindIndex(x => x.Driver.DriverInfo.SlotId == playerSlotId);
+            if (playerIndex < 0) return result; // Should not happen if player is in the list
 
+            // 2. Determine how many slots to allocate for "Ahead" vs "Behind"
             int slotsForOthers = maxDrivers - 1;
             int maxAheadSlots = slotsForOthers / 2;
-
             const double timeGapThresholdSeconds = 10.0d;
 
-            // Count how many cars ahead are within 10 seconds (using Relative Time Gap)
-            List<DriverData> carsAheadWithin10s = [];
+            // Count how many cars immediately ahead are within the time threshold
+            int foundAheadCount = 0;
 
-            // Check cars physically ahead in the list
-            for (int i = playerIndex - 1; i >= 0; i--)
+            // Scan upwards from player (Index - 1 is closest ahead)
+            for (int i = 1; i <= maxAheadSlots; i++)
             {
-                var driver = sortedDrivers[i];
-                var timeGap = dataPointService.GetTimeGapRelative(playerSlotId, driver.DriverInfo.SlotId);
+                int idx = playerIndex - i;
+                if (idx < 0) break; // End of list
 
-                // Note: GetTimeGapRelative returns positive if Subject(Player) is BEHIND Target(Driver)
-                // Since we are checking cars 'ahead', we expect positive gap from Player -> Driver?
-                // No, GetTimeGapRelative(Subject=Player, Target=Driver):
-                // If Driver is ahead, Player is behind -> Positive Gap.
+                var item = relativeDrivers[idx];
 
-                if (timeGap > 0 && timeGap <= timeGapThresholdSeconds)
+                // Calculate relative time gap
+                float gap = dataPointService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+
+                // Gap > 0 means subject (Player) is behind target (Item). This confirms valid "Ahead" car.
+                if (gap > 0 && gap <= timeGapThresholdSeconds)
                 {
-                    carsAheadWithin10s.Add(driver);
-                    if (carsAheadWithin10s.Count >= maxAheadSlots) break;
+                    foundAheadCount++;
+                }
+                else
+                {
+                    // Stop scanning if we hit a large gap (>10s) so we can allocate more slots to cars behind
+                    break;
                 }
             }
 
-            // Check wrap-around (cars physically ahead but at end of list)
-            if (carsAheadWithin10s.Count < maxAheadSlots)
-            {
-                for (int i = sortedDrivers.Count - 1; i > playerIndex; i--)
-                {
-                    var driver = sortedDrivers[i];
-                    var timeGap = dataPointService.GetTimeGapRelative(playerSlotId, driver.DriverInfo.SlotId);
+            int countAhead = foundAheadCount;
+            int countBehind = slotsForOthers - countAhead;
 
-                    if (timeGap > 0 && timeGap <= timeGapThresholdSeconds)
-                    {
-                        carsAheadWithin10s.Add(driver);
-                        if (carsAheadWithin10s.Count >= maxAheadSlots) break;
-                    }
-                }
+            // 3. Determine index range in the sorted list
+            // We want [Player - countAhead] to [Player + countBehind]
+            int startIndex = playerIndex - countAhead;
+            int endIndex = playerIndex + countBehind;
+
+            // Adjust window if we hit bounds (e.g. not enough cars ahead/behind in the session)
+            // Shift window down if start is negative
+            if (startIndex < 0)
+            {
+                endIndex += (0 - startIndex);
+                startIndex = 0;
+            }
+            // Shift window up if end is out of bounds
+            if (endIndex >= relativeDrivers.Count)
+            {
+                startIndex -= (endIndex - (relativeDrivers.Count - 1));
+                endIndex = relativeDrivers.Count - 1;
             }
 
-            int actualAhead = carsAheadWithin10s.Count;
-            int actualBehind = slotsForOthers - actualAhead;
+            // Clamp finally (in case total cars < maxDrivers)
+            startIndex = Math.Max(0, startIndex);
+            endIndex = Math.Min(relativeDrivers.Count - 1, endIndex);
 
-            // Get drivers in range
-            var startIndex = Math.Max(0, playerIndex - actualAhead);
-            var endIndex = Math.Min(sortedDrivers.Count - 1, playerIndex + actualBehind);
-
+            // 4. Build Result List
             for (int i = startIndex; i <= endIndex; i++)
             {
-                var driver = sortedDrivers[i];
-                var isPlayer = driver.DriverInfo.SlotId == playerSlotId;
-
+                var item = relativeDrivers[i];
+                bool isPlayer = (i == playerIndex);
                 TimeSpan timeGap = TimeSpan.Zero;
-                float distanceGap = 0f;
 
                 if (!isPlayer)
                 {
-                    var driverSlotId = driver.DriverInfo.SlotId;
+                    float relGap = dataPointService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
 
-                    // Use GetTimeGapRelative which handles lap differences automatically
-                    // We ask: What is gap between Player and Driver?
-                    float relGap = dataPointService.GetTimeGapRelative(playerSlotId, driverSlotId);
-
-                    // If relGap is positive, Player is BEHIND Driver (Driver is Ahead) -> Gap should be negative for display (standard racing UI)
-                    // If relGap is negative, Player is AHEAD OF Driver (Driver is Behind) -> Gap should be positive
-
+                    // Convert to TimeSpan.
+                    // If relGap > 0 (Player is Behind, Car is Ahead), we typically show negative time (e.g. -1.2s)
+                    // If relGap < 0 (Player is Ahead, Car is Behind), we typically show positive time (e.g. +1.2s)
                     timeGap = TimeSpan.FromSeconds(-relGap);
                 }
 
-                // Calculate distance gap
-                float lapFractionDiff = driver.LapDistanceFraction - playerLapFraction;
+                float distanceGap = (float)item.RelativeDiff * trackLength;
 
-                // Normalize lap fraction diff to shortest path [-0.5, 0.5]
-                if (lapFractionDiff > 0.5f) lapFractionDiff -= 1.0f;
-                else if (lapFractionDiff < -0.5f) lapFractionDiff += 1.0f;
-
-                distanceGap = lapFractionDiff * trackLength;
-
-                var relativeInfo = new RelativeDriverInfo
+                result.Add(new RelativeDriverInfo
                 {
-                    DriverData = driver,
+                    DriverData = item.Driver,
                     IsPlayer = isPlayer,
-                    LapDifference = driver.CompletedLaps - Raw.CompletedLaps,
+                    LapDifference = item.Driver.CompletedLaps - Raw.CompletedLaps,
                     DistanceGap = distanceGap,
-                    TimeGap = timeGap,
-                };
-
-                result.Add(relativeInfo);
+                    TimeGap = timeGap
+                });
             }
 
             return result;
