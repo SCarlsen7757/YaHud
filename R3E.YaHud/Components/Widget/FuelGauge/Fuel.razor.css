@@ -10,7 +10,10 @@
     position: absolute;
     box-sizing: border-box;
     overflow: hidden;
-    padding: 0.5vmin;
+    /*padding: 0.5vmin;
+    min-height: 90px;   /* prevents clipping on 1080p */
+    /* optional, but good for ABSOLUTE positioned elements */
+    max-width: fit-content;
 }
 
 .data-grid {
@@ -25,12 +28,11 @@
     border-radius: 0.5vmin;
     text-align: center;
     box-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
-    width: 8vw;
-    /* scales with screen width */
-    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    height: 100%; /* Ensure it fills the grid cell height */
+    min-width: 45px; /* Optional: A slightly larger pixel minimum for safety */
 }
 
 .data-box.large-box {
@@ -38,31 +40,31 @@
 }
 
 .value {
-    font-size: clamp(0.8rem, 1.5vmin, 2rem);
-    font-weight: bold;
-    line-height: 1.1;
-    text-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
-    padding-top: 0.3vmin;
-    margin-bottom: 0.7vmin;
+    font-size: clamp(0.7rem, 1.0vw, 1.4rem);
+    font-weight: 700;
+    line-height: 1.0;
+    text-shadow: 0 0 0.3vmin rgba(0, 0, 0, 0.5);
+    margin-bottom: 0.4vmin;
 }
 
 .data-box.large-box .value {
-    flex-grow: 1;
-    font-size: clamp(1.5rem, 4vmin, 4rem);
+    font-size: clamp(1.0rem, 1.2vw, 1.8rem);
     font-weight: bold;
-    margin-top: 1vmin;
-    margin-bottom: 1vmin;
+    margin-top: 0.2vmin;
+    margin-bottom: 0.4vmin;
 }
 
 .label {
-    font-size: clamp(0.5rem, 0.8vmin, 1rem);
+    font-size: clamp(0.45rem, 0.5vw, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #b5b5b5;
+    margin-top: -0.4vmin;
     text-transform: uppercase;
-    font-weight: bold;
-    color: #bbbbbb;
 }
-
+/*
 .value {
-    font-size: clamp(0.8rem, 1.5vmin, 2rem);
+    font-size: clamp(0.5rem, 0.8vmin, 1rem);
     font-weight: bold;
     line-height: 1.1;
     text-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
@@ -72,7 +74,7 @@
 
 .data-box.large-box .value {
     flex-grow: 1;
-    font-size: clamp(1.5rem, 4vmin, 4rem);
+    font-size: clamp(1.2rem, 2vmin, 2.5rem);
     font-weight: bold;
     margin-top: 1vmin;
     margin-bottom: 1vmin;
@@ -84,6 +86,10 @@
     font-weight: bold;
     color: #bbbbbb;
 }
+
+
+
+
 
 /* .FuelRemaining-text {
     color: green;
