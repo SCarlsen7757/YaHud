@@ -6,23 +6,13 @@ namespace R3E.API
     public class TelemetryData
     {
         // Raw telemetry struct
-        public Shared Raw { get; internal set; }
+        public Shared Raw { get; internal set; } = new();
 
-        private DataPointService? dataPointService;
+        private readonly DataPointService? dataPointService;
 
-        public void SetDataPointService(DataPointService dataPointService)
+        public TelemetryData(DataPointService dataPointService)
         {
             this.dataPointService = dataPointService;
-        }
-
-        public TelemetryData()
-        {
-            Raw = new();
-        }
-
-        public TelemetryData(Shared raw)
-        {
-            Raw = raw;
         }
 
         // Player position (1-based as provided by the shared memory; -1 or 0 indicates unknown)

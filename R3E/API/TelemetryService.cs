@@ -11,8 +11,7 @@ namespace R3E.API
 
         public event Action<TelemetryData>? DataUpdated;
 
-        private readonly TelemetryData data = new();
-        public TelemetryData Data { get => data; }
+        public TelemetryData Data { get; init; }
         public DataPointService DataPoints { get => dataPointService; }
 
         public TelemetryService(ILogger<TelemetryService> logger,
@@ -22,8 +21,7 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             this.dataPointService = dataPointService;
-            Data.Raw = sharedSource.Data;
-            Data.SetDataPointService(dataPointService);
+            Data = new TelemetryData(dataPointService);
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
@@ -31,7 +29,6 @@ namespace R3E.API
         {
             Data.Raw = raw;
             DataUpdated?.Invoke(Data);
-            logger.LogDebug("Telemetry data updated");
         }
 
         public void Dispose()
