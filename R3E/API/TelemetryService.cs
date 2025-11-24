@@ -23,7 +23,7 @@ namespace R3E.API
         private int lastTick = 0;
         private int lastLapNumber = 0;
         private Constant.Session lastSessionType = Constant.Session.Unavailable;
-        private Constant.SessionPhase SessionPhase = Constant.SessionPhase.Unavailable;
+        private Constant.SessionPhase sessionPhase = Constant.SessionPhase.Unavailable;
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
@@ -54,15 +54,15 @@ namespace R3E.API
             lastTick = tick;
 
             var sessionPhase = (Constant.SessionPhase)raw.SessionPhase;
-            if (sessionPhase != SessionPhase)
+            if (sessionPhase != this.sessionPhase)
             {
-                SessionPhase = sessionPhase;
+                this.sessionPhase = sessionPhase;
                 if (sessionPhase == Constant.SessionPhase.Green)
                 {
                     Data.PlayerStartPosition = raw.Position;
                 }
                 playerPosition = raw.Position;
-                this.logger.LogInformation("Session phase changed: {SessionPhase}", SessionPhase);
+                this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
                 SessionPhaseChanged?.Invoke(Data);
             }
 
