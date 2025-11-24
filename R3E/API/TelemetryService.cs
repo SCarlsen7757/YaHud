@@ -60,6 +60,11 @@ namespace R3E.API
                 if (sessionPhase == Constant.SessionPhase.Green)
                 {
                     Data.PlayerStartPosition = raw.Position;
+                    logger.LogInformation("Player starting position: {StartPosition}", Data.PlayerStartPosition);
+                }
+                else
+                {
+                    Data.PlayerStartPosition = -1;
                 }
                 playerPosition = raw.Position;
                 this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
