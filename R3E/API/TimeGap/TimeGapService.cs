@@ -1,11 +1,11 @@
-﻿using R3E.Data;
+﻿using R3E.Extensions;
 
 namespace R3E.API.TimeGap
 {
-    public class TimeGapService : IDisposable
+    public class TimeGapService : ITimeGapService, IDisposable
     {
         private readonly ILogger<TimeGapService> logger;
-        private readonly ISharedSource sharedSource;
+        private readonly ITelemetryService telemetryService;
 
         // Dictionary to hold history for every car.
         private readonly Dictionary<int, CarHistory> carHistories = [];
@@ -13,27 +13,28 @@ namespace R3E.API.TimeGap
 
         private float trackLength = 0;
 
-        public TimeGapService(ILogger<TimeGapService> logger, ISharedSource sharedSource)
+        public TimeGapService(ILogger<TimeGapService> logger,
+                              ITelemetryService telemetryService)
         {
             this.logger = logger;
-            this.sharedSource = sharedSource;
+            this.telemetryService = telemetryService;
 
-            this.sharedSource.DataUpdated += OnDataUpdated;
-            //this.sharedSource.NewSession += OnNewSession;
+            this.telemetryService.DataUpdated += OnDataUpdated;
+            this.telemetryService.SessionTypeChanged += OnSessionTypeChanged;
 
             this.logger.LogInformation("TimeGapService initialized");
         }
 
-        private void OnNewSession(Shared data)
+        private void OnSessionTypeChanged(TelemetryData data)
         {
             lock (@lock)
             {
                 logger.LogInformation("New Session. Clearing Car Histories.");
                 carHistories.Clear();
 
-                if (data.LayoutLength > 0)
+                if (data.Raw.LayoutLength > 0)
                 {
-                    trackLength = data.LayoutLength;
+                    trackLength = data.Raw.LayoutLength;
                 }
             }
         }
@@ -46,7 +47,6 @@ namespace R3E.API.TimeGap
                 if (!carHistories.TryGetValue(subjectSlotId, out var subject) ||
                     !carHistories.TryGetValue(targetSlotId, out var target))
                 {
-                    // Optional: Log warning only periodically to avoid spamming
                     return 0f;
                 }
 
@@ -88,18 +88,20 @@ namespace R3E.API.TimeGap
             }
         }
 
-        private void OnDataUpdated(Shared data)
+        private void OnDataUpdated(TelemetryData data)
         {
-            if (data.NumCars <= 0 || data.LayoutLength <= 0) return;
+            if (data.Raw.NumCars <= 0 || data.Raw.LayoutLength <= 0) return;
+            var sessionPhase = (Constant.SessionPhase)data.Raw.SessionPhase;
+            if (sessionPhase != Constant.SessionPhase.Green) return;
 
-            trackLength = data.LayoutLength;
-            double currentSimTime = data.Player.GameSimulationTime;
+            trackLength = data.Raw.LayoutLength;
+            double currentSimTime = data.Raw.Player.GameSimulationTime;
 
             lock (@lock)
             {
-                for (int i = 0; i < data.NumCars; i++)
+                for (int i = 0; i < data.Raw.NumCars; i++)
                 {
-                    var driver = data.DriverData[i];
+                    var driver = data.Raw.DriverData[i];
                     int slotId = driver.DriverInfo.SlotId;
 
                     if (slotId < 0) continue;
@@ -116,6 +118,7 @@ namespace R3E.API.TimeGap
 
                     if (!carHistories.TryGetValue(slotId, out CarHistory? history))
                     {
+                        logger.LogDebug("Creating CarHistory for SlotId {SlotId}, {Name}", slotId, driver.DriverInfo.Name.ToNullTerminatedString());
                         history = new CarHistory();
                         carHistories[slotId] = history;
                     }
@@ -127,10 +130,10 @@ namespace R3E.API.TimeGap
 
         public void Dispose()
         {
-            if (sharedSource != null)
+            if (telemetryService != null)
             {
-                sharedSource.DataUpdated -= OnDataUpdated;
-                //sharedSource.NewSession -= OnNewSession;
+                telemetryService.DataUpdated -= OnDataUpdated;
+                telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
             }
             GC.SuppressFinalize(this);
         }

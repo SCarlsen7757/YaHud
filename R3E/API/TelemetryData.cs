@@ -11,11 +11,12 @@ namespace R3E.API
         /// </summary>
         public Shared Raw { get; internal set; }
 
-        private readonly TimeGapService? timeGapService;
+        private readonly IServiceProvider serviceProvider;
+        private ITimeGapService timeGapService;
 
-        public TelemetryData(TimeGapService timeGapService)
+        public TelemetryData(IServiceProvider serviceProvider)
         {
-            this.timeGapService = timeGapService;
+            this.serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -88,6 +89,8 @@ namespace R3E.API
         public IList<RelativeDriverInfo> GetRelativeDrivers(int maxDrivers = 7)
         {
             List<RelativeDriverInfo> result = [];
+
+            timeGapService ??= serviceProvider.GetRequiredService<ITimeGapService>();
 
             if (timeGapService == null)
                 throw new InvalidOperationException($"No instance of {nameof(TimeGapService)} found.");
