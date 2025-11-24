@@ -106,11 +106,17 @@ namespace R3E.API.TimeGap
 
                     if (slotId < 0) continue;
 
-                    if (driver.FinishStatus == (int)Constant.FinishStatus.DNF ||
-                        driver.FinishStatus == (int)Constant.FinishStatus.DQ ||
-                        driver.FinishStatus == (int)Constant.FinishStatus.DNS)
+                    var finishStatus = (Constant.FinishStatus)driver.FinishStatus;
+                    if (finishStatus != Constant.FinishStatus.None)
                     {
-                        carHistories.Remove(slotId);
+                        if (carHistories.ContainsKey(driver.DriverInfo.SlotId))
+                        {
+                            logger.LogInformation("Removing CarHistory for SlotId {SlotId}, {Name} due to finish status: {FinishStatus}",
+                                slotId,
+                                driver.DriverInfo.Name.ToNullTerminatedString(),
+                                finishStatus);
+                            carHistories.Remove(slotId);
+                        }
                         continue;
                     }
 
