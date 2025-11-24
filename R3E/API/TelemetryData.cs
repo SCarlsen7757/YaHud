@@ -61,11 +61,11 @@ namespace R3E.API
         /// Retrieves the driver data relative to the player's position in the race order.
         /// </summary>
         /// <remarks>This method assumes that the player's position is valid and within the bounds of the
-        /// driver data array.  If the player's position is invalid or the driver data array is unavailable, the method
+        /// driver data array. If the player's position is invalid or the driver data array is unavailable, the method
         /// returns <see langword="null"/>.</remarks>
-        /// <param name="offset">The relative position offset from the player's current position.  A negative value retrieves a driver ahead
+        /// <param name="offset">The relative position offset from the player's current position. A negative value retrieves a driver ahead
         /// of the player, while a positive value retrieves a driver behind.</param>
-        /// <returns>The <see cref="DriverData"/> of the driver at the specified relative position, or <see langword="null"/>  if
+        /// <returns>The <see cref="DriverData"/> of the driver at the specified relative position, or <see langword="null"/> if
         /// the position is out of bounds or no driver data is available.</returns>
         public DriverData? GetCarRelative(int offset)
         {
