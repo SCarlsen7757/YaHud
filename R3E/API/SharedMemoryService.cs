@@ -14,7 +14,6 @@ namespace R3E.API
 
         // Track last observed header values for change detection
         private int lastSimTicks;
-        private int lastGamePaused;
         private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
