@@ -2,9 +2,9 @@
 
 namespace R3E.API.TimeGap
 {
-    public class TimeGapService : ITimeGapService, IDisposable
+    public class AdvancedTimeGapService : ITimeGapService, IDisposable
     {
-        private readonly ILogger<TimeGapService> logger;
+        private readonly ILogger<AdvancedTimeGapService> logger;
         private readonly ITelemetryService telemetryService;
 
         // Dictionary to hold history for every car.
@@ -13,7 +13,7 @@ namespace R3E.API.TimeGap
 
         private float trackLength = 0;
 
-        public TimeGapService(ILogger<TimeGapService> logger,
+        public AdvancedTimeGapService(ILogger<AdvancedTimeGapService> logger,
                               ITelemetryService telemetryService)
         {
             this.logger = logger;
@@ -54,7 +54,7 @@ namespace R3E.API.TimeGap
             }
         }
 
-        private static float CalculateRelativeGap(CarHistory subject, CarHistory target, double trackLen)
+        private float CalculateRelativeGap(CarHistory subject, CarHistory target, double trackLen)
         {
             double sDist = subject.LastKnownDistance;
             double tDist = target.LastKnownDistance;
@@ -67,24 +67,47 @@ namespace R3E.API.TimeGap
             double delta = (tLapDist - sLapDist + trackLen) % trackLen;
             double halfTrack = trackLen / 2.0;
 
+            // DIAGNOSTIC: Log the calculation for debugging
+            logger.LogDebug("Gap Calc: sDist={SDist:F1}m, tDist={TDist:F1}m, sLap={SLap:F1}m, tLap={TLap:F1}m, delta={Delta:F1}m",
+                sDist, tDist, sLapDist, tLapDist, delta);
+
             if (delta < halfTrack)
             {
-                // Target is physically AHEAD
-                double lookupDist = tDist - delta;
+                // Target is physically AHEAD on track
+                // Question: "When target was at subject's position, what was their time?"
+                double lookupDist = sDist;  // We want to know target's time when they were at subject's current position
                 double tTime = target.GetTimeAtDistance(lookupDist);
 
-                if (tTime <= 0) return 0f;
-                return (float)(target.LastKnownTime - tTime);
+                if (tTime <= 0)
+                {
+                    logger.LogDebug("Target ahead but no history at {LookupDist:F1}m", lookupDist);
+                    return 0f;
+                }
+
+                // Positive gap = target is ahead
+                float gap = (float)(target.LastKnownTime - tTime);
+                logger.LogDebug("Target AHEAD: gap={Gap:F3}s (tNow={TNow:F3}s, tThen={TThen:F3}s)",
+                    gap, target.LastKnownTime, tTime);
+                return gap;
             }
             else
             {
-                // Subject is physically AHEAD
-                double reverseDelta = (sLapDist - tLapDist + trackLen) % trackLen;
-                double lookupDist = sDist - reverseDelta;
+                // Subject is physically AHEAD on track
+                // Question: "When subject was at target's position, what was their time?"
+                double lookupDist = tDist;  // We want to know subject's time when they were at target's current position
                 double sTime = subject.GetTimeAtDistance(lookupDist);
 
-                if (sTime <= 0) return 0f;
-                return -(float)(subject.LastKnownTime - sTime);
+                if (sTime <= 0)
+                {
+                    logger.LogDebug("Subject ahead but no history at {LookupDist:F1}m", lookupDist);
+                    return 0f;
+                }
+
+                // Negative gap = subject is ahead (target is behind)
+                float gap = -(float)(subject.LastKnownTime - sTime);
+                logger.LogDebug("Subject AHEAD: gap={Gap:F3}s (sNow={SNow:F3}s, sThen={SThen:F3}s)",
+                    gap, subject.LastKnownTime, sTime);
+                return gap;
             }
         }
 
@@ -158,6 +181,14 @@ namespace R3E.API.TimeGap
 
         public double LastKnownDistance { get; private set; }
         public double LastKnownTime { get; private set; }
+
+        public string GetDiagnosticInfo(int slotId)
+        {
+            return $"Slot {slotId}: {history.Count} points, " +
+                   $"LastDist={LastKnownDistance:F1}m, " +
+                   $"LastTime={LastKnownTime:F3}s, " +
+                   $"Range=[{(history.Count > 0 ? history[0].TotalDistance : 0):F1}m to {(history.Count > 0 ? history[^1].TotalDistance : 0):F1}m]";
+        }
 
         public void RecordSnapshot(float totalDistance, double sessionTime, int lapNumber, float trackLength)
         {

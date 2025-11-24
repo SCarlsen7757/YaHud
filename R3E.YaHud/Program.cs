@@ -43,10 +43,8 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
-builder.Services.AddSingleton<ITimeGapService, TimeGapService>();
-
+builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
-
 
 builder.Logging.AddSimpleConsole(options =>
 {
