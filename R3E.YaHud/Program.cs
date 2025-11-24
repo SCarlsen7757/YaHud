@@ -7,7 +7,9 @@ using R3E.YaHud.Services.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Logging.ClearProviders();
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
