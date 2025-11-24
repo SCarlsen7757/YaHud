@@ -48,7 +48,7 @@ namespace R3E.API
             {
                 lastSessionType = sessionType;
                 lastLapNumber = -1;
-                this.logger.LogInformation("New session detected: {SessionType}", lastSessionType);
+                this.logger.LogInformation("Session changed: {SessionType}", lastSessionType);
                 SessionTypeChanged?.Invoke(Data);
             }
             lastTick = tick;
@@ -89,7 +89,7 @@ namespace R3E.API
             if (trackId != this.trackId && trackId > 0)
             {
                 this.trackId = trackId;
-                this.logger.LogInformation("Track changed detected. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
+                this.logger.LogInformation("Track changed. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
                 TrackChanged?.Invoke(Data);
             }
 
@@ -97,7 +97,7 @@ namespace R3E.API
             if (carId != this.carId && carId > 0)
             {
                 this.carId = carId;
-                this.logger.LogInformation("Car changed detected. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
+                this.logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
                 CarChanged?.Invoke(Data);
             }
 
