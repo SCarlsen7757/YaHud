@@ -3,7 +3,7 @@ using R3E.Extensions;
 
 namespace R3E.API
 {
-    public class TelemetryService : ITelemetryService, IDisposable, IAsyncDisposable
+    public class TelemetryService : ITelemetryService, IDisposable
     {
         private readonly ISharedSource sharedSource;
         private readonly ILogger<TelemetryService> logger;
@@ -114,12 +114,6 @@ namespace R3E.API
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }
