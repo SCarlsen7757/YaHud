@@ -1,11 +1,12 @@
 ﻿@using R3E.API
 @using R3E.API.Image
+@using R3E.API.TimeGap
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
 nts.Widget.RelativeDriver
 @inherits HudWidgetBase<RelativeDriverSettings>
 @inject IImageService ImageService
-@inject DataPointService DataPointService
+@inject TimeGapService DataPointService
 
 @if (Settings?.Visible ?? false)
 {

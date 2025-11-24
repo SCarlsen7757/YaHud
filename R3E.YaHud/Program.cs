@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Server;
 using R3E.API;
 using R3E.API.Image;
+using R3E.API.TimeGap;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -40,7 +41,7 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
-builder.Services.AddSingleton<DataPointService>();
+builder.Services.AddSingleton<TimeGapService>();
 
 // TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
 builder.Services.AddSingleton<TelemetryService>();
