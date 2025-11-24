@@ -21,7 +21,7 @@ namespace R3E.API
         public TelemetryData Data { get => data; }
 
         private int lastTick = 0;
-        private int lastLapNumber = -1;
+        private int lastLapNumber = 0;
         private Constant.Session lastSessionType = Constant.Session.Unavailable;
         private Constant.SessionPhase SessionPhase = Constant.SessionPhase.Unavailable;
         private int trackId = 0;
