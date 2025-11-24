@@ -71,7 +71,7 @@ namespace R3E.API
             var carId = raw.VehicleInfo.CarNumber;
             if (carId != this.carId)
             {
-                this.carId = raw.VehicleInfo.CarNumber;
+                this.carId = carId;
                 this.logger.LogInformation("Car changed detected: {CarId}", carId);
                 CarChanged?.Invoke(Data);
             }
