@@ -25,8 +25,12 @@
     gap: 8px;
     padding: 2px 4px;
     border-radius: 2px;
-    min-height: 22px;
     transition: background-color 0.2s;
+    /* Allocate seven equal rows inside the widget's content area.
+       There are 6 gaps of 2px => 12px total gap. The driver-table height is the widget's content height, so we subtract gaps. */
+    height: calc((100% - 12px) / 7);
+    min-height: 18px;
+    box-sizing: border-box;
 }
 
     .driver-row.player-row {
@@ -39,7 +43,8 @@
     align-items: center;
     justify-content: center;
     width: 32px;
-    height: 22px;
+    /* keep icons a bit smaller than the row height so they fit nicely */
+    height: 18px;
 }
 
     .class-icon img,
