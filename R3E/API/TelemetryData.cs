@@ -9,11 +9,11 @@ namespace R3E.API
         // Raw telemetry struct
         public Shared Raw { get; internal set; } = new();
 
-        private readonly TimeGapService? dataPointService;
+        private readonly TimeGapService? timeGapService;
 
-        public TelemetryData(TimeGapService dataPointService)
+        public TelemetryData(TimeGapService timeGapService)
         {
-            this.dataPointService = dataPointService;
+            this.timeGapService = timeGapService;
         }
 
         // Player position (1-based as provided by the shared memory; -1 or 0 indicates unknown)
@@ -59,8 +59,8 @@ namespace R3E.API
         {
             List<RelativeDriverInfo> result = [];
 
-            if (dataPointService == null)
-                throw new InvalidOperationException("DataPointService not set. Call SetDataPointService() before using GetRelativeDrivers().");
+            if (timeGapService == null)
+                throw new InvalidOperationException($"No instance of {nameof(TimeGapService)} found.");
             if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0) return result;
 
             var playerSlotId = Raw.VehicleInfo.SlotId;
@@ -106,7 +106,7 @@ namespace R3E.API
                 var item = relativeDrivers[idx];
 
                 // Calculate relative time gap
-                float gap = dataPointService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                float gap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
 
                 // Gap > 0 means subject (Player) is behind target (Item). This confirms valid "Ahead" car.
                 if (gap > 0 && gap <= timeGapThresholdSeconds)
@@ -155,7 +155,7 @@ namespace R3E.API
 
                 if (!isPlayer)
                 {
-                    float relGap = dataPointService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                    float relGap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
 
                     // Convert to TimeSpan.
                     // If relGap > 0 (Player is Behind, Car is Ahead), we typically show negative time (e.g. -1.2s)
