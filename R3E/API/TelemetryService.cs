@@ -50,12 +50,6 @@ namespace R3E.API
                 lastLapNumber = -1;
                 this.logger.LogInformation("New session detected: {SessionType}", lastSessionType);
                 SessionTypeChanged?.Invoke(Data);
-
-                if (sessionType == Constant.Session.Race)
-                {
-                    Data.PlayerStartPosition = raw.Position;
-                }
-                playerPosition = raw.Position;
             }
             lastTick = tick;
 
@@ -63,6 +57,11 @@ namespace R3E.API
             if (sessionPhase != SessionPhase)
             {
                 SessionPhase = sessionPhase;
+                if (sessionPhase == Constant.SessionPhase.Green)
+                {
+                    Data.PlayerStartPosition = raw.Position;
+                }
+                playerPosition = raw.Position;
                 this.logger.LogInformation("Session phase changed: {SessionPhase}", SessionPhase);
                 SessionPhaseChanged?.Invoke(Data);
             }
@@ -73,7 +72,7 @@ namespace R3E.API
                 lastLapNumber = completedLaps;
                 if (lastLapNumber > 0)
                 {
-                    this.logger.LogInformation("New lap detected: {LapNumber}", lastLapNumber + 1);
+                    this.logger.LogInformation("Starting lap number: {LapNumber}", lastLapNumber + 1);
                     NewLap?.Invoke(Data);
                 }
             }
@@ -82,12 +81,12 @@ namespace R3E.API
             if (position != playerPosition)
             {
                 playerPosition = position;
-                this.logger.LogInformation("Car position changed: {Position}", position);
+                this.logger.LogInformation("Player position changed: {Position}", position);
                 CarPositionChanged?.Invoke(Data);
             }
 
             var trackId = raw.TrackId;
-            if (trackId != this.trackId)
+            if (trackId != this.trackId && trackId > 0)
             {
                 this.trackId = trackId;
                 this.logger.LogInformation("Track changed detected. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
@@ -95,7 +94,7 @@ namespace R3E.API
             }
 
             var carId = raw.VehicleInfo.CarNumber;
-            if (carId != this.carId)
+            if (carId != this.carId && carId > 0)
             {
                 this.carId = carId;
                 this.logger.LogInformation("Car changed detected. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
