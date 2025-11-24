@@ -10,7 +10,7 @@ namespace R3E.YaHud.Components.Widget.Core
     {
         [Inject] protected IJSRuntime JS { get; set; } = default!;
         [Inject] protected HudLockService LockService { get; set; } = default!;
-        [Inject] protected TelemetryService TelemetryService { get; set; } = default!;
+        [Inject] protected ITelemetryService TelemetryService { get; set; } = default!;
         [Inject] protected SettingsService SettingsService { get; set; } = default!;
         [Inject] protected TestModeService TestModeService { get; set; } = default!;
         [Inject] protected ILogger<HudWidgetBase<TSettings>> Logger { get; set; } = default!;
