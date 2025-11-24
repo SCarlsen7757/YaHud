@@ -22,7 +22,6 @@ namespace R3E.API
         private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // Game not running update interval
 
         // Offsets computed at runtime so code remains correct if SHM layout moves
-        private static readonly int offsetGamePaused;
         private static readonly int offsetPlayer;
         private static readonly int offsetGameSimulationTicks;
 
@@ -33,7 +32,6 @@ namespace R3E.API
         static SharedMemoryService()
         {
             // Use Marshal.OffsetOf to compute offsets relative to the Shared struct
-            offsetGamePaused = (int)Marshal.OffsetOf<Shared>(nameof(Shared.GamePaused));
             offsetPlayer = (int)Marshal.OffsetOf<Shared>(nameof(Shared.Player));
 
             // Offset of GameSimulationTicks inside PlayerData
