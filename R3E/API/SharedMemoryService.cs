@@ -115,7 +115,6 @@ namespace R3E.API
                             simTicks = BitConverter.ToInt32(readBuffer, offsetGameSimulationTicks);
                         }
 
-                        // adjust polling interval based on paused/running
                         currentDelay = normalInterval;
 
                         // If nothing changed, skip
