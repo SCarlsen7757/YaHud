@@ -1,3 +1,4 @@
+using R3E.API.TimeGap;
 using R3E.Data;
 
 namespace R3E.API
@@ -5,23 +6,26 @@ namespace R3E.API
     public class TelemetryService : IDisposable
     {
         private readonly ISharedSource sharedSource;
-        private readonly DataPointService dataPointService;
+        private readonly TimeGapService dataPointService;
         private readonly ILogger<TelemetryService> logger;
         private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
+        public event Action<TelemetryData>? NewLap;
+        public event Action<TelemetryData>? NewSession;
 
         public TelemetryData Data { get; init; }
-        public DataPointService DataPoints { get => dataPointService; }
+        public TimeGapService DataPoints { get => dataPointService; }
 
         public TelemetryService(ILogger<TelemetryService> logger,
                                 ISharedSource sharedSource,
-                                DataPointService dataPointService)
+                                TimeGapService dataPointService)
         {
             this.logger = logger;
             this.sharedSource = sharedSource;
             this.dataPointService = dataPointService;
             Data = new TelemetryData(dataPointService);
+
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 

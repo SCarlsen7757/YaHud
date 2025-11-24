@@ -1,4 +1,5 @@
-﻿using R3E.Data;
+﻿using R3E.API.TimeGap;
+using R3E.Data;
 using R3E.Extensions;
 
 namespace R3E.API
@@ -8,9 +9,9 @@ namespace R3E.API
         // Raw telemetry struct
         public Shared Raw { get; internal set; } = new();
 
-        private readonly DataPointService? dataPointService;
+        private readonly TimeGapService? dataPointService;
 
-        public TelemetryData(DataPointService dataPointService)
+        public TelemetryData(TimeGapService dataPointService)
         {
             this.dataPointService = dataPointService;
         }
