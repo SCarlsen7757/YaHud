@@ -22,7 +22,7 @@ namespace R3E.YaHud.Components.Widget.StartLight
         public string FormationLapColor { get; set; } = "#0000FF";
 
         [SettingType("Widget visible after start duration (ms)", SettingsTypes.Slider, 30,
-            Description = "Duration the green light stays on before turning off.",
+            Description = "Duration the widget stays visible after the start.",
             Max = 5000,
             Min = 0,
             Step = 100,
