@@ -94,14 +94,9 @@
         }
         else if (SessionPhase == R3E.Constant.SessionPhase.Green)
         {
-            if (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
-            {
-                IsCountdownPhase = true;
-            }
-            else
-            {
-                IsCountdownPhase = IsStartPeriodActive();
-            }
+            IsCountdownPhase = (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
+                ? true
+                : IsStartPeriodActive();
         }
 
     }
