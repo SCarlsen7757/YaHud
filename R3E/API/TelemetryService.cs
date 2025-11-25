@@ -68,6 +68,18 @@ namespace R3E.API
                 }
                 playerPosition = raw.Position;
                 this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
+
+                if (sessionPhase == Constant.SessionPhase.Formation)
+                {
+                    Data.RollingStart = true;
+                    logger.LogInformation("Rolling start detected.");
+                }
+                else if (sessionPhase == Constant.SessionPhase.Countdown)
+                {
+                    Data.RollingStart = false;
+                    logger.LogInformation("Standing start detected.");
+                }
+
                 SessionPhaseChanged?.Invoke(Data);
             }
 
