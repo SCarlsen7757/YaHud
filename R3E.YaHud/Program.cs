@@ -9,6 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
+    options.SingleLine = true;
+    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -46,12 +52,6 @@ else
 builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
 
-builder.Logging.AddSimpleConsole(options =>
-{
-    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
-    options.SingleLine = true;
-    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
-});
 
 var app = builder.Build();
 
