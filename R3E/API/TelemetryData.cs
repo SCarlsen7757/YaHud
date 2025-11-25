@@ -97,8 +97,6 @@ namespace R3E.API
 
             timeGapService ??= serviceProvider.GetRequiredService<ITimeGapService>();
 
-            if (timeGapService == null)
-                throw new InvalidOperationException($"No instance of {nameof(ITimeGapService)} found.");
             if (Raw.NumCars <= 0 || Raw.DriverData == null || maxDrivers <= 0) return result;
 
             var playerSlotId = Raw.VehicleInfo.SlotId;
