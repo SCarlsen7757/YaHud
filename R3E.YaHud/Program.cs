@@ -1,11 +1,21 @@
 using Microsoft.AspNetCore.Components.Server;
 using R3E.API;
+using R3E.API.Image;
+using R3E.API.TimeGap;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Logging.ClearProviders();
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
+    options.SingleLine = true;
+    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
+});
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -15,6 +25,9 @@ builder.Services.Configure<CircuitOptions>(options =>
     options.DetailedErrors = true;
 });
 #endif
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IImageService, ImageService>();
 
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<HudLockService>();
@@ -36,15 +49,9 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
-// TelemetryService depends on ISharedSource. Let DI construct it so ILogger is injected.
-builder.Services.AddSingleton<TelemetryService>();
+builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
 
-builder.Logging.AddSimpleConsole(options =>
-{
-    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss.fff] ";
-    options.SingleLine = true;
-    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
-});
 
 var app = builder.Build();
 

@@ -17,8 +17,7 @@ namespace R3E.API
         public event Action<TelemetryData>? TrackChanged;
         public event Action<TelemetryData>? CarChanged;
 
-        private readonly TelemetryData data = new();
-        public TelemetryData Data { get => data; }
+        public TelemetryData Data { get; init; }
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -30,11 +29,13 @@ namespace R3E.API
 
 
         public TelemetryService(ILogger<TelemetryService> logger,
+                                IServiceProvider serviceProvider,
                                 ISharedSource sharedSource)
         {
             this.logger = logger;
             this.sharedSource = sharedSource;
-            Data.Raw = sharedSource.Data;
+            Data = new TelemetryData(serviceProvider);
+
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
