@@ -42,6 +42,11 @@ namespace R3E.API
         }
 
         /// <summary>
+        /// Gets a value indicating whether the start is a rolling start.
+        /// </summary>
+        public bool RollingStart { get; internal set; }
+
+        /// <summary>
         /// Gets the driver directly ahead of the player, if available.
         /// <remarks>This property retrieves the driver in the position immediately ahead of the player's
         /// current position. If there is no driver ahead of the player, the property returns <see
