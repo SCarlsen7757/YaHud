@@ -41,7 +41,9 @@
 
     private int StartLightPhase { get; set; } = 0;
     private R3E.Constant.SessionPhase SessionPhase { get; set; } = R3E.Constant.SessionPhase.Unavailable;
-    private DateTime? StartAt { get; set; }
+    private double GameSimulationTime { get; set; } = 0d;
+    private double? HideAgainAt { get; set; } = null;
+    private R3E.Constant.Control PlayerControl = Constant.Control.Unavailable;
 
     public override string ElementId { get => "startLightWidget"; }
     public override string Name => "Start light";
@@ -63,9 +65,45 @@
         if (Settings is null) return;
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
+        GameSimulationTime = data.Player.GameSimulationTime;
         StartLightPhase = data.StartLights;
+
         SessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
-        StartAt = StartLightPhase == 6 && StartAt is null ? DateTime.UtcNow : StartAt;
+        PlayerControl = (R3E.Constant.Control)data.ControlType;
+
+        if (StartLightPhase == 6 && PlayerControl == Constant.Control.Player && HideAgainAt is null)
+        {
+            HideAgainAt = data.Player.GameSimulationTime + (Settings.VisibleAfterStartDurationMs / 1000);
+        }
+        else if (StartLightPhase < 6)
+        {
+            HideAgainAt = null;
+        }
+
+        if (TestMode)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Countdown)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Formation)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Green)
+        {
+            if (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
+            {
+                IsCountdownPhase = true;
+            }
+            else
+            {
+                IsCountdownPhase = IsStartPeriodActive();
+            }
+        }
+
     }
 
     protected override void UpdateWithTestData()
@@ -73,19 +111,20 @@
         StartLightPhase = 3;
     }
 
-    private bool IsCountdownPhase => SessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
+    private bool IsCountdownPhase { get; set; }
 
     private bool IsStartPeriodActive()
     {
+        if (TelemetryService.Data.RollingStart && PlayerControl != Constant.Control.Player && StartLightPhase == 6) return true;
+        if (PlayerControl != Constant.Control.Player) return false;
         if (!TelemetryService.Data.RollingStart) return false;
         if (StartLightPhase < 6) return false;
 
-        if (Settings!.VisibleAfterStartDurationMs > 0 && StartAt != null)
+        if (Settings!.VisibleAfterStartDurationMs > 0 && HideAgainAt != null)
         {
-            var elapsed = (DateTime.UtcNow - StartAt.Value).TotalMilliseconds;
-            return elapsed <= Settings.VisibleAfterStartDurationMs;
+            return GameSimulationTime < HideAgainAt;
         }
-        return StartAt != null;
+        return HideAgainAt != null;
     }
 
     private Tuple<string, bool> LightColor(int pos)
@@ -94,9 +133,9 @@
         {
             return new(Settings!.StartColor, true);
         }
-        if (StartLightPhase <= 0)
+        if (StartLightPhase <= 5 && SessionPhase == Constant.SessionPhase.Formation)
         {
-            return new("#000000", false);
+            return new(Settings!.FormationLapColor, true);
         }
         if (StartLightPhase >= 1 && StartLightPhase <= 5 && pos <= StartLightPhase)
         {
