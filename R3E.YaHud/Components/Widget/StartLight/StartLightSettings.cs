@@ -9,17 +9,17 @@ namespace R3E.YaHud.Components.Widget.StartLight
         [SettingType("Start color", SettingsTypes.ColorPicker, 20,
             Description = "Color of the 'Start' light.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string StartColor => "#00FF00";
+        public string StartColor { get; set; } = "#00FF00";
 
         [SettingType("Ready color", SettingsTypes.ColorPicker, 21,
             Description = "Color of the 'Ready' light.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string ReadyColor => "#FF0000";
+        public string ReadyColor { get; set; } = "#FF0000";
 
         [SettingType("Formation lap color", SettingsTypes.ColorPicker, 22,
             Description = "Color of the 'Formation Lap' light.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string FormationLapColor => "#0000FF";
+        public string FormationLapColor { get; set; } = "#0000FF";
 
         [SettingType("Widget visible after start duration (ms)", SettingsTypes.Slider, 30,
             Description = "Duration the green light stays on before turning off.",
