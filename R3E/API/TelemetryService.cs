@@ -72,10 +72,12 @@ namespace R3E.API
                 if (sessionPhase == Constant.SessionPhase.Formation)
                 {
                     Data.RollingStart = true;
+                    logger.LogInformation("Rolling start detected.");
                 }
                 else if (sessionPhase == Constant.SessionPhase.Countdown)
                 {
                     Data.RollingStart = false;
+                    logger.LogInformation("Standing start detected.");
                 }
 
                 SessionPhaseChanged?.Invoke(Data);
