@@ -175,7 +175,7 @@ namespace R3E.API.TimeGap
         // Sufficient for ~3-4 minutes of data at 60Hz without resizing.
         // Calculation: 240 seconds (4 minutes) × 60 updates/sec = 14.400 data points.
         // Data size is 12 bytes (TotalDistance = 4 + SessionTime = 8) x 15000 = 180kB.
-        // 12 Drivers x 180kB = 2,16MB if the lap time is less then 4 minutes.
+        // 12 Drivers x 180kB = 2,16MB if the lap time is less than 4 minutes.
         private readonly List<TelemetrySnapshot> history = new(15000);
         private int lastLapNumber = -1;
 
