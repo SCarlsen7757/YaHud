@@ -83,7 +83,7 @@
 /* OFF STATE */
 .housing.off {
     --current-color: var(--off-color);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px rgb(FF, 0, 0, 0,30);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px rgb(20, 20, 20);
 }
 
 .housing.on {
