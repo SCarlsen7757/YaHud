@@ -14,7 +14,7 @@ namespace R3E.YaHud.Components.Widget.StartLight
         [SettingType("Ready color", SettingsTypes.ColorPicker, 21,
             Description = "Color of the 'Ready' light.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string ReadyColor => "#FFFF00";
+        public string ReadyColor => "#FF0000";
 
         [SettingType("Formation lap color", SettingsTypes.ColorPicker, 22,
             Description = "Color of the 'Formation Lap' light.",
