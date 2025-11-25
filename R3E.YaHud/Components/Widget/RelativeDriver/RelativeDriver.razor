@@ -71,7 +71,7 @@
 
     public override bool Collidable => true;
 
-
+    private const float Epsilon = 0.01f;
 
     private List<DisplayDriver> displayDrivers = new();
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
@@ -180,7 +180,7 @@
         }
         else
         {
-            if (driver.DistanceGap == 0f) return Settings?.TextColor ?? "#FFFFFFFF";
+            if (MathF.Abs(driver.DistanceGap) < Epsilon) return Settings?.TextColor ?? "#FFFFFFFF";
             return driver.DistanceGap > 0f ? Settings?.GapPositiveColor ?? "#FFFF5252" : Settings?.GapNegativeColor ?? "#FF4CAF50";
         }
     }
@@ -204,7 +204,7 @@
         else
         {
             var distance = driver.DistanceGap;
-            if (distance == 0f) return "--";
+            if (MathF.Abs(distance) < Epsilon) return "--";
             return $"{distance:+0.0;-0.0}m";
         }
     }
