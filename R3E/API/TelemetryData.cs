@@ -9,10 +9,10 @@ namespace R3E.API
         /// <summary>
         /// Gets the raw telemetry data as a shared structure.
         /// </summary>
-        public Shared Raw { get; internal set; }
+        public Shared Raw { get; internal set; } = new Shared();
 
         private readonly IServiceProvider serviceProvider;
-        private ITimeGapService timeGapService;
+        private ITimeGapService? timeGapService;
 
         public TelemetryData(IServiceProvider serviceProvider)
         {
