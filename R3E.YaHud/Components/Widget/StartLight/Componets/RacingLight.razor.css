@@ -1,0 +1,99 @@
+﻿.housing {
+    --housing-size: 210px;
+    
+    --led-size: 16px;
+    --led-spacing: 4px; 
+    --ring-radius: 84px; 
+    
+    --off-color: #2a2a2a;
+    
+    --active-color: #ff0000;
+}
+
+.racing-light-container {
+    position: relative;
+    width: var(--housing-size);
+    height: var(--housing-size);
+    margin: auto;
+    isolation: auto;
+}
+
+.housing {
+    width: var(--housing-size);
+    height: var(--housing-size);
+    background-color: #000;
+    border-radius: 50%;
+    border: 6px solid #151515;
+    box-shadow: 
+        0 10px 30px rgba(0,0,0,0.6),
+        inset 0 0 20px #000;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: box-shadow 0.2s;
+}
+
+.led {
+    background-color: var(--current-color);
+    border-radius: 50%;
+    width: var(--led-size);
+    height: var(--led-size);
+    transition: background-color 0.1s, box-shadow 0.1s;
+    box-shadow: 
+        inset -2px -2px 5px rgba(0,0,0,0.7), 
+        inset 2px 2px 2px rgba(255,255,255,0.1);
+}
+
+.center-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--led-spacing);
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.grid-row {
+    display: flex;
+    gap: var(--led-spacing);
+}
+
+.outer-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0; left: 0;
+    pointer-events: none;
+}
+
+.ring-led {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: 
+        translate(-50%, -50%) 
+        rotate(var(--angle)) 
+        translateY(calc(var(--ring-radius) * -1)) 
+        rotate(calc(var(--angle) * -1));
+}
+
+/* --- STATES --- */
+
+/* OFF STATE */
+.housing.off {
+    --current-color: var(--off-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px rgb(FF, 0, 0, 0,30);
+}
+
+.housing.on {
+    --current-color: var(--active-color);
+    box-shadow: 
+        0 10px 30px rgba(0,0,0,0.6),
+        inset 0 0 20px #000,
+        0 0 40px var(--active-color);
+}
+
+.housing.on .led {
+    box-shadow: 0 0 6px var(--active-color);
+}

@@ -1,5 +1,4 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
-@using R3E.YaHud.Components.Widget.UserInputs.Components
 @using R3E.API
 @inherits HudWidgetBase<StartLightSettings>
 
@@ -7,14 +6,25 @@
 {
     <div style="display: @(IsCountdownPhase ? "block" : "none");">
         <div id=@ElementId class="start-light-widget text">
-            <div class="lights" aria-label="Start lights (countdown)">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    var src = ImageForPosition(i);
-                    <div class="light">
-                        <img src=@src draggable="false" ondragstart="return false;" />
-                    </div>
-                }
+            <div class="lights-and-glows-container" aria-label="Start lights (countdown)">
+                <div class="lights-container">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="light">
+                            <R3E.YaHud.Components.Widget.StartLight.Componets.RacingLight IsOn="@src.Item2" ColorHex="@src.Item1" />
+                        </div>
+                    }
+                </div>
+                <div class="glows-overlay">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="glow-wrapper">
+                            <div class="glow-layer @(src.Item2 ? "on" : "off")" style="@(src.Item2 ? $"--active-color: {src.Item1};" : "")"></div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
@@ -29,9 +39,9 @@
         return $"{ImageAssetsBase}{name}";
     }
 
-    private int startLightRaw = 0;
-    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Unavailable;
-    private DateTime? greenShownAt;
+    private int StartLightPhase { get; set; } = 0;
+    private R3E.Constant.SessionPhase SessionPhase { get; set; } = R3E.Constant.SessionPhase.Unavailable;
+    private DateTime? StartAt { get; set; }
 
     public override string ElementId { get => "startLightWidget"; }
     public override string Name => "Start light";
@@ -53,64 +63,45 @@
         if (Settings is null) return;
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
-        startLightRaw = data.StartLights;
-        sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
-
-        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff && (startLightRaw == 6))
-        {
-            if (greenShownAt == null)
-            {
-                greenShownAt = DateTime.UtcNow;
-            }
-        }
-        else
-        {
-            greenShownAt = null;
-        }
+        StartLightPhase = data.StartLights;
+        SessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+        StartAt = StartLightPhase == 6 && StartAt is null ? DateTime.UtcNow : StartAt;
     }
 
     protected override void UpdateWithTestData()
     {
-        startLightRaw = 3;
+        StartLightPhase = 3;
     }
 
-    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
+    private bool IsCountdownPhase => SessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
 
-    private bool IsGreenPeriodActive()
+    private bool IsStartPeriodActive()
     {
-        if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
-        if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
-        if (Settings == null) return false;
+        if (!TelemetryService.Data.RollingStart) return false;
+        if (StartLightPhase < 6) return false;
 
-        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        if (Settings!.VisibleAfterStartDurationMs > 0 && StartAt != null)
         {
-            if (Settings.GreenLightDurationMs > 0 && greenShownAt != null)
-            {
-                var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
-                return elapsed <= Settings.GreenLightDurationMs;
-            }
-            return greenShownAt != null;
+            var elapsed = (DateTime.UtcNow - StartAt.Value).TotalMilliseconds;
+            return elapsed <= Settings.VisibleAfterStartDurationMs;
         }
-        return false;
+        return StartAt != null;
     }
 
-    private string ImageForPosition(int pos)
+    private Tuple<string, bool> LightColor(int pos)
     {
-        if (IsGreenPeriodActive())
+        if (IsStartPeriodActive())
         {
-            return Image("green.png");
+            return new(Settings!.StartColor, true);
         }
-
-        if (startLightRaw <= 0)
+        if (StartLightPhase <= 0)
         {
-            return Image("off.png");
+            return new("#000000", false);
         }
-
-        if (startLightRaw >= 1 && startLightRaw <= 5)
+        if (StartLightPhase >= 1 && StartLightPhase <= 5 && pos <= StartLightPhase)
         {
-            return pos <= startLightRaw ? Image("red.png") : Image("off.png");
+            return new(Settings!.ReadyColor, true);
         }
-
-        return Image("off.png");
+        return new("#000000", false);
     }
 }
