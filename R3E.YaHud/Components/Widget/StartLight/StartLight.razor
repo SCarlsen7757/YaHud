@@ -1,5 +1,4 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
-@using R3E.YaHud.Components.Widget.UserInputs.Components
 @using R3E.API
 @inherits HudWidgetBase<StartLightSettings>
 
@@ -7,14 +6,25 @@
 {
     <div style="display: @(IsCountdownPhase ? "block" : "none");">
         <div id=@ElementId class="start-light-widget text">
-            <div class="lights" aria-label="Start lights (countdown)">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    var src = ImageForPosition(i);
-                    <div class="light">
-                        <img src=@src draggable="false" ondragstart="return false;" />
-                    </div>
-                }
+            <div class="lights-and-glows-container" aria-label="Start lights (countdown)">
+                <div class="lights-container">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="light">
+                            <R3E.YaHud.Components.Widget.StartLight.Components.RacingLight IsOn="@src.Item2" ColorHex="@src.Item1" />
+                        </div>
+                    }
+                </div>
+                <div class="glows-overlay">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="glow-wrapper">
+                            <div class="glow-layer @(src.Item2 ? "on" : "off")" style="@(src.Item2 ? $"--active-color: {src.Item1};" : "")"></div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
@@ -29,9 +39,11 @@
         return $"{ImageAssetsBase}{name}";
     }
 
-    private int startLightRaw = 0;
-    private R3E.Constant.SessionPhase sessionPhase = R3E.Constant.SessionPhase.Unavailable;
-    private DateTime? greenShownAt;
+    private int StartLightPhase { get; set; } = 0;
+    private R3E.Constant.SessionPhase SessionPhase { get; set; } = R3E.Constant.SessionPhase.Unavailable;
+    private double GameSimulationTime { get; set; } = 0d;
+    private double? HideAgainAt { get; set; } = null;
+    private R3E.Constant.Control PlayerControl = Constant.Control.Unavailable;
 
     public override string ElementId { get => "startLightWidget"; }
     public override string Name => "Start light";
@@ -53,64 +65,93 @@
         if (Settings is null) return;
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
-        startLightRaw = data.StartLights;
-        sessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+        GameSimulationTime = data.Player.GameSimulationTime;
+        StartLightPhase = data.StartLights;
 
-        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff && (startLightRaw == 6))
+        SessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+        PlayerControl = (R3E.Constant.Control)data.ControlType;
+
+        if (StartLightPhase == 6 && PlayerControl == Constant.Control.Player && HideAgainAt is null)
         {
-            if (greenShownAt == null)
-            {
-                greenShownAt = DateTime.UtcNow;
-            }
+            HideAgainAt = data.Player.GameSimulationTime + (Settings.VisibleAfterStartDurationMs / 1000);
         }
-        else
+        else if (StartLightPhase < 6)
         {
-            greenShownAt = null;
+            HideAgainAt = null;
         }
+
+        if (TestMode)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Countdown)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Formation)
+        {
+            IsCountdownPhase = true;
+        }
+        else if (SessionPhase == R3E.Constant.SessionPhase.Green)
+        {
+            IsCountdownPhase = (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
+                ? true
+                : IsStartPeriodActive();
+        }
+
     }
 
     protected override void UpdateWithTestData()
     {
-        startLightRaw = 3;
+        StartLightPhase = 3;
     }
 
-    private bool IsCountdownPhase => sessionPhase == R3E.Constant.SessionPhase.Countdown || TestMode;
+    private bool IsCountdownPhase { get; set; }
 
-    private bool IsGreenPeriodActive()
+    private bool IsStartPeriodActive()
     {
-        if (!IsCountdownPhase && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
-        if (startLightRaw != 6 && sessionPhase != R3E.Constant.SessionPhase.Green) return false;
-        if (Settings == null) return false;
+        var rolling = TelemetryService.Data.RollingStart;
 
-        if (Settings.Behavior == StartLightBehavior.SequentialThenGreenThenOff)
+        if (PlayerControl != Constant.Control.Player)
         {
-            if (Settings.GreenLightDurationMs > 0 && greenShownAt != null)
-            {
-                var elapsed = (DateTime.UtcNow - greenShownAt.Value).TotalMilliseconds;
-                return elapsed <= Settings.GreenLightDurationMs;
-            }
-            return greenShownAt != null;
+            return rolling && StartLightPhase == 6;
         }
-        return false;
+
+        if (rolling)
+        {
+            if (StartLightPhase < 6) return false;
+        }
+        else
+        {
+            if (StartLightPhase < 1) return false;
+        }
+
+        if (Settings!.VisibleAfterStartDurationMs > 0 && HideAgainAt != null)
+        {
+            return GameSimulationTime < HideAgainAt;
+        }
+        return HideAgainAt != null;
     }
 
-    private string ImageForPosition(int pos)
+    private Tuple<string, bool> LightColor(int pos)
     {
-        if (IsGreenPeriodActive())
+        if (IsStartPeriodActive())
         {
-            return Image("green.png");
+            return new(Settings!.StartColor, true);
         }
-
-        if (startLightRaw <= 0)
+        if (StartLightPhase <= 5 && SessionPhase == Constant.SessionPhase.Formation)
         {
-            return Image("off.png");
-        }
+            var blinkOn = (GameSimulationTime % 1) < 0.5;
+            var positionEven = pos % 2 == 0;
 
-        if (startLightRaw >= 1 && startLightRaw <= 5)
+            return blinkOn ^ positionEven
+                ? new(Settings!.FormationLapColor, true)
+                : new("#000000", false);
+        }
+        if (StartLightPhase >= 1 && StartLightPhase <= 5 && pos <= StartLightPhase)
         {
-            return pos <= startLightRaw ? Image("red.png") : Image("off.png");
+            return new(Settings!.ReadyColor, true);
         }
-
-        return Image("off.png");
+        return new("#000000", false);
     }
 }
