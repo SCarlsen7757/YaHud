@@ -135,7 +135,18 @@
         }
         if (StartLightPhase <= 5 && SessionPhase == Constant.SessionPhase.Formation)
         {
-            return new(Settings!.FormationLapColor, true);
+            var blinkOn = (GameSimulationTime % 1) < 0.5;
+            var positionEven = pos % 2 == 0;
+
+            var on = blinkOn ^ positionEven;
+            if (on)
+            {
+                return new(Settings!.FormationLapColor, true);
+            }
+            else
+            {
+                return new("#000000", false);
+            }
         }
         if (StartLightPhase >= 1 && StartLightPhase <= 5 && pos <= StartLightPhase)
         {
