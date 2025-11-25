@@ -159,11 +159,8 @@ namespace R3E.API.TimeGap
 
         public void Dispose()
         {
-            if (telemetryService != null)
-            {
-                telemetryService.DataUpdated -= OnDataUpdated;
-                telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
-            }
+            telemetryService.DataUpdated -= OnDataUpdated;
+            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
             GC.SuppressFinalize(this);
         }
     }
