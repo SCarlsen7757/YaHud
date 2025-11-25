@@ -3,6 +3,7 @@
 @using R3E.API.TimeGap
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
+@using R3E.YaHud.Components.Widget.RelativeDriver.Models
 @inherits HudWidgetBase<RelativeDriverSettings>
 @inject IImageService ImageService
 @inject ITimeGapService TimeGapService
@@ -75,22 +76,6 @@
     private List<DisplayDriver> displayDrivers = new();
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
 
-    private class DisplayDriver
-    {
-        public required string Name { get; set; }
-        public required int CarNumber { get; set; }
-        public required float Rating { get; set; }
-        public required float Reputation { get; set; }
-        public required TimeSpan TimeGap { get; set; }
-        public required float DistanceGap { get; set; }
-        public required bool IsPlayer { get; set; }
-        public required int LapDifference { get; set; }
-        public required bool IsOutLap { get; set; }
-        public required bool IsInvalidLap { get; set; }
-        public string ClassImageUrl { get; set; } = string.Empty;
-        public string ManufacturerImageUrl { get; set; } = string.Empty;
-    }
-
     public RelativeDriver()
     {
         UseR3EData = true;
@@ -127,29 +112,14 @@
                 IsInvalidLap = IsQualifying && driver.CurrentLapValid == 0,
                 TimeGap = relDriver.TimeGap,
                 DistanceGap = relDriver.DistanceGap,
+                ClassImageUrl = await ImageService.GetClassImageAsync(driver.DriverInfo.ClassId, ImageSize.Small),
+                ManufacturerImageUrl = await ImageService.GetManufacturerImageAsync(driver.DriverInfo.ManufacturerId, ImageSize.Small)
             };
-
-            await LoadImagesForDriver(driver.DriverInfo, displayDriver);
 
             newDisplayDrivers.Add(displayDriver);
         }
 
         displayDrivers = newDisplayDrivers;
-    }
-
-    private async Task LoadImagesForDriver(R3E.Data.DriverInfo driverInfo, DisplayDriver displayDriver)
-    {
-        try
-        {
-            displayDriver.ClassImageUrl = await ImageService.GetClassImageAsync(driverInfo.ClassId, ImageSize.Small);
-            displayDriver.ManufacturerImageUrl = await ImageService.GetManufacturerImageAsync(driverInfo.ManufacturerId, ImageSize.Small);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to load images for driver {DriverName}", TelemetryData.GetDriverName(driverInfo.Name));
-            displayDriver.ClassImageUrl = "";
-            displayDriver.ManufacturerImageUrl = "";
-        }
     }
 
     protected override void UpdateWithTestData()
