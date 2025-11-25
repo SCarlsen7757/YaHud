@@ -220,12 +220,12 @@ namespace R3E.API
         }
     }
 
-    public class RelativeDriverInfo
+    public readonly record struct RelativeDriverInfo
     {
-        public DriverData DriverData { get; set; }
-        public bool IsPlayer { get; set; }
-        public int LapDifference { get; set; }
-        public float DistanceGap { get; set; }
-        public TimeSpan TimeGap { get; set; }
+        public DriverData DriverData { get; init; }
+        public bool IsPlayer { get; init; }
+        public int LapDifference { get; init; }
+        public float DistanceGap { get; init; }
+        public TimeSpan TimeGap { get; init; }
     }
 }
