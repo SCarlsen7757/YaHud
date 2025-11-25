@@ -1,4 +1,4 @@
-﻿namespace R3E.API
+﻿namespace R3E.API.TimeGap
 {
     public interface ITimeGapService
     {

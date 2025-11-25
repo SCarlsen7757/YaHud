@@ -1,0 +1,88 @@
+﻿.relative-driver-widget {
+    text-align: left;
+    border-radius: 4px;
+    width: 400px;
+    height: 175px;
+    position: absolute;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 5px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: rgba(42, 42, 42, 0.9);
+}
+
+.driver-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 2px;
+}
+
+.driver-row {
+    display: grid;
+    grid-template-columns: 32px 40px 1fr 80px 32px 60px;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+    /* Allocate seven equal rows inside the widget's content area.
+       There are 6 gaps of 2px => 12px total gap. The driver-table height is the widget's content height, so we subtract gaps. */
+    height: calc((100% - 12px) / 7);
+    min-height: 18px;
+    box-sizing: border-box;
+}
+
+    .driver-row.player-row {
+        font-weight: bold;
+    }
+
+.class-icon,
+.manufacturer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    /* keep icons a bit smaller than the row height so they fit nicely */
+    height: 18px;
+}
+
+    .class-icon img,
+    .manufacturer-icon img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+.car-number {
+    font-weight: bold;
+    text-align: center;
+    font-size: 14px;
+}
+
+.driver-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rating {
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.gap {
+    font-size: 13px;
+    font-weight: bold;
+    text-align: right;
+}
+
+.no-data {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 14px;
+}
