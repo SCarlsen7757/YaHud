@@ -115,10 +115,21 @@
 
     private bool IsStartPeriodActive()
     {
-        if (TelemetryService.Data.RollingStart && PlayerControl != Constant.Control.Player && StartLightPhase == 6) return true;
-        if (PlayerControl != Constant.Control.Player) return false;
-        if (!TelemetryService.Data.RollingStart) return false;
-        if (StartLightPhase < 6) return false;
+        var rolling = TelemetryService.Data.RollingStart;
+
+        if (PlayerControl != Constant.Control.Player)
+        {
+            return rolling && StartLightPhase == 6;
+        }
+
+        if (rolling)
+        {
+            if (StartLightPhase < 6) return false;
+        }
+        else
+        {
+            if (StartLightPhase < 1) return false;
+        }
 
         if (Settings!.VisibleAfterStartDurationMs > 0 && HideAgainAt != null)
         {
