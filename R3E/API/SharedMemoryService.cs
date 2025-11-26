@@ -13,8 +13,7 @@ namespace R3E.API
         private Shared data;
 
         // Track last observed header values for change detection
-        private int? lastSimTicks;
-        private int? lastGamePaused;
+        private int lastSimTicks;
         private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
@@ -22,9 +21,8 @@ namespace R3E.API
         private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // Game not running update interval
 
         // Offsets computed at runtime so code remains correct if SHM layout moves
-        private static readonly int s_offsetGamePaused;
-        private static readonly int s_offsetPlayer;
-        private static readonly int s_offsetGameSimulationTicks;
+        private static readonly int offsetPlayer;
+        private static readonly int offsetGameSimulationTicks;
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
@@ -33,11 +31,10 @@ namespace R3E.API
         static SharedMemoryService()
         {
             // Use Marshal.OffsetOf to compute offsets relative to the Shared struct
-            s_offsetGamePaused = (int)Marshal.OffsetOf<Shared>(nameof(Shared.GamePaused));
-            s_offsetPlayer = (int)Marshal.OffsetOf<Shared>(nameof(Shared.Player));
+            offsetPlayer = (int)Marshal.OffsetOf<Shared>(nameof(Shared.Player));
 
             // Offset of GameSimulationTicks inside PlayerData
-            s_offsetGameSimulationTicks = s_offsetPlayer + (int)Marshal.OffsetOf<PlayerData>(nameof(PlayerData.GameSimulationTicks));
+            offsetGameSimulationTicks = offsetPlayer + (int)Marshal.OffsetOf<PlayerData>(nameof(PlayerData.GameSimulationTicks));
         }
 
         /// <summary>
@@ -103,30 +100,27 @@ namespace R3E.API
                         if (bytesRead != expected)
                         {
                             // skip incomplete read
-                            logger.LogDebug("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
+                            logger.LogCritical("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
                             await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
                         }
 
-                        // Determine paused state and sim ticks directly from buffer using computed offsets
-                        int gamePaused = 0;
+                        // Determine sim ticks directly from buffer using computed offsets
                         int simTicks = 0;
-                        if (readBuffer.Length >= s_offsetGameSimulationTicks + 4)
+                        if (readBuffer.Length >= offsetGameSimulationTicks + 4)
                         {
-                            gamePaused = BitConverter.ToInt32(readBuffer, s_offsetGamePaused);
-                            simTicks = BitConverter.ToInt32(readBuffer, s_offsetGameSimulationTicks);
+                            simTicks = BitConverter.ToInt32(readBuffer, offsetGameSimulationTicks);
                         }
 
-                        // adjust polling interval based on paused/running
-                        currentDelay = gamePaused != 0 ? pausedInterval : normalInterval;
+                        currentDelay = normalInterval;
 
                         // If nothing changed, skip
-                        if (lastSimTicks.HasValue && lastGamePaused.HasValue && lastSimTicks.Value == simTicks && lastGamePaused.Value == gamePaused)
+                        if (lastSimTicks == simTicks)
                         {
                             noUpdate++;
-                            if (noUpdate > 100)
+                            if (noUpdate > 327)
                             {
-                                logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks}, paused={Paused})", simTicks, gamePaused);
+                                logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks})", simTicks);
                                 noUpdate = 0;
                             }
                         }
@@ -135,26 +129,15 @@ namespace R3E.API
                             noUpdate = 0;
                             // update last observed
                             lastSimTicks = simTicks;
-                            lastGamePaused = gamePaused;
 
-                            // If game is paused, skip publishing (HUD hidden)
-                            if (gamePaused != 0)
+                            if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
                             {
-                                logger.LogDebug("Game paused (GamePaused={Paused}); skipping publish", gamePaused);
+                                data = newData;
+                                DataUpdated?.Invoke(data);
                             }
                             else
                             {
-                                if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
-                                {
-                                    data = newData;
-                                    // Immediately publish updates so HUD receives fresh data
-                                    DataUpdated?.Invoke(data);
-                                    logger.LogDebug("Published shared memory update (simTicks={SimTicks})", simTicks);
-                                }
-                                else
-                                {
-                                    logger.LogWarning("Failed to marshal shared memory buffer");
-                                }
+                                logger.LogCritical("Failed to marshal shared memory buffer");
                             }
                         }
                     }
