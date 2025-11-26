@@ -5,26 +5,26 @@ namespace R3E.YaHud.Components.Widget.UserInputs
 {
     public class UserInputsSettings : BasicSettings
     {
-        private bool showSteering = true;
+        private bool showSteeringWheel = true;
 
-        [SettingType("Show Steering input", SettingsTypes.Checkbox, 10,
-            Description = "Show steering input",
+        [SettingType("Show Steering wheel", SettingsTypes.Checkbox, 10,
+            Description = "Show steering wheel",
             ViewMode = SettingsViewMode.Beginner)]
-        public bool ShowSteering
+        public bool ShowSteeringWheel
         {
-            get => showSteering;
+            get => showSteeringWheel;
             set
             {
-                if (value == showSteering) return;
-                showSteering = value;
+                if (value == showSteeringWheel) return;
+                showSteeringWheel = value;
                 NotifyPropertyChanged();
             }
         }
 
         private string steeringColor = "#ffffff";
 
-        [SettingType("Steering Color", SettingsTypes.ColorPicker, 11,
-            Description = "Color of the steering input",
+        [SettingType("Steering wheel Color", SettingsTypes.ColorPicker, 11,
+            Description = "Color of the steering wheel",
             ViewMode = SettingsViewMode.Expert)]
         public string SteeringColor
         {
@@ -37,6 +37,37 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
+        private bool showSteeringInput = true;
+
+        [SettingType("Show Steering Input", SettingsTypes.Checkbox, 12,
+            Description = "Show steering input bar",
+            ViewMode = SettingsViewMode.Beginner)]
+        public bool ShowSteeringInput
+        {
+            get => showSteeringInput;
+            set
+            {
+                if (value == showSteeringInput) return;
+                showSteeringInput = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        private string steeringInputColor = "#ffffff";
+
+        [SettingType("Steering Input Color", SettingsTypes.ColorPicker, 13,
+            Description = "Color of the steering input dot",
+            ViewMode = SettingsViewMode.Expert)]
+        public string SteeringInputColor
+        {
+            get => steeringInputColor;
+            set
+            {
+                if (value == steeringInputColor) return;
+                steeringInputColor = value;
+                NotifyPropertyChanged();
+            }
+        }
 
         private bool showClutch = true;
 

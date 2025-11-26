@@ -39,10 +39,20 @@
             </div>
         </div>
 
-        @if (Settings.ShowSteering)
+        @if (Settings.ShowSteeringWheel)
         {
-            <div class="steering-component">
-                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; -webkit-mask-image: url(@Settings.WheelSvgPath); mask-image: url(@Settings.WheelSvgPath); transform: rotate(@Steering);"></div>
+            <div class="steering-wheel-component">
+                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; -webkit-mask-image: url(@Settings.WheelSvgPath); mask-image: url(@Settings.WheelSvgPath); transform: rotate(@SteeringWheelDeg);"></div>
+            </div>
+        }
+
+        @if (Settings.ShowSteeringInput)
+        {
+            <div class="steering-input-component">
+                <HorizontalBar @key="SteeringInputRaw"
+                               Value="SteeringInputRaw"
+                               PrimaryColor="@Settings.SteeringInputColor"
+                               BackgroundColor="@BarBackgroundColor" />
             </div>
         }
     </div>
@@ -52,7 +62,8 @@
     private double Clutch { get; set; } = 0.0d;
     private double Throttle { get; set; } = 0.0d;
     private double Brake { get; set; } = 0.0d;
-    private string Steering { get; set; } = "0deg";
+    private string SteeringWheelDeg { get; set; } = "0deg";
+    private double SteeringInputRaw { get; set; } = 0.0d;
 
     private string BarBackgroundColor => "#454545";
 
@@ -75,10 +86,11 @@
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
-        Clutch = (double)data.Clutch;
-        Throttle = (double)data.Throttle;
-        Brake = (double)data.Brake;
-        Steering = (data.SteerInputRaw * data.SteerWheelRangeDegrees / 2).ToString().Replace(",", ".") + "deg";
+        Clutch = (double)data.ClutchRaw;
+        Throttle = (double)data.ThrottleRaw;
+        Brake = (double)data.BrakeRaw;
+        SteeringInputRaw = data.SteerInputRaw;
+        SteeringWheelDeg = (data.SteerInputRaw * data.SteerWheelRangeDegrees / 2).ToString().Replace(",", ".") + "deg";
     }
 
     protected override void UpdateWithTestData()
@@ -86,6 +98,7 @@
         Clutch = 0.35;
         Throttle = 0.85;
         Brake = 0.15;
-        Steering = "45deg";
+        SteeringWheelDeg = "45deg";
+        SteeringInputRaw = 0.5;
     }
 }
