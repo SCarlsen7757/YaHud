@@ -1,4 +1,6 @@
-﻿namespace R3E.API
+﻿using R3E.Models;
+
+namespace R3E.API
 {
     public interface ITelemetryService
     {
@@ -11,5 +13,6 @@
         event Action<TelemetryData>? CarChanged;
 
         TelemetryData Data { get; }
+        FuelData FuelData { get; }
     }
 }

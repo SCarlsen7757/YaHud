@@ -19,6 +19,10 @@ namespace R3E.API
             this.serviceProvider = serviceProvider;
         }
 
+
+        
+        
+
         /// <summary>
         /// Gets the player's starting position in the race session, as a 1-based index.
         /// </summary>

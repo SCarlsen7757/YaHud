@@ -1,5 +1,6 @@
 using R3E.Data;
 using R3E.Extensions;
+using R3E.Models;
 
 namespace R3E.API
 {
@@ -18,6 +19,7 @@ namespace R3E.API
         public event Action<TelemetryData>? CarChanged;
 
         public TelemetryData Data { get; init; }
+        public FuelData FuelData { get; init; }
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -35,6 +37,7 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
+            FuelData = new FuelData(Data.Raw, this);
 
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
