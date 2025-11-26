@@ -1,0 +1,345 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.MoTec.Components
+@using R3E.API
+@using System.Numerics
+@inherits HudWidgetBase<RadarSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="radar-widget">
+        <div id="radar" @ref="radarElement" style="background-image : radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ), url(@Settings.RadarGridSvgPath)">
+            @foreach (var child in radarChildren)
+            {
+                <div id="@child" class="@driverStyling.GetValueOrDefault(child)!.classlist.ToString()" style="@driverStyling.GetValueOrDefault(child)!.ToString()">
+                    <!-- TODO Render child element here -->
+                </div>
+            }
+        </div>
+    </div>
+}
+
+
+@code {
+
+    public override string ElementId { get => "radarWidget"; }
+    public override string Name => "Radar";
+    public override string Category => "Radar";
+    public override bool Collidable => false;
+
+    public override double DefaultXPercent => 90;
+    public override double DefaultYPercent => 90;
+    private string RadarStyle = "";
+    //TODO Refactor this to a proper class.
+    class DriverState { public Vector3 RelativePos; public Vector3 RelativeOri; public R3E.Data.DriverData DriverData; } //TODO move to proper struct/class file.
+    private Dictionary<int, DriverState> drivers = new Dictionary<int, DriverState>();
+
+    //private List<Data.DriverInfo> radarChildren = new List<Data.DriverInfo>();
+    private List<int> radarChildren = new List<int>();
+    private Dictionary<int, stylingElement> driverStyling = new Dictionary<int, stylingElement>();
+    private bool RadarPointer = false;
+    private ElementReference radarElement;
+    private double radarWidth;
+
+    public Radar()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    protected override void UpdateWithTestData()
+    {
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            radarWidth = await JS.InvokeAsync<double>(
+                "radarInterop.getOffsetWidth",
+                radarElement
+            );
+
+            // If you depend on this value for further rendering:
+            StateHasChanged();
+        }
+    }
+
+    protected override void Update()
+    {
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+        foreach (var driver in data.DriverData)
+        {
+            drivers[driver.DriverInfo.SlotId] = new DriverState();
+        }
+
+        var rotationMatrix = RotationMatrixFromEuler(data.Player.Orientation);
+        var pointerStartRange = Settings.RadarRange * 1.1;
+        var radarFadeRange = Settings.RadarRange + Settings.RadarFadeRange;
+
+        RadarStyle = "background-image : radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url('/icons/radar-grid.png')";// : ""; //TODO add image //TODO make it not so shit. //TODO make sure styling works
+        var ownPlace = data.DriverData.Where(d => d.DriverInfo.UserId == data.Player.UserId).FirstOrDefault().Place; //TODO verify that this does not cause errors.
+        var ownDriver = data.DriverData.Where(d => d.DriverInfo.UserId == data.Player.UserId).FirstOrDefault(); //TODO verify this exists.
+
+        foreach (var driver in data.DriverData)
+        {
+            if (ownPlace != driver.Place)
+            {
+                drivers[driver.DriverInfo.SlotId].RelativePos = RotateVector(rotationMatrix, SubtractVector(ownDriver.Position, driver.Position));
+                var tmp = SubtractVector(driver.Orientation, ownDriver.Orientation);
+                drivers[driver.DriverInfo.SlotId].RelativeOri = new Vector3(tmp.X, tmp.Y, tmp.Z);
+            }
+            drivers[driver.DriverInfo.SlotId].DriverData = driver;
+
+            //radarChildren.Add(driver.DriverInfo);
+        }
+
+        var closeDrivers = drivers.Where(d => DistanceFromZero(d.Value.RelativePos) < radarFadeRange).ToList();
+
+        //var radarSize = radarElement.;
+
+        double? closest = null;
+        int closeLeft = 0;
+        int closeRight = 0;
+
+
+        for (int i = 0; i < radarChildren.Count + closeDrivers.Count; i++)
+        {
+            if (i >= closeDrivers.Count)
+            {
+                if (i < radarChildren.Count)
+                {
+                    driverStyling[i].display = "none";
+                    //StateHasChanged();
+                }
+                continue;
+            }
+            else if (i >= radarChildren.Count)
+            {
+                //TODO create new child
+                radarChildren.Add(i); //TODO replace 0 with actual child id.
+                driverStyling.Add(i, new stylingElement());
+                //driverStyling[i].display = "none"; //TODO add child to radar
+                //StateHasChanged();
+            }
+
+            //TODO add if statement about child being an HTML element.
+            var child = driverStyling[i];
+            //child.display = null;//"display: none;"; //Reset styling"
+
+            var driver = closeDrivers[i];
+            var driverRotation = driver.Value.RelativeOri.Y;
+            var driverLeftRight = driver.Value.RelativePos.X;
+            var driverFrontBack = driver.Value.RelativePos.Z;
+
+            var carWdith = driver.Value.DriverData.DriverInfo.CarWidth;
+            var carLength = driver.Value.DriverData.DriverInfo.CarLength;
+
+            var distance = DistanceFromZero(driver.Value.RelativePos);
+
+            if (distance < Settings.RadarRange)
+            {
+                if (driverLeftRight < 0 && (Math.Abs(driverFrontBack) < Math.Abs(driverLeftRight) || Math.Abs(driverFrontBack) <= carLength))
+                {
+                    closeLeft = 1;
+                }
+                else if (driverLeftRight > 0 && (Math.Abs(driverFrontBack) < Math.Abs(driverLeftRight) || Math.Abs(driverFrontBack) <= carLength))
+                {
+                    closeRight = 1;
+                }
+            }
+
+            driverFrontBack = -driverFrontBack;
+
+            var width = carWdith / Settings.RadarRange * radarWidth / 2; //TODO find radar size
+            var height = carLength / Settings.RadarRange * radarWidth / 2; //TODO find radar size
+
+            if (RadarPointer && distance > pointerStartRange)
+            {
+                var pointerRotation = GetRadarPointerRotation(distance, driver.Value.RelativePos.X, driver.Value.RelativePos.Z);
+                var pointerOpacity = Math.Pow((distance - radarFadeRange) / (Settings.RadarRange - radarFadeRange), 1 / 2);
+
+                child.BackgroundColor = "red";
+                child.BorderRadius = "0px";
+                //child.left = "50%";
+                //child.top = "50%";
+                child.width = $"{width}px";
+                child.height = "20px";
+                child.translate = "-50% -50%";
+                if (driver.Value.RelativePos.Z > 0)
+                {
+                    child.transform = $"rotate({pointerRotation}rad)translate(0px, -150px)";
+                }
+                else
+                {
+                    child.transform = $"rotate({pointerRotation}rad)translate(0px, 150px)";
+                }
+
+                child.opacity = $"{pointerOpacity}";
+                driverStyling[i] = child;
+                //StateHasChanged();
+
+            }
+            else
+            {
+                child.BackgroundColor = ownPlace == driver.Value.DriverData.Place ? "white" : "red";
+                child.BorderRadius = "6px";
+                //child.left = $"{(driverLeftRight / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - width / 2}px";
+                //child.top = $"{(driverFrontBack / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2}px";
+                child.width = $"{width}px";
+                child.height = $"{height}px";
+                child.translate = "none";
+                child.transform = $"rotate({driverRotation}rad)";
+                child.opacity = "1";
+                driverStyling[i] = child;
+                //StateHasChanged();
+            }
+
+            if (ownPlace == driver.Value.DriverData.Place)
+            {
+                child.classlist.add("radar-car-self");
+                driverStyling[i] = child;
+                //StateHasChanged();
+            }
+            else
+            {
+                if (closest == null || distance < closest)
+                {
+                    closest = distance;
+                }
+                child.classlist.remove("radar-car-self");
+                driverStyling[i] = child;
+                //StateHasChanged();
+            }
+
+
+
+        }
+        StateHasChanged();
+    }
+
+
+    private static double[,] RotationMatrixFromEuler(R3E.Data.Vector3<Double> euler)
+    {
+        double x = -euler.X;
+        double y = -euler.Y;
+        double z = -euler.Z;
+
+        double c1 = Math.Cos(x);
+        double s1 = Math.Sin(x);
+        double c2 = Math.Cos(y);
+        double s2 = Math.Sin(y);
+        double c3 = Math.Cos(z);
+        double s3 = Math.Sin(z);
+
+        return new double[,]
+        {
+            { c2 * c3, -c2 * s3, s2 },
+            { c1 * s3 + c3 * s1 * s2, c1 * c3 - s1 * s2 * s3, -c2 * s1 },
+            { s1 * s3 - c1 * c3 * s2, c3 * s1 + c1 * s2 * s3, c1 * c2 }
+        };
+    }
+
+    public static Vector3 RotateVector(double[,] matrix, R3E.Data.Vector3<Double> vector)
+    {
+        float x = (float)(matrix[0, 0] * vector.X + matrix[0, 1] * vector.Y + matrix[0, 2] * vector.Z);
+        float y = (float)(matrix[1, 0] * vector.X + matrix[1, 1] * vector.Y + matrix[1, 2] * vector.Z);
+        float z = (float)(matrix[2, 0] * vector.X + matrix[2, 1] * vector.Y + matrix[2, 2] * vector.Z);
+
+        return new Vector3(x, y, z);
+    }
+
+    public static Vector3 RotateVector(double[,] matrix, R3E.Data.Vector3<float> vector)
+    {
+        float x = (float)(matrix[0, 0] * vector.X + matrix[0, 1] * vector.Y + matrix[0, 2] * vector.Z);
+        float y = (float)(matrix[1, 0] * vector.X + matrix[1, 1] * vector.Y + matrix[1, 2] * vector.Z);
+        float z = (float)(matrix[2, 0] * vector.X + matrix[2, 1] * vector.Y + matrix[2, 2] * vector.Z);
+
+        return new Vector3(x, y, z);
+    }
+
+    public static Vector3 SubtractVector(Vector3 a, Vector3 b)
+    {
+        return new Vector3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+    }
+
+    public static R3E.Data.Vector3<float> SubtractVector(R3E.Data.Vector3<float> a, R3E.Data.Vector3<float> b)
+    {
+        return new R3E.Data.Vector3<float>
+        {
+            X = a.X - b.X,
+            Y = a.Y - b.Y,
+            Z = a.Z - b.Z
+        };
+    }
+
+    public double DistanceFromZero(Vector3 v)
+    {
+        return Math.Sqrt(v.X * v.X + v.Z * v.Z);
+    }
+
+    public static double GetRadarPointerRotation(double d, double x, double z)
+    {
+        double angle = Math.Acos(Math.Abs(z) / d);
+
+        if (x > 0 && z > 0)
+        {
+            return angle;
+        }
+        else if (x > 0 && z < 0)
+        {
+            return -angle;
+        }
+        else if (x < 0 && z > 0)
+        {
+            return -angle;
+        }
+        else
+        {
+            return angle;
+        }
+    }
+
+
+    class stylingElement
+    {
+        public string BackgroundColor;
+        public string BorderRadius;
+        public string left;
+        public string top;
+        public string width;
+        public string height;
+        public string translate;
+        public string transform;
+        public string opacity;
+        public string display;
+        public classList classlist = new classList();
+
+        public override string ToString()
+        {
+            return $"background-color: {BackgroundColor}; border-radius: {BorderRadius}; width: {width}; height: {height}; transform: translate({translate}) {transform}; opacity: {opacity};";
+        }
+
+        public class classList
+        {
+
+            private string classlist = "";
+            public void add(string className)
+            {
+                if (!classlist.Contains(className))
+                {
+                    classlist += " " + className;
+                }
+            }
+            public void remove(string className)
+            {
+                classlist = classlist.Replace(" " + className, "");
+            }
+            public override string ToString()
+            {
+                return classlist;
+            }
+        }
+
+    }
+}
