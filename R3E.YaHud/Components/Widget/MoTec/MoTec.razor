@@ -58,7 +58,7 @@
                 Gear = data.Gear.ToString();
                 break;
         }
-        Speed = UnitConverter.Convert(data.CarSpeed, SpeedUnit.MilesPerHour, SettingsService.GlobalSettings.SpeedUnit);
+        Speed = UnitConverter.Convert(data.CarSpeed, SpeedUnit.MetersPerSecond, SettingsService.GlobalSettings.SpeedUnit);
         Rps = (double)data.EngineRps;
         MaxRps = (double)data.MaxEngineRps;
         var upshiftRps = (double)data.UpshiftRps;
