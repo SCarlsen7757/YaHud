@@ -23,7 +23,7 @@
 
     public override string ElementId { get => "radarWidget"; }
     public override string Name => "Radar";
-    public override string Category => "Radar";
+    public override string Category => "Telemetry";
     public override bool Collidable => false;
 
     public override double DefaultXPercent => 90;
@@ -36,7 +36,7 @@
     //private List<Data.DriverInfo> radarChildren = new List<Data.DriverInfo>();
     private List<int> radarChildren = new List<int>();
     private Dictionary<int, stylingElement> driverStyling = new Dictionary<int, stylingElement>();
-    private bool RadarPointer = false;
+    private bool RadarPointer = true;
     private ElementReference radarElement;
     private double radarWidth;
 
@@ -53,20 +53,26 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await base.OnAfterRenderAsync(firstRender);
         if (firstRender)
         {
-            radarWidth = await JS.InvokeAsync<double>(
-                "radarInterop.getOffsetWidth",
-                radarElement
-            );
+            if(radarElement.Context != null)
+            {
+                radarWidth = await JS.InvokeAsync<double>(
+                    "radarInterop.getOffsetWidth",
+                    radarElement
+                );
 
-            // If you depend on this value for further rendering:
-            StateHasChanged();
+                // If you depend on this value for further rendering:
+                StateHasChanged();
+            }
+
         }
     }
 
     protected override void Update()
     {
+        if (Settings is null) return;
         R3E.Data.Shared data = TelemetryService.Data.Raw;
         foreach (var driver in data.DriverData)
         {
@@ -77,7 +83,7 @@
         var pointerStartRange = Settings.RadarRange * 1.1;
         var radarFadeRange = Settings.RadarRange + Settings.RadarFadeRange;
 
-        RadarStyle = "background-image : radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url('/icons/radar-grid.png')";// : ""; //TODO add image //TODO make it not so shit. //TODO make sure styling works
+        RadarStyle = "background-image : radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url('/icons/radar/radar-grid.png')";// : ""; //TODO add image //TODO make it not so shit. //TODO make sure styling works
         var ownPlace = data.DriverData.Where(d => d.DriverInfo.UserId == data.Player.UserId).FirstOrDefault().Place; //TODO verify that this does not cause errors.
         var ownDriver = data.DriverData.Where(d => d.DriverInfo.UserId == data.Player.UserId).FirstOrDefault(); //TODO verify this exists.
 
@@ -103,13 +109,27 @@
         int closeRight = 0;
 
 
-        for (int i = 0; i < radarChildren.Count + closeDrivers.Count; i++)
+        foreach(var driver in drivers)
+        {
+            if (!radarChildren.Contains(driver.Value.DriverData.DriverInfo.SlotId))
+                radarChildren.Add(driver.Value.DriverData.DriverInfo.SlotId);
+            if (!driverStyling.ContainsKey(driver.Value.DriverData.DriverInfo.SlotId))
+            {
+                driverStyling.Add(driver.Value.DriverData.DriverInfo.SlotId, new stylingElement());
+                driverStyling[driver.Value.DriverData.DriverInfo.SlotId].display = "none";
+
+                driverStyling[driver.Value.DriverData.DriverInfo.SlotId].classlist.add("radar-car");
+            }
+        }
+
+        for (int i = 0; i < radarChildren.Count; i++)
         {
             if (i >= closeDrivers.Count)
             {
                 if (i < radarChildren.Count)
                 {
-                    driverStyling[i].display = "none";
+                    if (driverStyling.ContainsKey(i))
+                        driverStyling[i].display = "none";
                     //StateHasChanged();
                 }
                 continue;
@@ -117,8 +137,8 @@
             else if (i >= radarChildren.Count)
             {
                 //TODO create new child
-                radarChildren.Add(i); //TODO replace 0 with actual child id.
-                driverStyling.Add(i, new stylingElement());
+                //radarChildren.Add(i); //TODO replace 0 with actual child id.
+                //driverStyling.Add(i, new stylingElement());
                 //driverStyling[i].display = "none"; //TODO add child to radar
                 //StateHasChanged();
             }
@@ -157,22 +177,23 @@
             if (RadarPointer && distance > pointerStartRange)
             {
                 var pointerRotation = GetRadarPointerRotation(distance, driver.Value.RelativePos.X, driver.Value.RelativePos.Z);
-                var pointerOpacity = Math.Pow((distance - radarFadeRange) / (Settings.RadarRange - radarFadeRange), 1 / 2);
+                var pointerOpacity = Math.Pow((distance - radarFadeRange) / (Settings.RadarRange - radarFadeRange), 1/2);
 
+                child.display = null;
                 child.BackgroundColor = "red";
                 child.BorderRadius = "0px";
-                //child.left = "50%";
-                //child.top = "50%";
+                child.left = "50%";
+                child.top = "50%";
                 child.width = $"{width}px";
                 child.height = "20px";
                 child.translate = "-50% -50%";
                 if (driver.Value.RelativePos.Z > 0)
                 {
-                    child.transform = $"rotate({pointerRotation}rad)translate(0px, -150px)";
+                    child.transform = $"rotate({pointerRotation.ToString().Replace(",",".")}rad)translate(0px, -150px)";
                 }
                 else
                 {
-                    child.transform = $"rotate({pointerRotation}rad)translate(0px, 150px)";
+                    child.transform = $"rotate({pointerRotation.ToString().Replace(",", ".")}rad)translate(0px, 150px)";
                 }
 
                 child.opacity = $"{pointerOpacity}";
@@ -182,14 +203,27 @@
             }
             else
             {
+                var pointerRotation = GetRadarPointerRotation(distance, driver.Value.RelativePos.X, driver.Value.RelativePos.Z);
+
+
+                child.display = null;
                 child.BackgroundColor = ownPlace == driver.Value.DriverData.Place ? "white" : "red";
                 child.BorderRadius = "6px";
-                //child.left = $"{(driverLeftRight / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - width / 2}px";
-                //child.top = $"{(driverFrontBack / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2}px";
+                child.left = $"{(driverLeftRight / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - width / 2}px";
+                child.top = $"{(driverFrontBack / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2}px";
                 child.width = $"{width}px";
                 child.height = $"{height}px";
                 child.translate = "none";
-                child.transform = $"rotate({driverRotation}rad)";
+                //child.translate = "-50% -50%";
+                child.transform = $"rotate({driverRotation.ToString().Replace(",",".")}rad)";
+                // if (driver.Value.RelativePos.Z > 0)
+                // {
+                //     child.transform = $"rotate({pointerRotation.ToString().Replace(",", ".")}rad)translate(0px, -150px)";
+                // }
+                // else
+                // {
+                //     child.transform = $"rotate({pointerRotation.ToString().Replace(",", ".")}rad)translate(0px, 150px)";
+                // }
                 child.opacity = "1";
                 driverStyling[i] = child;
                 //StateHasChanged();
@@ -211,11 +245,8 @@
                 driverStyling[i] = child;
                 //StateHasChanged();
             }
-
-
-
         }
-        StateHasChanged();
+
     }
 
 
@@ -317,7 +348,10 @@
 
         public override string ToString()
         {
-            return $"background-color: {BackgroundColor}; border-radius: {BorderRadius}; width: {width}; height: {height}; transform: translate({translate}) {transform}; opacity: {opacity};";
+            if(display != null)
+                return$"display: {display}";
+            else 
+                return $"background-color: {BackgroundColor}; border-radius: {BorderRadius}; width: {width.Replace(",", ".")}; height: {height.Replace(",", ".")}; transform: {transform}; translate: {translate}; opacity: {opacity}; top: {top.Replace(",", ".")}; left: {left.Replace(",", ".")}";
         }
 
         public class classList
