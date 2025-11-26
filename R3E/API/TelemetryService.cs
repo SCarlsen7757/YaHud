@@ -1,39 +1,125 @@
 using R3E.Data;
+using R3E.Extensions;
 
 namespace R3E.API
 {
-    public class TelemetryService : IDisposable, IAsyncDisposable
+    public class TelemetryService : ITelemetryService, IDisposable
     {
         private readonly ISharedSource sharedSource;
-        private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
+        private readonly ILogger<TelemetryService> logger;
         private bool disposed;
-        private int oldNumberOfLaps;
 
         public event Action<TelemetryData>? DataUpdated;
         public event Action<TelemetryData>? NewLap;
-        private readonly TelemetryData data = new();
-        public TelemetryData Data { get => data; }
+        public event Action<TelemetryData>? SessionTypeChanged;
+        public event Action<TelemetryData>? SessionPhaseChanged;
+        public event Action<TelemetryData>? CarPositionChanged;
+        public event Action<TelemetryData>? TrackChanged;
+        public event Action<TelemetryData>? CarChanged;
 
-        public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
+        public TelemetryData Data { get; init; }
+
+        private int lastTick = 0;
+        private int lastLapNumber = 0;
+        private Constant.Session lastSessionType = Constant.Session.Unavailable;
+        private Constant.SessionPhase sessionPhase = Constant.SessionPhase.Unavailable;
+        private int trackId = 0;
+        private int carId = 0;
+        private int playerPosition = 0;
+
+
+        public TelemetryService(ILogger<TelemetryService> logger,
+                                IServiceProvider serviceProvider,
+                                ISharedSource sharedSource)
         {
-            this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
-            this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
-            Data.Raw = sharedSource.Data;
+            this.logger = logger;
+            this.sharedSource = sharedSource;
+            Data = new TelemetryData(serviceProvider);
+
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
 
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
-            DataUpdated?.Invoke(Data);
-            logger.LogDebug("Telemetry data updated");
-            if (raw.NumberOfLaps != oldNumberOfLaps)
+
+            var tick = raw.Player.GameSimulationTicks;
+            var sessionType = (Constant.Session)raw.SessionType;
+            if (sessionType != lastSessionType || tick < lastTick)
             {
-                oldNumberOfLaps = raw.NumberOfLaps;
-                NewLap?.Invoke(Data);
-                logger.LogDebug("New lap detected");
+                lastSessionType = sessionType;
+                lastLapNumber = -1;
+                this.logger.LogInformation("Session changed: {SessionType}", lastSessionType);
+                SessionTypeChanged?.Invoke(Data);
+            }
+            lastTick = tick;
+
+            var sessionPhase = (Constant.SessionPhase)raw.SessionPhase;
+            if (sessionPhase != this.sessionPhase)
+            {
+                this.sessionPhase = sessionPhase;
+                if (sessionPhase == Constant.SessionPhase.Green)
+                {
+                    Data.PlayerStartPosition = raw.Position;
+                    logger.LogInformation("Player starting position: {StartPosition}", Data.PlayerStartPosition);
+                }
+                else
+                {
+                    Data.PlayerStartPosition = -1;
+                }
+                playerPosition = raw.Position;
+                this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
+
+                if (sessionPhase == Constant.SessionPhase.Formation)
+                {
+                    Data.RollingStart = true;
+                    logger.LogInformation("Rolling start detected.");
+                }
+                else if (sessionPhase == Constant.SessionPhase.Countdown)
+                {
+                    Data.RollingStart = false;
+                    logger.LogInformation("Standing start detected.");
+                }
+
+                SessionPhaseChanged?.Invoke(Data);
             }
 
+            var completedLaps = raw.CompletedLaps;
+            if (completedLaps != lastLapNumber)
+            {
+                lastLapNumber = completedLaps;
+                if (lastLapNumber > 0)
+                {
+                    this.logger.LogInformation("Starting lap number: {LapNumber}", lastLapNumber + 1);
+                    NewLap?.Invoke(Data);
+                }
+            }
+
+            var position = raw.Position;
+            if (position != playerPosition)
+            {
+                playerPosition = position;
+                this.logger.LogInformation("Player position changed: {Position}", position);
+                CarPositionChanged?.Invoke(Data);
+            }
+
+            var trackId = raw.TrackId;
+            if (trackId != this.trackId && trackId > 0)
+            {
+                this.trackId = trackId;
+                this.logger.LogInformation("Track changed. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
+                TrackChanged?.Invoke(Data);
+            }
+
+            var carId = raw.VehicleInfo.CarNumber;
+            if (carId != this.carId && carId > 0)
+            {
+                this.carId = carId;
+                this.logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
+                CarChanged?.Invoke(Data);
+            }
+
+            DataUpdated?.Invoke(Data);
         }
 
         public void Dispose()
@@ -46,12 +132,6 @@ namespace R3E.API
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             GC.SuppressFinalize(this);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }
