@@ -31,8 +31,8 @@
     private bool blinkModeOn = false;
     private string blinkColor = "#ff0000";
 
-    private const double MaxRpsOffset = 20.0;
-    private const double UpshiftRpsOffset = 70.0;
+    private const double MaxRpsOffset = 20.0; //Radians per Second 20 rad/s = 190.985932 RPM
+    private const double UpshiftRpsOffset = 70.0; //Radians per Second 70 rad/s = 668.450761 RPM
     private const double BlinkCycleDuration = 0.3;
     private const double BlinkOnDuration = 0.15;
 
@@ -86,14 +86,9 @@
             blinkModeOn = false;
         }
 
-        if (blinkModeOn)
-        {
-            RpsCurrentColor = (data.Player.GameSimulationTime % BlinkCycleDuration) < BlinkOnDuration ? blinkColor : Settings!.SecondaryBlinkColor;
-        }
-        else
-        {
-            RpsCurrentColor = Settings!.PrimaryColor;
-        }
+        RpsCurrentColor = blinkModeOn
+            ? ((data.Player.GameSimulationTime % BlinkCycleDuration) < BlinkOnDuration ? blinkColor : Settings!.SecondaryBlinkColor)
+            : Settings!.PrimaryColor;
     }
 
     protected override void UpdateWithTestData()
