@@ -1,4 +1,11 @@
-﻿window.HudHelper = (function () {
+﻿window.radarInterop = {
+    getOffsetWidth: function (element) {
+        if (!element) return 0;   // or null
+        return element.offsetWidth;
+    }
+};
+
+window.HudHelper = (function () {
     const registry = {}; // elementId -> { el, dotNetRef, isDragging, handlers, targetX, targetY, raf, id, collidable }
 
     // create grid overlay element lazily

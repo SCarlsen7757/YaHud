@@ -9,6 +9,6 @@ namespace R3E.YaHud.Components.Widget.Radar
         public int RadarRange { get; set; } = 12;
         public float RadarOpacity { get; set; } = 0.8f;
         public int RadarFadeRange { get; set; } = 2;
-        public string RadarGridSvgPath => $"/img/radar/radar-grid.png";
+        public string RadarGridSvgPath => $"assets/img/radar/radar-grid.png";
     }
 }
