@@ -7,8 +7,8 @@ namespace R3E.YaHud.Components.Widget.UserInputs
     {
         private bool showSteeringWheel = true;
 
-        [SettingType("Show Steering input", SettingsTypes.Checkbox, 10,
-            Description = "Show steering input",
+        [SettingType("Show Steering wheel", SettingsTypes.Checkbox, 10,
+            Description = "Show steering wheel",
             ViewMode = SettingsViewMode.Beginner)]
         public bool ShowSteeringWheel
         {
@@ -23,8 +23,8 @@ namespace R3E.YaHud.Components.Widget.UserInputs
 
         private string steeringColor = "#ffffff";
 
-        [SettingType("Steering Color", SettingsTypes.ColorPicker, 11,
-            Description = "Color of the steering input",
+        [SettingType("Steering wheel Color", SettingsTypes.ColorPicker, 11,
+            Description = "Color of the steering wheel",
             ViewMode = SettingsViewMode.Expert)]
         public string SteeringColor
         {
@@ -37,18 +37,18 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
-        private bool showSteeringInputBox = true;
+        private bool showSteeringInput = true;
 
         [SettingType("Show Steering Input", SettingsTypes.Checkbox, 12,
-            Description = "Show steering input box",
+            Description = "Show steering input bar",
             ViewMode = SettingsViewMode.Beginner)]
         public bool ShowSteeringInput
         {
-            get => showSteeringInputBox;
+            get => showSteeringInput;
             set
             {
-                if (value == showSteeringInputBox) return;
-                showSteeringInputBox = value;
+                if (value == showSteeringInput) return;
+                showSteeringInput = value;
                 NotifyPropertyChanged();
             }
         }
@@ -56,7 +56,7 @@ namespace R3E.YaHud.Components.Widget.UserInputs
         private string steeringInputColor = "#ffffff";
 
         [SettingType("Steering Input Color", SettingsTypes.ColorPicker, 13,
-            Description = "Color of the steering input box",
+            Description = "Color of the steering input dot",
             ViewMode = SettingsViewMode.Expert)]
         public string SteeringInputColor
         {
