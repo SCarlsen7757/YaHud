@@ -1,0 +1,24 @@
+<div class="horizontal-bar" role="progressbar" aria-valuenow="@Value" aria-valuemin="-1" aria-valuemax="1">
+    <div class="horizontal-bar-track" style="background-color:@BackgroundColor">
+        <div class="horizontal-bar-dot" style="left:@Percent; background-color:@PrimaryColor"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string PrimaryColor { get; set; } = "white";
+    [Parameter] public string BackgroundColor { get; set; } = "darkgray";
+
+    string Percent
+    {
+        get
+        {
+            const double min = -1.0;
+            const double max = 1.0;
+            double percentage = (Value - min) / (max - min) * 100.0;
+            return (Math.Clamp(percentage, 0.0, 100.0)
+                .ToString("0.##")
+                .Replace(",", ".") + "%");
+        }
+    }
+}

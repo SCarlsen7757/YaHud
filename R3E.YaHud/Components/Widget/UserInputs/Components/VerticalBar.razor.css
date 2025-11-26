@@ -9,7 +9,7 @@
 
 .vertical-bar-track {
     display: flex;
-    flex-direction: column-reverse; /* make fill grow from bottom */
+    flex-direction: column-reverse;
     width: 100%;
     height: 100%;
     border-radius: 4px;
@@ -20,7 +20,7 @@
 .vertical-bar-fill {
     width: 100%;
     height: 0%;
-    transition: height 120ms linear; /* smooth updates */
+    transition: height 120ms linear;
     box-sizing: border-box;
     align-self: stretch;
 }
