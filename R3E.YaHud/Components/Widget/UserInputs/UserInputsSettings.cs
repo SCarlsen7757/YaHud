@@ -5,18 +5,18 @@ namespace R3E.YaHud.Components.Widget.UserInputs
 {
     public class UserInputsSettings : BasicSettings
     {
-        private bool showSteering = true;
+        private bool showSteeringWheel = true;
 
         [SettingType("Show Steering input", SettingsTypes.Checkbox, 10,
             Description = "Show steering input",
             ViewMode = SettingsViewMode.Beginner)]
-        public bool ShowSteering
+        public bool ShowSteeringWheel
         {
-            get => showSteering;
+            get => showSteeringWheel;
             set
             {
-                if (value == showSteering) return;
-                showSteering = value;
+                if (value == showSteeringWheel) return;
+                showSteeringWheel = value;
                 NotifyPropertyChanged();
             }
         }
@@ -37,6 +37,37 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
+        private bool showSteeringInputBox = true;
+
+        [SettingType("Show Steering Input", SettingsTypes.Checkbox, 12,
+            Description = "Show steering input box",
+            ViewMode = SettingsViewMode.Beginner)]
+        public bool ShowSteeringInput
+        {
+            get => showSteeringInputBox;
+            set
+            {
+                if (value == showSteeringInputBox) return;
+                showSteeringInputBox = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        private string steeringInputColor = "#ffffff";
+
+        [SettingType("Steering Input Color", SettingsTypes.ColorPicker, 13,
+            Description = "Color of the steering input box",
+            ViewMode = SettingsViewMode.Expert)]
+        public string SteeringInputColor
+        {
+            get => steeringInputColor;
+            set
+            {
+                if (value == steeringInputColor) return;
+                steeringInputColor = value;
+                NotifyPropertyChanged();
+            }
+        }
 
         private bool showClutch = true;
 
