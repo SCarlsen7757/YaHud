@@ -1,9 +1,9 @@
 ﻿using R3E.YaHud.Components.Widget.Core;
 using R3E.YaHud.Services.Settings;
 
-namespace R3E.YaHud.Components.Widget.SectorTime
+namespace R3E.YaHud.Components.Widget.Progress
 {
-    public class SectorTimeSettings : BasicSettings
+    public class ProgressSettings : BasicSettings
     {
         [SettingType("Positive Delta Time Color", SettingsTypes.ColorPicker, 10,
             Description = "Color of the delta time, when faster than previous time.",

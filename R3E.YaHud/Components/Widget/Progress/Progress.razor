@@ -1,5 +1,5 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
-@inherits HudWidgetBase<SectorTimeSettings>
+@inherits HudWidgetBase<ProgressSettings>
 @implements IDisposable
 
 @if (Settings?.Visible ?? false)
@@ -16,8 +16,8 @@
 
 @code {
 
-    public override string ElementId { get => "sectorTimeWidget"; }
-    public override string Name => "Sector Time";
+    public override string ElementId { get => "progressWidget"; }
+    public override string Name => "Progress";
     public override string Category => "Telemetry"; // TODO: Check correct value
 
     public override double DefaultXPercent => 50;
