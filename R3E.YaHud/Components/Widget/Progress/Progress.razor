@@ -5,10 +5,13 @@
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId>
-        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor">@TimeDeltaBestLapSelf.ToString("0.###")</span> <!-- TODO: Should it round or truncate? -->
+        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@TimeDeltaBestLapSelf.ToString("0.###")</span> <!-- TODO: Should it round or truncate? -->
     
-        <div>
-
+        <div id="box-container">
+            <div id="time-delta-best-lap-bar" style="background-color: @TimeDeltaBestLapSelfColor">
+                <div id="time-delta-best-lap-bar-negative"></div>
+                <div id="time-delta-best-lap-bar-positive"></div>
+            </div>
         </div>
     </div>
 }
