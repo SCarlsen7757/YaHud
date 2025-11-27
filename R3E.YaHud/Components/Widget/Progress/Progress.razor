@@ -19,6 +19,7 @@
 
 @code {
 
+    // Widget values
     public override string ElementId { get => "progressWidget"; }
     public override string Name => "Progress";
     public override string Category => "Telemetry"; // TODO: Check correct value
@@ -28,8 +29,10 @@
 
     public override bool Collidable => false;
 
-
+    // Controlling values
     private double TimeDeltaBestLapSelf = 0.0f;
+
+    // Style values
     private string TimeDeltaBestLapSelfColor = "#000000";
 
 
