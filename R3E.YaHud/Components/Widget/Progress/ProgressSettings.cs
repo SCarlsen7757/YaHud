@@ -5,6 +5,34 @@ namespace R3E.YaHud.Components.Widget.Progress
 {
     public class ProgressSettings : BasicSettings
     {
+        public enum DeltaTimeType {
+            /// <summary>
+            /// The actual delta time value
+            /// </summary>
+            Value,
+            /// <summary>
+            /// The change in the delta time value
+            /// </summary>
+            Velocity
+        }
+
+        [SettingType("Number Display Delta Time Type", SettingsTypes.Enum, 7,
+            Description = "What value to display for the number display.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public DeltaTimeType NumberDisplayDeltaTimeType { get; set; } = DeltaTimeType.Value;
+
+        [SettingType("Positive Negative Bar Delta Time Type", SettingsTypes.Enum, 8,
+            Description = "What value to display for the number display.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public DeltaTimeType PositiveNegativeBarDeltaTimeType { get; set; } = DeltaTimeType.Value;
+
+
+        [SettingType("Positive Negative Bar Range", SettingsTypes.Number, 9,
+            Min = 0.1, Max = 10, Step = 0.01,
+            Description = "The value which maps to a 100% extended bar in either direction.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public double PositiveNegativeBarRange { get; set; } = 1;
+
         [SettingType("Positive Delta Time Color", SettingsTypes.ColorPicker, 10,
             Description = "Color of the delta time, when faster than previous time.",
             ViewMode = SettingsViewMode.Intermediate)]
@@ -19,5 +47,20 @@ namespace R3E.YaHud.Components.Widget.Progress
             Description = "Color of the delta time, when equal to previous time.",
             ViewMode = SettingsViewMode.Intermediate)]
         public string NeutralDeltaTimeColor { get; set; } = "#FFFFFF";
+
+        [SettingType("Fastest Sector Time All Color", SettingsTypes.ColorPicker, 13,
+            Description = "Color of the sector, when the sector time is the fastest time of all players.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public string FastestSectorTimeAllColor { get; set; } = "#700f71";
+
+        [SettingType("Fastest Sector Time Self Color", SettingsTypes.ColorPicker, 14,
+            Description = "Color of the sector, when the sector time is the fastest sector of the player.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public string FastestSectorTimeSelfColor { get; set; } = "#1a510b";
+
+        [SettingType("Neutral Sector Time Color", SettingsTypes.ColorPicker, 15,
+            Description = "Color of neutral sector times.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public string NeutralSectorTimeColor { get; set; } = "#7e7e81";
     }
 }

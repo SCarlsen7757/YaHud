@@ -6,23 +6,27 @@
 }
 
 #time-delta-best-lap {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
 }
 
 #box-container {
     background-color: #00000080;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-    width: 200px;
     height: 50px;
 
     display: flex;
     flex-direction: column;
 }
 
-#time-delta-best-lap-bar {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas: "positive negative";
+::deep .visual-bar {
+    height: 20px;
+}
+
+#sector-times {
+    display: flex;
+}
+
+.sector-time {
+    padding: 0.1rem 0.25rem;
 }
