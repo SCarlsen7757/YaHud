@@ -73,6 +73,17 @@
         UpdateVisuals();
 
         /*
+         * TODO:
+         * 
+         * Value for Estimate position
+         * Colors for sector times
+         * Velocity switches for number and bar display
+         * Add setting for sector times text and information text
+         */
+
+
+
+        /*
         * public Single LapDistance;
     // fraction of lap completed, 0.0-1.0, -1.0 = N/A
     public Single LapDistanceFraction;
@@ -124,6 +135,14 @@
             rawData.SectorTimesPreviousSelf.Sector3
         ];
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
+
+
+        if (rawData.LapTimePreviousSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
+            EstimateLapTime = -1;
+        else
+            EstimateLapTime = rawData.LapTimePreviousSelf + rawData.TimeDeltaBestSelf;
+
+        LastLapTime = rawData.LapTimePreviousSelf;
     }
 
     private void UpdateVisuals(bool isTest = false)
