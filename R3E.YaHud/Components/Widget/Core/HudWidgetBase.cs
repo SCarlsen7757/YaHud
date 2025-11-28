@@ -45,6 +45,8 @@ namespace R3E.YaHud.Components.Widget.Core
 
         protected abstract void UpdateWithTestData();
 
+        protected virtual Task OnSettingsLoadedAsync() => Task.CompletedTask;
+
         protected override void OnInitialized()
         {
             SettingsService.RegisterWidget(this);
@@ -59,6 +61,7 @@ namespace R3E.YaHud.Components.Widget.Core
             {
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
+                await OnSettingsLoadedAsync();
                 await InvokeAsync(StateHasChanged);
             }
 
