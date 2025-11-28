@@ -18,12 +18,12 @@ namespace R3E.YaHud.Components.Widget.Progress
 
         [SettingType("Number Display Delta Time Type", SettingsTypes.Enum, 7,
             Description = "What value to display for the number display.",
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Beginner)]
         public DeltaTimeType NumberDisplayDeltaTimeType { get; set; } = DeltaTimeType.Value;
 
         [SettingType("Positive Negative Bar Delta Time Type", SettingsTypes.Enum, 8,
             Description = "What value to display for the number display.",
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Beginner)]
         public DeltaTimeType PositiveNegativeBarDeltaTimeType { get; set; } = DeltaTimeType.Value;
 
 
@@ -41,12 +41,12 @@ namespace R3E.YaHud.Components.Widget.Progress
         [SettingType("Negative Delta Time Color", SettingsTypes.ColorPicker, 11,
             Description = "Color of the delta time, when slower than previous time.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string NegativeDeltaTimeColor { get; set; } = "#B11B1B";
+        public string NegativeDeltaTimeColor { get; set; } = "#b11b1b";
 
         [SettingType("Neutral Delta Time Color", SettingsTypes.ColorPicker, 12,
             Description = "Color of the delta time, when equal to previous time.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public string NeutralDeltaTimeColor { get; set; } = "#FFFFFF";
+        public string NeutralDeltaTimeColor { get; set; } = "#ffffff";
 
         [SettingType("Fastest Sector Time All Color", SettingsTypes.ColorPicker, 13,
             Description = "Color of the sector, when the sector time is the fastest time of all players.",
@@ -62,5 +62,10 @@ namespace R3E.YaHud.Components.Widget.Progress
             Description = "Color of neutral sector times.",
             ViewMode = SettingsViewMode.Intermediate)]
         public string NeutralSectorTimeColor { get; set; } = "#7e7e81";
+
+        [SettingType("Lap Distance Bar Color", SettingsTypes.ColorPicker, 16,
+            Description = "The color of the lap distance bar.",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public string LapDistanceBarColor { get; set; } = "#ffffff";
     }
 }

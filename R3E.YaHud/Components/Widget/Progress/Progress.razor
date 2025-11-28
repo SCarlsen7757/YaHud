@@ -7,7 +7,7 @@
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId>
-        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@TimeDeltaBestLapSelf.ToString("0.###")</span> <!-- TODO: Should it round or truncate? -->
+        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@TimeDeltaBestLapSelf.ToString("0.###", CultureInfo.InvariantCulture)</span> <!-- TODO: Should it round or truncate? -->
     
         <div id="box-container">
             <PositiveNegativeBar 
@@ -20,11 +20,17 @@
             <div id="sector-times">
                 @for (int i = 0; i < 3; i++)
                 {
-                    <div class="sector-time" style="background-color: @SectorColors[i];">
-                        <span>S@(i+1): @GetSectorTimeFormatted(SectorTimes[i])</span>
+                    <div class="sector-time" style="background: @SectorColors[i];">
+                        <span>S@(i+1): @GetTimeFormatted(SectorTimes[i])</span>
                     </div>
                 }
             </div>
+            <div id="lap-distance-fraction" style="width: @((LapDistanceFraction * 100).ToString(CultureInfo.InvariantCulture))%; background: @Settings.LapDistanceBarColor"></div>
+        </div>
+        <div id="info-grid">
+            <span id="estimate-lap-time">Est. Time: @GetTimeFormatted(EstimateLapTime)</span>
+            <span id="last-lap-time">Last Lap: @GetTimeFormatted(LastLapTime)</span>
+            <span id="estimate-position">Est. Pos: @(EstimatePosition != -1 ? EstimatePosition : "-")</span>
         </div>
     </div>
 }
@@ -43,8 +49,12 @@
     public override bool Collidable => false;
 
     // Controlling values
-    private double TimeDeltaBestLapSelf = 0.0f;
-    private double[] SectorTimes = [-1, -1, -1];
+    private double TimeDeltaBestLapSelf { get; set; } = 0.0f;
+    private double[] SectorTimes { get; set; } = [-1, -1, -1];
+    private double LapDistanceFraction { get; set; } = 0;
+    private double EstimateLapTime { get; set; } = -1;
+    private double LastLapTime { get; set; } = -1;
+    private int EstimatePosition { get; set; } = -1;
 
     // Style values
     private string TimeDeltaBestLapSelfColor = "#000000";
@@ -56,14 +66,6 @@
         SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
 
         return Task.CompletedTask;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender) 
-    {
-        await base.OnAfterRenderAsync(firstRender);
-
-        // TimeDeltaBestLapSelfColor = Settings!.NeutralDeltaTimeColor;
-        // SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
     }
 
     protected override void Update() {
@@ -121,6 +123,7 @@
             rawData.SectorTimesPreviousSelf.Sector2,
             rawData.SectorTimesPreviousSelf.Sector3
         ];
+        LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
     }
 
     private void UpdateVisuals(bool isTest = false)
@@ -147,6 +150,12 @@
             Settings!.FastestSectorTimeAllColor
         ];
 
+        LapDistanceFraction = rnd.NextDouble();
+
+        EstimateLapTime = rnd.NextDouble() * 120;
+        LastLapTime = rnd.NextDouble() * 120;
+        EstimatePosition = rnd.Next(1, 20);
+
         UpdateVisuals(true);
     }
 
@@ -154,7 +163,7 @@
         base.Dispose();
     }
 
-    private string GetSectorTimeFormatted(double time)
+    private string GetTimeFormatted(double time)
     {
         if (time == -1)
             return "-:--.---";
