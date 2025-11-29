@@ -14,18 +14,25 @@ namespace R3E.API
 
         // Track last observed header values for change detection
         private int lastSimTicks;
+        private bool fastPollingActive;
         private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
-        private readonly TimeSpan pausedInterval = TimeSpan.FromMilliseconds(200); // Game paused update interval
         private readonly TimeSpan notRunningInterval = TimeSpan.FromMilliseconds(5000); // Game not running update interval
+        private readonly TimeSpan fastInterval = TimeSpan.FromMilliseconds(2.5); // ~400Hz
+
+        // Start light count tracking
+        private int lastStartLights = -1;
 
         // Offsets computed at runtime so code remains correct if SHM layout moves
         private static readonly int offsetPlayer;
         private static readonly int offsetGameSimulationTicks;
+        private static readonly int offsetStartLights;
+        private static readonly int offsetSessionPhase;
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
+        private byte[]? fastReadBuffer;
         private bool disposed;
 
         static SharedMemoryService()
@@ -35,12 +42,14 @@ namespace R3E.API
 
             // Offset of GameSimulationTicks inside PlayerData
             offsetGameSimulationTicks = offsetPlayer + (int)Marshal.OffsetOf<PlayerData>(nameof(PlayerData.GameSimulationTicks));
+
+            offsetStartLights = (int)Marshal.OffsetOf<Shared>(nameof(Shared.StartLights));
+            offsetSessionPhase = (int)Marshal.OffsetOf<Shared>(nameof(Shared.SessionPhase));
         }
 
-        /// <summary>
-        /// Raised when new shared memory data is available.
-        /// </summary>
         public event Action<Shared>? DataUpdated;
+
+        public event Action<int>? StartLightsChanged;
 
         public Shared Data => data;
 
@@ -55,14 +64,22 @@ namespace R3E.API
         {
             var expected = Marshal.SizeOf<Shared>();
 
-            // allocate read buffer once
+            // allocate read buffers once
             readBuffer = new byte[expected];
-
-            // current delay, start with normal
-            var currentDelay = normalInterval;
+            fastReadBuffer = new byte[8]; // Only need 8 bytes for SessionPhase (4) + StartLights (4)
 
             logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
+            // Run both polling tasks concurrently
+            var normalTask = NormalPollingLoopAsync(stoppingToken);
+            var fastTask = FastPollingLoopAsync(stoppingToken);
+
+            await Task.WhenAll(normalTask, fastTask).ConfigureAwait(false);
+        }
+
+        private async Task NormalPollingLoopAsync(CancellationToken stoppingToken)
+        {
+            var currentDelay = normalInterval;
             ulong noUpdate = 0;
 
             while (!stoppingToken.IsCancellationRequested)
@@ -73,7 +90,6 @@ namespace R3E.API
                     {
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
                         logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
-                        // reset to normal when found
                         currentDelay = normalInterval;
                     }
                     catch (FileNotFoundException)
@@ -90,6 +106,7 @@ namespace R3E.API
 
                         // Read into the reusable buffer to avoid allocations
                         var bytesRead = 0;
+                        var expected = readBuffer!.Length;
                         while (bytesRead < expected)
                         {
                             var read = view.Read(readBuffer, bytesRead, expected - bytesRead);
@@ -99,7 +116,6 @@ namespace R3E.API
 
                         if (bytesRead != expected)
                         {
-                            // skip incomplete read
                             logger.LogCritical("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
                             await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
@@ -127,12 +143,15 @@ namespace R3E.API
                         else
                         {
                             noUpdate = 0;
-                            // update last observed
                             lastSimTicks = simTicks;
 
                             if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
                             {
                                 data = newData;
+
+                                // Determine if fast polling should be active
+                                UpdateFastPollingState(newData);
+
                                 DataUpdated?.Invoke(data);
                             }
                             else
@@ -146,7 +165,6 @@ namespace R3E.API
                         logger.LogWarning(ex, "Error reading shared memory, disposing file handle");
                         file?.Dispose();
                         file = null;
-                        // if file lost, back off heavily
                         currentDelay = notRunningInterval;
                     }
                 }
@@ -154,6 +172,7 @@ namespace R3E.API
                 {
                     // game not running - back off to reduce CPU
                     currentDelay = notRunningInterval;
+                    fastPollingActive = false;
                 }
 
                 try
@@ -162,8 +181,84 @@ namespace R3E.API
                 }
                 catch (OperationCanceledException)
                 {
-                    logger.LogInformation("Shared memory poll loop cancellation requested");
+                    logger.LogInformation("Normal polling loop cancellation requested");
                     break;
+                }
+            }
+        }
+
+        private async Task FastPollingLoopAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                // Only poll fast if we're in an active countdown phase
+                if (!fastPollingActive || file == null)
+                {
+                    await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                try
+                {
+                    using var view = file.CreateViewStream();
+
+                    // Seek to StartLights offset and read only that field (4 bytes)
+                    view.Position = offsetStartLights;
+                    var bytesRead = view.Read(fastReadBuffer!, 0, 4);
+
+                    if (bytesRead == 4)
+                    {
+                        int currentStartLights = BitConverter.ToInt32(fastReadBuffer!, 0);
+
+                        // Only fire event if value changed
+                        if (currentStartLights != lastStartLights)
+                        {
+                            lastStartLights = currentStartLights;
+                            StartLightsChanged?.Invoke(currentStartLights);
+                            logger.LogDebug("StartLights changed to: {StartLights}", currentStartLights);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Error in fast polling loop");
+                    // Don't dispose file here - let the main loop handle that
+                    await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                try
+                {
+                    await Task.Delay(fastInterval, stoppingToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    logger.LogInformation("Fast polling loop cancellation requested");
+                    break;
+                }
+            }
+        }
+
+        private void UpdateFastPollingState(Shared sharedData)
+        {
+            var sessionPhase = (Constant.SessionPhase)sharedData.SessionPhase;
+            var startLights = sharedData.StartLights;
+
+            bool shouldBeActive =
+                (sessionPhase == Constant.SessionPhase.Countdown ||
+                 sessionPhase == Constant.SessionPhase.Formation ||
+                 sessionPhase == Constant.SessionPhase.Green) &&
+                startLights >= 0;
+
+            if (shouldBeActive != fastPollingActive)
+            {
+                fastPollingActive = shouldBeActive;
+                logger.LogInformation("Fast polling {State}", fastPollingActive ? "activated" : "deactivated");
+
+                // Reset lastStartLights when transitioning to active
+                if (fastPollingActive)
+                {
+                    lastStartLights = startLights;
                 }
             }
         }
@@ -193,7 +288,6 @@ namespace R3E.API
             logger.LogInformation("Disposing SharedMemoryService asynchronously");
             file?.Dispose();
 
-            // BackgroundService doesn't implement IAsyncDisposable, so just dispose synchronously
             base.Dispose();
 
             GC.SuppressFinalize(this);
