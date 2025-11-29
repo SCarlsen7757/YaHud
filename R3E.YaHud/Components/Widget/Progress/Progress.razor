@@ -1,4 +1,5 @@
-﻿@using R3E.YaHud.Components.Widget.Core
+﻿@using R3E.API
+@using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.Progress.Components
 @using System.Globalization
 @inherits HudWidgetBase<ProgressSettings>
@@ -7,7 +8,7 @@
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId>
-        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@TimeDeltaBestLapSelf.ToString("0.###", CultureInfo.InvariantCulture)</span> <!-- TODO: Should it round or truncate? -->
+        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@GetTimeFormatted(TimeDeltaBestLapSelf, -1000)</span>
     
         <div id="box-container">
             <PositiveNegativeBar 
@@ -20,7 +21,7 @@
             <div id="sector-times">
                 @for (int i = 0; i < 3; i++)
                 {
-                    <div class="sector-time" style="background: @SectorColors[i];">
+                    <div class="sector-time" style="background: @SectorColors[i]; color: @Settings.SectorTimeAndInfoTextColor;">
                         <span>S@(i+1): @GetTimeFormatted(SectorTimes[i])</span>
                     </div>
                 }
@@ -28,9 +29,9 @@
             <div id="lap-distance-fraction" style="width: @((LapDistanceFraction * 100).ToString(CultureInfo.InvariantCulture))%; background: @Settings.LapDistanceBarColor"></div>
         </div>
         <div id="info-grid">
-            <span id="estimate-lap-time">Est. Time: @GetTimeFormatted(EstimateLapTime)</span>
-            <span id="last-lap-time">Last Lap: @GetTimeFormatted(LastLapTime)</span>
-            <span id="estimate-position">Est. Pos: @(EstimatePosition != -1 ? EstimatePosition : "-")</span>
+            <span id="estimate-lap-time" style="color: @Settings.SectorTimeAndInfoTextColor;">Est. Time: @GetTimeFormatted(EstimateLapTime)</span>
+            <span id="last-lap-time" style="color: @Settings.SectorTimeAndInfoTextColor;">Last Lap: @GetTimeFormatted(LastLapTime)</span>
+            <span id="estimate-position" style="color: @Settings.SectorTimeAndInfoTextColor; display: @(IsQualifying ? "block" : "none");">Est. Pos: @(EstimatePosition != -1 ? EstimatePosition : "-")</span>
         </div>
     </div>
 }
@@ -60,12 +61,33 @@
     private string TimeDeltaBestLapSelfColor = "#000000";
     private string[] SectorColors = ["#000000", "#000000", "#000000"];
 
+    private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
+
+    private string GetTimeFormatted(double time, double naValue = -1, string naText = "-:--.---") {
+        if (time == naValue)
+            return naText;
+
+        var minutes = Math.Floor(time / 60);
+        var seconds = time % 60;
+
+        return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString("0.000", CultureInfo.InvariantCulture)}";
+    }
+
     protected override Task OnSettingsLoadedAsync()
     {
         TimeDeltaBestLapSelfColor = Settings!.NeutralDeltaTimeColor;
         SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
 
+        TelemetryService.NewLap += NewLapEvent;
+
         return Task.CompletedTask;
+    }
+
+    private void NewLapEvent(TelemetryData data)
+    {
+        new Timer((object? state) => {
+            SectorTimes = [-1, -1, -1];
+        }, null, (int)(Settings!.CompletedLapSectorTimesVisibleTime * 1000), Timeout.Infinite);
     }
 
     protected override void Update() {
@@ -73,12 +95,11 @@
         UpdateVisuals();
 
         /*
-         * TODO:
+        * TODO:
          * 
          * Value for Estimate position
          * Colors for sector times
          * Velocity switches for number and bar display
-         * Add setting for sector times text and information text
          */
 
 
@@ -130,12 +151,11 @@
 
         TimeDeltaBestLapSelf = rawData.TimeDeltaBestSelf;
         SectorTimes = [
-            rawData.SectorTimesPreviousSelf.Sector1,
-            rawData.SectorTimesPreviousSelf.Sector2,
-            rawData.SectorTimesPreviousSelf.Sector3
+            rawData.SectorTimesCurrentSelf.Sector1,
+            rawData.SectorTimesCurrentSelf.Sector2,
+            rawData.SectorTimesCurrentSelf.Sector3
         ];
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
-
 
         if (rawData.LapTimePreviousSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
             EstimateLapTime = -1;
@@ -149,6 +169,7 @@
     {
         TimeDeltaBestLapSelfColor = TimeDeltaBestLapSelf switch 
         {
+            -1000 => Settings!.NeutralDeltaTimeColor,
             > 0.0 => Settings!.NegativeDeltaTimeColor,
             < 0.0 => Settings!.PositiveDeltaTimeColor,
             _ => Settings!.NeutralDeltaTimeColor
@@ -157,7 +178,7 @@
 
     protected override void UpdateWithTestData() {
         var rnd = new Random();
-        TimeDeltaBestLapSelf = rnd.NextDouble() * 2 - 1; //-0.78;
+        TimeDeltaBestLapSelf = rnd.NextDouble() * 2 - 1;
         for (int i = 0; i < 3; i++)
         {
             SectorTimes[i] = rnd.NextDouble() * 180;
@@ -180,16 +201,7 @@
 
     public override void Dispose() {
         base.Dispose();
-    }
 
-    private string GetTimeFormatted(double time)
-    {
-        if (time == -1)
-            return "-:--.---";
-
-        var minutes = Math.Floor(time / 60);
-        var seconds = time % 60;
-
-        return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString("0.000", CultureInfo.InvariantCulture)}";
+        TelemetryService.NewLap -= NewLapEvent;
     }
 }
