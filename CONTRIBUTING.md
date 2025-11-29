@@ -256,7 +256,7 @@ This fix ensures proper cleanup after each processing cycle.
 
 ## 🚀 Quick Reference
 
-```
+```bash
 # Start new feature
 git checkout develop
 git pull origin develop
