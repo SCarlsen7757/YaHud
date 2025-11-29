@@ -39,7 +39,7 @@ If a Widget contains any of the following, flag it for refactoring:
 
 When heavy calculations or data logging is needed:
 
-1. Create a new class responsible for the logic (e.g., `LapTimeCalculator. cs`, `FuelHistoryTracker.cs`)
+1. Create a new class responsible for the logic (e.g., `LapTimeCalculator.cs`, `FuelHistoryTracker.cs`)
 2. Add an instance of that class to `TelemetryService.cs`
 3. Widget should only read the processed results from the service
 
@@ -104,6 +104,6 @@ public class FuelWidget : WidgetBase
 |----------------|----------|
 | Display data | Widget |
 | Minor display formatting | Widget |
-| Data logging/history | Dedicated class → `TelemetryService. cs` |
-| Heavy calculations | Dedicated class → `TelemetryService. cs` |
-| Business logic | Dedicated class → `TelemetryService. cs` |
+| Data logging/history | Dedicated class → `TelemetryService.cs` |
+| Heavy calculations | Dedicated class → `TelemetryService.cs` |
+| Business logic | Dedicated class → `TelemetryService.cs` |
