@@ -1,6 +1,45 @@
 # Contributing to YaHud
 
-This document describes the branching strategy, pull request workflow, and release process for the YaHud project.
+This document describes the code style guidelines, branching strategy, pull request workflow, and release process for the YaHud project.
+
+## 🎨 Code Style Guidelines
+
+We follow [Microsoft's C# Coding Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions) with the following project-specific adjustments:
+
+### Naming Conventions
+
+| Element | Style | Example |
+|---------|-------|---------|
+| Private fields | camelCase (no underscore prefix) | `private int counter;` |
+| Public properties | PascalCase | `public int Counter { get; set; }` |
+| Methods | PascalCase | `public void CalculateScore()` |
+| Local variables | camelCase | `var telemetryData = new();` |
+| Constants | PascalCase | `public const int MaxRetries = 3;` |
+
+### Field and Parameter Disambiguation
+
+Since we don't use underscore prefixes for fields, use the `this` keyword when a method parameter has the same name as a field:
+
+```csharp
+public class TelemetryService
+{
+    private readonly ILogger logger;
+    private int timeout;
+
+    // ✅ Use 'this.' when parameter name matches field name
+    public TelemetryService(ILogger logger, int timeout)
+    {
+        this.logger = logger;
+        this.timeout = timeout;
+    }
+
+    // ✅ No 'this.' needed when names don't conflict
+    public void UpdateTimeout(int newTimeout)
+    {
+        timeout = newTimeout;
+    }
+}
+```
 
 ## 🌳 Branching Strategy
 
@@ -81,7 +120,7 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
    - Automatically creates hotfix release
    - Increments patch version only
 
-5. Back-merge to develop (if it exists)
+5. Back-merge to develop
    git checkout develop
    git merge main
    git push origin develop
@@ -237,6 +276,9 @@ git push origin <branch-name>
 ```
 
 ## ❓ FAQ
+
+**Q: Why don't we use underscore prefixes for private fields?**  
+A: We follow a simplified version of Microsoft's conventions. Use `this.` when parameter names match field names to avoid ambiguity.
 
 **Q: Can I merge feature branches directly to main?**  
 A: No. Features must go through `develop` first, then `develop` → `main`.
