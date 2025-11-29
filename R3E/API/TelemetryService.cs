@@ -10,6 +10,7 @@ namespace R3E.API
         private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
+        public event Action<int>? StartLightsChanged;
         public event Action<TelemetryData>? NewLap;
         public event Action<TelemetryData>? SessionTypeChanged;
         public event Action<TelemetryData>? SessionPhaseChanged;
@@ -37,6 +38,12 @@ namespace R3E.API
             Data = new TelemetryData(serviceProvider);
 
             sharedSource.DataUpdated += OnRawDataUpdated;
+            sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+        }
+
+        private void SharedSource_StartLightsChanged(int startLights)
+        {
+            StartLightsChanged?.Invoke(startLights);
         }
 
         private void OnRawDataUpdated(Shared raw)
@@ -122,6 +129,7 @@ namespace R3E.API
             DataUpdated?.Invoke(Data);
         }
 
+
         public void Dispose()
         {
             if (disposed)
@@ -131,6 +139,7 @@ namespace R3E.API
 
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
+            sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
         }
     }
