@@ -16,6 +16,7 @@ namespace R3E.API
         public event Action<TelemetryData>? CarPositionChanged;
         public event Action<TelemetryData>? TrackChanged;
         public event Action<TelemetryData>? CarChanged;
+        public event Action<TelemetryData, int>? SectorCompleted;
 
         public TelemetryData Data { get; init; }
 
@@ -26,6 +27,7 @@ namespace R3E.API
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
+        private double lastLapDistanceFraction = 0;
 
 
         public TelemetryService(ILogger<TelemetryService> logger,
@@ -117,6 +119,23 @@ namespace R3E.API
                 this.carId = carId;
                 this.logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
                 CarChanged?.Invoke(Data);
+            }
+
+            if (lastLapDistanceFraction != raw.LapDistanceFraction) {
+                if (lastLapDistanceFraction < raw.SectorStartFactors.Sector2 && raw.LapDistanceFraction > raw.SectorStartFactors.Sector2) {
+                    this.logger.LogInformation("Sector Completed. Sector Index: 0");
+                    SectorCompleted?.Invoke(Data, 0);
+                }
+                else if (lastLapDistanceFraction < raw.SectorStartFactors.Sector3 && raw.LapDistanceFraction > raw.SectorStartFactors.Sector3) {
+                    this.logger.LogInformation("Sector Completed. Sector Index: 1");
+                    SectorCompleted?.Invoke(Data, 1);
+                }
+                else if (lastLapDistanceFraction > raw.SectorStartFactors.Sector3 && raw.LapDistanceFraction < raw.SectorStartFactors.Sector2) {
+                    this.logger.LogInformation("Sector Completed. Sector Index: 2");
+                    SectorCompleted?.Invoke(Data, 2);
+                }
+
+                lastLapDistanceFraction = raw.LapDistanceFraction;
             }
 
             DataUpdated?.Invoke(Data);
