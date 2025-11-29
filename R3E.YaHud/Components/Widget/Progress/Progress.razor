@@ -5,6 +5,8 @@
 @inherits HudWidgetBase<ProgressSettings>
 @implements IDisposable
 
+@inject ILogger<Progress> Logger
+
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId>
@@ -94,11 +96,28 @@
         UpdateWithValuesFromR3E();
         UpdateVisuals();
 
+        Logger.LogInformation("CURRENT | S1: {s1} | S2: {s2} | S3: {s3}", [
+            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector1,
+            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector2,
+            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector3
+        ]);
+        Logger.LogInformation("Best Se | S1: {s1} | S2: {s2} | S3: {s3}", [
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector1,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector2,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector3
+        ]);
+        Logger.LogInformation("Best Le | S1: {s1} | S2: {s2} | S3: {s3}", [
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector1,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector2,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector3
+        ]);
+        Logger.LogInformation("");
+        Logger.LogInformation("");
+
         /*
         * TODO:
          * 
          * Value for Estimate position
-         * Colors for sector times
          * Velocity switches for number and bar display
          */
 
@@ -152,8 +171,8 @@
         TimeDeltaBestLapSelf = rawData.TimeDeltaBestSelf;
         SectorTimes = [
             rawData.SectorTimesCurrentSelf.Sector1,
-            rawData.SectorTimesCurrentSelf.Sector2,
-            rawData.SectorTimesCurrentSelf.Sector3
+            rawData.SectorTimesCurrentSelf.Sector2 != -1 ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
+            rawData.SectorTimesCurrentSelf.Sector3 != -1 ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
         ];
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
@@ -174,6 +193,38 @@
             < 0.0 => Settings!.PositiveDeltaTimeColor,
             _ => Settings!.NeutralDeltaTimeColor
         };
+
+        var rawData = TelemetryService.Data.Raw;
+        double[] bestIndividualSectorTimesLeader = [
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector1,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector2,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector3
+        ];
+        double[] bestIndividualSectorTimesSelf = [
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector1,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector2,
+            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector3
+        ];
+        for (int i = 0; i < 3; i++)
+        {
+            var currentSectorTime = SectorTimes[i];
+
+            if (currentSectorTime == -1)
+            {
+                SectorColors[i] = Settings.NeutralSectorTimeColor;
+            }
+            else if (currentSectorTime < bestIndividualSectorTimesLeader[i])
+            {
+                SectorColors[i] = Settings.FastestSectorTimeAllColor;
+            }
+            else if (currentSectorTime < bestIndividualSectorTimesSelf[i]) {
+                SectorColors[i] = Settings.FastestSectorTimeSelfColor;
+            }
+            else
+            {
+                SectorColors[i] = Settings.NeutralSectorTimeColor;
+            }
+        }
     }
 
     protected override void UpdateWithTestData() {
