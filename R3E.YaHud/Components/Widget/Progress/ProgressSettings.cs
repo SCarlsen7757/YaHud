@@ -63,9 +63,19 @@ namespace R3E.YaHud.Components.Widget.Progress
             ViewMode = SettingsViewMode.Intermediate)]
         public string NeutralSectorTimeColor { get; set; } = "#7e7e81";
 
-        [SettingType("Lap Distance Bar Color", SettingsTypes.ColorPicker, 16,
+        [SettingType("Completed Lap Sector Times Visible Time", SettingsTypes.Number, 16,
+            Description = "The number of seconds, the sector times for a completed lap is vissible before resetting.",
+            ViewMode = SettingsViewMode.Beginner)]
+        public double CompletedLapSectorTimesVisibleTime { get; set; } = 5;
+
+        [SettingType("Lap Distance Bar Color", SettingsTypes.ColorPicker, 17,
             Description = "The color of the lap distance bar.",
             ViewMode = SettingsViewMode.Intermediate)]
         public string LapDistanceBarColor { get; set; } = "#ffffff";
+
+        [SettingType("Sector Time and Info Text Color", SettingsTypes.ColorPicker, 18,
+            Description = "The color of the sector time text and the info text underneath.",
+            ViewMode = SettingsViewMode.Expert)]
+        public string SectorTimeAndInfoTextColor { get; set; } = "#ffffff";
     }
 }
