@@ -14,7 +14,7 @@
     
         <div id="box-container">
             <PositiveNegativeBar 
-                Value=@(TimeDeltaBestLapSelf * -1) 
+                Value=@(TimeDeltaBestLapSelf == -1000 ? 0 : TimeDeltaBestLapSelf * -1) 
                 Range=@Settings.PositiveNegativeBarRange
                 RootElementClass="visual-bar" 
                 PositiveColor=@Settings.PositiveDeltaTimeColor 
@@ -119,6 +119,7 @@
          * 
          * Value for Estimate position
          * Velocity switches for number and bar display
+         * New Lap Shit
          */
 
 
