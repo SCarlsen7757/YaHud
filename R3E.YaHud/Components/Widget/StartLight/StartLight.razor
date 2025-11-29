@@ -60,6 +60,18 @@
         UpdateInterval = TimeSpan.FromMilliseconds(30);
     }
 
+    override protected void OnInitialized()
+    {
+        base.OnInitialized();
+        TelemetryService.StartLightsChanged += StartLightsChanged;
+    }
+
+    private void StartLightsChanged(int startLights)
+    {
+        StartLightPhase = startLights;
+        InvokeAsync(StateHasChanged);
+    }
+
     protected override void Update()
     {
         if (Settings is null) return;
@@ -153,5 +165,12 @@
             return new(Settings!.ReadyColor, true);
         }
         return new("#000000", false);
+    }
+
+    public override void Dispose()
+    {
+        if (disposed) return;
+        TelemetryService.StartLightsChanged -= StartLightsChanged;
+        base.Dispose();
     }
 }
