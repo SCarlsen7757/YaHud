@@ -14,7 +14,7 @@ namespace R3E.API
 
         // Track last observed header values for change detection
         private int lastSimTicks;
-        private bool fastPollingActive;
+        private bool fastStartLightPollingActive;
         private readonly ILogger<SharedMemoryService> logger;
 
         private readonly TimeSpan normalInterval = TimeSpan.FromMilliseconds(16); // ~60Hz
@@ -70,7 +70,7 @@ namespace R3E.API
 
             // Run both polling tasks concurrently
             var normalTask = NormalPollingLoopAsync(stoppingToken);
-            var fastTask = FastPollingLoopAsync(stoppingToken);
+            var fastTask = FastStartLightPollingLoopAsync(stoppingToken);
 
             await Task.WhenAll(normalTask, fastTask).ConfigureAwait(false);
         }
@@ -148,7 +148,7 @@ namespace R3E.API
                                 data = newData;
 
                                 // Determine if fast polling should be active
-                                UpdateFastPollingState(newData);
+                                UpdateFastStartLightPollingState(newData);
 
                                 DataUpdated?.Invoke(data);
                             }
@@ -170,7 +170,7 @@ namespace R3E.API
                 {
                     // game not running - back off to reduce CPU
                     currentDelay = notRunningInterval;
-                    fastPollingActive = false;
+                    fastStartLightPollingActive = false;
                 }
 
                 try
@@ -185,12 +185,12 @@ namespace R3E.API
             }
         }
 
-        private async Task FastPollingLoopAsync(CancellationToken stoppingToken)
+        private async Task FastStartLightPollingLoopAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 // Only poll fast if we're in an active countdown phase
-                if (!fastPollingActive || file == null)
+                if (!fastStartLightPollingActive || file == null)
                 {
                     await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                     continue;
@@ -237,24 +237,23 @@ namespace R3E.API
             }
         }
 
-        private void UpdateFastPollingState(Shared sharedData)
+        private void UpdateFastStartLightPollingState(Shared sharedData)
         {
             var sessionPhase = (Constant.SessionPhase)sharedData.SessionPhase;
             var startLights = sharedData.StartLights;
 
             bool shouldBeActive =
-                (sessionPhase == Constant.SessionPhase.Countdown ||
-                 sessionPhase == Constant.SessionPhase.Formation ||
-                 sessionPhase == Constant.SessionPhase.Green) &&
-                startLights >= 0;
+                sessionPhase == Constant.SessionPhase.Countdown ||
+                sessionPhase == Constant.SessionPhase.Formation ||
+                (sessionPhase == Constant.SessionPhase.Green && lastStartLights < 6);
 
-            if (shouldBeActive != fastPollingActive)
+            if (shouldBeActive != fastStartLightPollingActive)
             {
-                fastPollingActive = shouldBeActive;
-                logger.LogInformation("Fast polling {State}", fastPollingActive ? "activated" : "deactivated");
+                fastStartLightPollingActive = shouldBeActive;
+                logger.LogInformation("Fast polling {State}", fastStartLightPollingActive ? "activated" : "deactivated");
 
                 // Reset lastStartLights when transitioning to active
-                if (fastPollingActive)
+                if (fastStartLightPollingActive)
                 {
                     lastStartLights = startLights;
                 }
