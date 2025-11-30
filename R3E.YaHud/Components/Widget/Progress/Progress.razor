@@ -52,7 +52,7 @@
     // Controlling values
     private double TimeDeltaBestLapSelf { get; set; } = 0.0f;
     private double[] SectorTimes { get; set; } = [-1, -1, -1];
-    private bool OverrideSectorTimes { get; set; } = false;
+    private bool ShowSectorTimes { get; set; } = true;
     private double LapDistanceFraction { get; set; } = 0;
     private double EstimateLapTime { get; set; } = -1;
     private double LastLapTime { get; set; } = -1;
@@ -63,7 +63,7 @@
     private string[] SectorColors = ["#000000", "#000000", "#000000"];
 
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
-    private DateTime? crossedFinishLineTime = null;
+    private DateTime? hideSectorTimesTime = null;
 
     private string GetTimeFormatted(double time, double naValue = -1, string naText = "-:--.---") {
         if (time == naValue)
@@ -74,6 +74,11 @@
 
         var secondsFormat = $"{(minutes > 0 ? "0" : "")}0.000";
         return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString(secondsFormat, CultureInfo.InvariantCulture)}";
+    }
+
+    private void HideSectorTimes(double delaySeconds = 0)
+    {
+        hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
     }
 
     protected override void OnInitialized()
@@ -99,20 +104,25 @@
         TelemetryService.NewLap += TelemetryService_NewLap;
         TelemetryService.SectorCompleted += TelemetryService_SectorCompleted;
 
+        if (TelemetryService.SectorData.CurrentSectorIndexSelf == 0) {
+            // When HUD is reloaded while in sector 1
+            HideSectorTimes();
+        }
+
         return Task.CompletedTask;
     }
 
     private void TelemetryService_NewLap(TelemetryData data)
     {
-        // resetTimer!.Start();
-        crossedFinishLineTime = DateTime.Now;
+        HideSectorTimes(delaySeconds: Settings!.CompletedLapSectorTimesVisibleTime);
     }
 
     private void TelemetryService_SectorCompleted(TelemetryData data, int sectorIndex)
     {
         if (sectorIndex == 0 || sectorIndex == 1)
         {
-            OverrideSectorTimes = false;
+            hideSectorTimesTime = null;
+            ShowSectorTimes = true;
             InvokeAsync(StateHasChanged);
         }
     }
@@ -185,19 +195,21 @@
         TimeDeltaBestLapSelf = rawData.TimeDeltaBestSelf;
 
         // Sector Times
-        if (crossedFinishLineTime != null && (DateTime.Now - crossedFinishLineTime) > TimeSpan.FromSeconds(Settings!.CompletedLapSectorTimesVisibleTime))
-        {
-            SectorTimes = [-1, -1, -1];
-            OverrideSectorTimes = true;
+        if (hideSectorTimesTime != null && DateTime.Now > hideSectorTimesTime) {
+            ShowSectorTimes = false;
         }
 
-        if (!OverrideSectorTimes)
+        if (!ShowSectorTimes)
         {
             SectorTimes = [
                 rawData.SectorTimesCurrentSelf.Sector1,
                 rawData.SectorTimesCurrentSelf.Sector2 != -1 ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
                 rawData.SectorTimesCurrentSelf.Sector3 != -1 ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
             ];
+        }
+        else
+        {
+            SectorTimes = [-1, -1, -1];
         }
 
         // Lap Progess
