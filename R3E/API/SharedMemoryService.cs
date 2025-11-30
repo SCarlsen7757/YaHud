@@ -66,7 +66,7 @@ namespace R3E.API
 
             // allocate read buffers once
             readBuffer = new byte[expected];
-            startLightReadBuffer = new byte[4]; // Only need 4 bytes for StartLights (4)
+            startLightReadBuffer = new byte[4]; // Only need 4 bytes for StartLights (int32)
 
             logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
