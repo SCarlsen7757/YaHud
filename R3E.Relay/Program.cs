@@ -94,10 +94,33 @@ internal class Program : IAsyncDisposable
         // Unsubscribe from events before disposing
         sharedMemoryService.DataUpdated -= OnDataUpdated;
 
-        // Dispose services asynchronously
-        await sharedMemoryService.DisposeAsync().ConfigureAwait(false);
-        udpRelayService.Dispose();
-        loggerFactory?.Dispose();
+        try
+        {
+            sharedMemoryService.Dispose();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error disposing SharedMemoryService");
+        }
+
+        try
+        {
+            udpRelayService.Dispose();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error disposing UdpRelayService");
+        }
+
+        try
+        {
+            loggerFactory?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            // Dispose of logger factory shouldn't throw, but guard anyway
+            logger.LogError(ex, "Error disposing LoggerFactory");
+        }
 
         GC.SuppressFinalize(this);
     }
