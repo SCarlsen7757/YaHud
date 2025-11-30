@@ -1,3 +1,4 @@
+using R3E.API.Models;
 using R3E.Data;
 using R3E.Extensions;
 
@@ -19,6 +20,7 @@ namespace R3E.API
         public event Action<TelemetryData, int>? SectorCompleted;
 
         public TelemetryData Data { get; init; }
+        public SectorData SectorData { get; init; }
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -27,7 +29,7 @@ namespace R3E.API
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
-        private double lastLapDistanceFraction = 0;
+        private double lastSectorIndex = 0;
 
 
         public TelemetryService(ILogger<TelemetryService> logger,
@@ -37,6 +39,7 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
+            SectorData = new SectorData(Data.Raw);
 
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
@@ -44,6 +47,7 @@ namespace R3E.API
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
+            SectorData.Raw = raw;
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;
@@ -121,21 +125,23 @@ namespace R3E.API
                 CarChanged?.Invoke(Data);
             }
 
-            if (lastLapDistanceFraction != raw.LapDistanceFraction) {
-                if (lastLapDistanceFraction < raw.SectorStartFactors.Sector2 && raw.LapDistanceFraction > raw.SectorStartFactors.Sector2) {
-                    this.logger.LogInformation("Sector Completed. Sector Index: 0");
-                    SectorCompleted?.Invoke(Data, 0);
-                }
-                else if (lastLapDistanceFraction < raw.SectorStartFactors.Sector3 && raw.LapDistanceFraction > raw.SectorStartFactors.Sector3) {
-                    this.logger.LogInformation("Sector Completed. Sector Index: 1");
-                    SectorCompleted?.Invoke(Data, 1);
-                }
-                else if (lastLapDistanceFraction > raw.SectorStartFactors.Sector3 && raw.LapDistanceFraction < raw.SectorStartFactors.Sector2) {
-                    this.logger.LogInformation("Sector Completed. Sector Index: 2");
-                    SectorCompleted?.Invoke(Data, 2);
+            if (lastSectorIndex != SectorData.CurrentSectorIndexSelf) {
+                switch (SectorData.CurrentSectorIndexSelf) {
+                    case 0:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 2");
+                        SectorCompleted?.Invoke(Data, 2);
+                        break;
+                    case 1:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 0");
+                        SectorCompleted?.Invoke(Data, 0);
+                        break;
+                    case 2:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 1");
+                        SectorCompleted?.Invoke(Data, 1);
+                        break;
                 }
 
-                lastLapDistanceFraction = raw.LapDistanceFraction;
+                lastSectorIndex = SectorData.CurrentSectorIndexSelf;
             }
 
             DataUpdated?.Invoke(Data);
