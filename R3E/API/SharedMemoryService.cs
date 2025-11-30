@@ -31,7 +31,6 @@ namespace R3E.API
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
-        private byte[]? startLightReadBuffer;
         private bool disposed;
 
         private readonly SemaphoreSlim fileLock = new(1, 1);
@@ -66,7 +65,6 @@ namespace R3E.API
 
             // allocate read buffers once
             readBuffer = new byte[expected];
-            startLightReadBuffer = new byte[4]; // Only need 4 bytes for StartLights (int32)
 
             logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
