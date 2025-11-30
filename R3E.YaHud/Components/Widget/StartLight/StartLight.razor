@@ -42,7 +42,7 @@
     private int StartLightPhase { get; set; } = 0;
     private R3E.Constant.SessionPhase SessionPhase { get; set; } = R3E.Constant.SessionPhase.Unavailable;
     private double GameSimulationTime { get; set; } = 0d;
-    private double? HideAgainAt { get; set; } = null;
+    private double? HideAgainAt { get; set; } = 0;
     private R3E.Constant.Control PlayerControl = Constant.Control.Unavailable;
 
     public override string ElementId { get => "startLightWidget"; }
