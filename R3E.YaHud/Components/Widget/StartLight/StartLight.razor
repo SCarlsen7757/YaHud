@@ -68,6 +68,7 @@
 
     private void StartLightsChanged(int startLights)
     {
+        if (disposed) return;
         StartLightPhase = startLights;
         InvokeAsync(StateHasChanged);
     }
