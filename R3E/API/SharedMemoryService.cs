@@ -189,19 +189,28 @@ namespace R3E.API
 
         private async Task FastStartLightPollingLoopAsync(CancellationToken stoppingToken)
         {
+            MemoryMappedViewAccessor? accessor = null;
+            MemoryMappedFile? currentFile = null;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (!fastStartLightPollingActive)
                 {
+                    if (accessor != null)
+                    {
+                        accessor.Dispose();
+                        accessor = null;
+                        currentFile = null;
+                    }
+
                     await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                     continue;
                 }
 
-                // Borrow file reference for reading only
-                MemoryMappedFile? localFile = null;
-
                 try
                 {
+                    MemoryMappedFile? localFile = null;
+
                     await fileLock.WaitAsync(stoppingToken).ConfigureAwait(false);
                     try
                     {
@@ -212,27 +221,31 @@ namespace R3E.API
                         fileLock.Release();
                     }
 
-                    if (localFile == null)
+                    if (!ReferenceEquals(localFile, currentFile))
+                    {
+                        accessor?.Dispose();
+                        accessor = null;
+                        currentFile = localFile;
+
+                        if (currentFile != null)
+                        {
+                            accessor = currentFile.CreateViewAccessor(offsetStartLights, 4, MemoryMappedFileAccess.Read);
+                        }
+                    }
+
+                    if (accessor == null)
                     {
                         await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                         continue;
                     }
 
-                    using var view = localFile.CreateViewStream();
+                    int currentStartLights = accessor.ReadInt32(0);
 
-                    view.Position = offsetStartLights;
-                    var bytesRead = view.Read(startLightReadBuffer!, 0, 4);
-
-                    if (bytesRead == 4)
+                    if (currentStartLights != lastStartLights)
                     {
-                        int currentStartLights = BitConverter.ToInt32(startLightReadBuffer!, 0);
-
-                        if (currentStartLights != lastStartLights)
-                        {
-                            lastStartLights = currentStartLights;
-                            StartLightsChanged?.Invoke(currentStartLights);
-                            logger.LogDebug("StartLights changed to: {StartLights}", currentStartLights);
-                        }
+                        lastStartLights = currentStartLights;
+                        StartLightsChanged?.Invoke(currentStartLights);
+                        logger.LogDebug("StartLights changed to: {StartLights}", currentStartLights);
                     }
                 }
                 catch (OperationCanceledException)
@@ -243,6 +256,9 @@ namespace R3E.API
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Error in fast polling loop");
+                    accessor?.Dispose();
+                    accessor = null;
+                    currentFile = null;
                     await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                     continue;
                 }
@@ -257,6 +273,8 @@ namespace R3E.API
                     break;
                 }
             }
+
+            accessor?.Dispose();
         }
 
         private void UpdateFastStartLightPollingState(Shared sharedData)
