@@ -22,7 +22,7 @@ namespace R3E.API
         private readonly TimeSpan fastInterval = TimeSpan.FromMilliseconds(2.5); // ~400Hz
 
         // Start light count tracking
-        private int lastStartLights = -1;
+        private volatile int lastStartLights = -1;
 
         // Offsets computed at runtime so code remains correct if SHM layout moves
         private static readonly int offsetPlayer;
