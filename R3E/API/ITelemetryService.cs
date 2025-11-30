@@ -1,4 +1,6 @@
-﻿namespace R3E.API
+﻿using R3E.API.Models;
+
+namespace R3E.API
 {
     public interface ITelemetryService
     {
@@ -15,5 +17,6 @@
         event Action<TelemetryData, int>? SectorCompleted;
 
         TelemetryData Data { get; }
+        SectorData SectorData { get; }
     }
 }
