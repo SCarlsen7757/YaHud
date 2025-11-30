@@ -31,7 +31,7 @@ namespace R3E.YaHud.Components.Widget.Progress
             Min = 0.1, Max = 10, Step = 0.01,
             Description = "The value which maps to a 100% extended bar in either direction.",
             ViewMode = SettingsViewMode.Intermediate)]
-        public double PositiveNegativeBarRange { get; set; } = 1;
+        public double PositiveNegativeBarRange { get; set; } = 2;
 
         [SettingType("Positive Delta Time Color", SettingsTypes.ColorPicker, 10,
             Description = "Color of the delta time, when faster than previous time.",
@@ -64,6 +64,7 @@ namespace R3E.YaHud.Components.Widget.Progress
         public string NeutralSectorTimeColor { get; set; } = "#7e7e81";
 
         [SettingType("Completed Lap Sector Times Visible Time", SettingsTypes.Number, 16,
+            Min = 0, Max = 10, Step = 1,
             Description = "The number of seconds, the sector times for a completed lap is vissible before resetting.",
             ViewMode = SettingsViewMode.Beginner)]
         public double CompletedLapSectorTimesVisibleTime { get; set; } = 5;

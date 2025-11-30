@@ -5,8 +5,6 @@
 @inherits HudWidgetBase<ProgressSettings>
 @implements IDisposable
 
-@inject ILogger<Progress> Logger
-
 @if (Settings?.Visible ?? false)
 {
     <div id=@ElementId>
@@ -54,6 +52,7 @@
     // Controlling values
     private double TimeDeltaBestLapSelf { get; set; } = 0.0f;
     private double[] SectorTimes { get; set; } = [-1, -1, -1];
+    private bool OverrideSectorTimes { get; set; } = false;
     private double LapDistanceFraction { get; set; } = 0;
     private double EstimateLapTime { get; set; } = -1;
     private double LastLapTime { get; set; } = -1;
@@ -64,6 +63,7 @@
     private string[] SectorColors = ["#000000", "#000000", "#000000"];
 
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
+    private DateTime? crossedFinishLineTime = null;
 
     private string GetTimeFormatted(double time, double naValue = -1, string naText = "-:--.---") {
         if (time == naValue)
@@ -72,7 +72,14 @@
         var minutes = Math.Floor(time / 60);
         var seconds = time % 60;
 
-        return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString("0.000", CultureInfo.InvariantCulture)}";
+        var secondsFormat = $"{(minutes > 0 ? "0" : "")}0.000";
+        return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString(secondsFormat, CultureInfo.InvariantCulture)}";
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        // Logger.LogInformation("INIT");
     }
 
     protected override Task OnSettingsLoadedAsync()
@@ -80,39 +87,44 @@
         TimeDeltaBestLapSelfColor = Settings!.NeutralDeltaTimeColor;
         SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
 
-        TelemetryService.NewLap += NewLapEvent;
+        // resetTimer = new System.Timers.Timer((int)(Settings!.CompletedLapSectorTimesVisibleTime * 1000));
+        // resetTimer.AutoReset = false;
+        // resetTimer.Elapsed += (sender, e) => {
+        //     Logger.LogInformation("EXECUTED TIMER");
+        //     SectorTimes = [-1, -1, -1];
+        //     OverrideSectorTimes = true;
+        //     InvokeAsync(StateHasChanged);
+        // };
+
+        TelemetryService.NewLap += TelemetryService_NewLap;
+        TelemetryService.SectorCompleted += TelemetryService_SectorCompleted;
 
         return Task.CompletedTask;
     }
 
-    private void NewLapEvent(TelemetryData data)
+    private void TelemetryService_NewLap(TelemetryData data)
     {
-        new Timer((object? state) => {
-            SectorTimes = [-1, -1, -1];
-        }, null, (int)(Settings!.CompletedLapSectorTimesVisibleTime * 1000), Timeout.Infinite);
+        // resetTimer!.Start();
+        crossedFinishLineTime = DateTime.Now;
+    }
+
+    private void TelemetryService_SectorCompleted(TelemetryData data, int sectorIndex)
+    {
+        if (sectorIndex == 0 || sectorIndex == 1)
+        {
+            OverrideSectorTimes = false;
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     protected override void Update() {
         UpdateWithValuesFromR3E();
         UpdateVisuals();
 
-        Logger.LogInformation("CURRENT | S1: {s1} | S2: {s2} | S3: {s3}", [
-            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector1,
-            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector2,
-            TelemetryService.Data.Raw.SectorTimesCurrentSelf.Sector3
-        ]);
-        Logger.LogInformation("Best Se | S1: {s1} | S2: {s2} | S3: {s3}", [
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector1,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector2,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector3
-        ]);
-        Logger.LogInformation("Best Le | S1: {s1} | S2: {s2} | S3: {s3}", [
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector1,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector2,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector3
-        ]);
-        Logger.LogInformation("");
-        Logger.LogInformation("");
+        // Logger.LogInformation("Override: {o} - {x} - {y}", OverrideSectorTimes, GetHashCode(), GetType().Name);
+
+        // Logger.LogInformation("S1: {s1} | S2: {s2} | S3: {s3}", SectorTimes[0], SectorTimes[1], SectorTimes[2]);
+        // Logger.LogInformation("Distance: {d}", TelemetryService.Data.Raw.LapDistanceFraction);
 
         /*
         * TODO:
@@ -169,14 +181,29 @@
     private void UpdateWithValuesFromR3E() {
         var rawData = TelemetryService.Data.Raw;
 
+        // Number and Bar display
         TimeDeltaBestLapSelf = rawData.TimeDeltaBestSelf;
-        SectorTimes = [
-            rawData.SectorTimesCurrentSelf.Sector1,
-            rawData.SectorTimesCurrentSelf.Sector2 != -1 ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
-            rawData.SectorTimesCurrentSelf.Sector3 != -1 ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
-        ];
+
+        // Sector Times
+        if (crossedFinishLineTime != null && (DateTime.Now - crossedFinishLineTime) > TimeSpan.FromSeconds(Settings!.CompletedLapSectorTimesVisibleTime))
+        {
+            SectorTimes = [-1, -1, -1];
+            OverrideSectorTimes = true;
+        }
+
+        if (!OverrideSectorTimes)
+        {
+            SectorTimes = [
+                rawData.SectorTimesCurrentSelf.Sector1,
+                rawData.SectorTimesCurrentSelf.Sector2 != -1 ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
+                rawData.SectorTimesCurrentSelf.Sector3 != -1 ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
+            ];
+        }
+
+        // Lap Progess
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
+        //Info Grid
         if (rawData.LapTimePreviousSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
             EstimateLapTime = -1;
         else
@@ -254,6 +281,7 @@
     public override void Dispose() {
         base.Dispose();
 
-        TelemetryService.NewLap -= NewLapEvent;
+        TelemetryService.NewLap -= TelemetryService_NewLap;
+        TelemetryService.SectorCompleted -= TelemetryService_SectorCompleted;
     }
 }
