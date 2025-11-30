@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace R3E.API
 {
     [SupportedOSPlatform("windows")]
-    public class SharedMemoryService : BackgroundService, ISharedSource, IAsyncDisposable
+    public class SharedMemoryService : BackgroundService, ISharedSource
     {
         private MemoryMappedFile? file;
         private Shared data;
@@ -33,6 +33,8 @@ namespace R3E.API
         private byte[]? readBuffer;
         private byte[]? startLightReadBuffer;
         private bool disposed;
+
+        private readonly SemaphoreSlim fileLock = new(1, 1);
 
         static SharedMemoryService()
         {
@@ -189,18 +191,35 @@ namespace R3E.API
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                // Only poll fast if we're in an active countdown phase
-                if (!fastStartLightPollingActive || file == null)
+                if (!fastStartLightPollingActive)
                 {
                     await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                     continue;
                 }
 
+                // Borrow file reference for reading only
+                MemoryMappedFile? localFile = null;
+
                 try
                 {
-                    using var view = file.CreateViewStream();
+                    await fileLock.WaitAsync(stoppingToken).ConfigureAwait(false);
+                    try
+                    {
+                        localFile = file;
+                    }
+                    finally
+                    {
+                        fileLock.Release();
+                    }
 
-                    // Seek to StartLights offset and read only that field (4 bytes)
+                    if (localFile == null)
+                    {
+                        await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    using var view = localFile.CreateViewStream();
+
                     view.Position = offsetStartLights;
                     var bytesRead = view.Read(startLightReadBuffer!, 0, 4);
 
@@ -208,7 +227,6 @@ namespace R3E.API
                     {
                         int currentStartLights = BitConverter.ToInt32(startLightReadBuffer!, 0);
 
-                        // Only fire event if value changed
                         if (currentStartLights != lastStartLights)
                         {
                             lastStartLights = currentStartLights;
@@ -217,10 +235,14 @@ namespace R3E.API
                         }
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    logger.LogInformation("Fast polling loop cancellation requested");
+                    break;
+                }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Error in fast polling loop");
-                    // Don't dispose file here - let the main loop handle that
                     await Task.Delay(normalInterval, stoppingToken).ConfigureAwait(false);
                     continue;
                 }
@@ -269,25 +291,9 @@ namespace R3E.API
             disposed = true;
             logger.LogInformation("Disposing SharedMemoryService");
             file?.Dispose();
+            fileLock.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            if (disposed)
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            disposed = true;
-            logger.LogInformation("Disposing SharedMemoryService asynchronously");
-            file?.Dispose();
-
-            base.Dispose();
-
-            GC.SuppressFinalize(this);
-            return ValueTask.CompletedTask;
         }
     }
 }
