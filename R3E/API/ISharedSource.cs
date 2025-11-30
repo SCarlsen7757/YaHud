@@ -16,7 +16,7 @@ namespace R3E.API
         /// Occurs when start lights changes.
         /// </summary>
         /// <remarks>Subscribers receive the new count of start lights as an integer parameter. This event
-        /// is raised when the start light changes.</remarks>
+        /// is raised when the start light change.</remarks>
         event Action<int>? StartLightsChanged;
 
         /// <summary>
