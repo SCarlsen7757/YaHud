@@ -28,7 +28,6 @@ namespace R3E.API
         private static readonly int offsetPlayer;
         private static readonly int offsetGameSimulationTicks;
         private static readonly int offsetStartLights;
-        private static readonly int offsetSessionPhase;
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
@@ -44,7 +43,6 @@ namespace R3E.API
             offsetGameSimulationTicks = offsetPlayer + (int)Marshal.OffsetOf<PlayerData>(nameof(PlayerData.GameSimulationTicks));
 
             offsetStartLights = (int)Marshal.OffsetOf<Shared>(nameof(Shared.StartLights));
-            offsetSessionPhase = (int)Marshal.OffsetOf<Shared>(nameof(Shared.SessionPhase));
         }
 
         public event Action<Shared>? DataUpdated;
