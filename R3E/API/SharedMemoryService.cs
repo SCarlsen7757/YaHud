@@ -31,7 +31,7 @@ namespace R3E.API
 
         // Reusable buffer for reading from the memory mapped file to avoid per-frame allocations
         private byte[]? readBuffer;
-        private byte[]? fastReadBuffer;
+        private byte[]? startLightReadBuffer;
         private bool disposed;
 
         static SharedMemoryService()
@@ -64,7 +64,7 @@ namespace R3E.API
 
             // allocate read buffers once
             readBuffer = new byte[expected];
-            fastReadBuffer = new byte[8]; // Only need 8 bytes for SessionPhase (4) + StartLights (4)
+            startLightReadBuffer = new byte[4]; // Only need 4 bytes for StartLights (4)
 
             logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
@@ -202,11 +202,11 @@ namespace R3E.API
 
                     // Seek to StartLights offset and read only that field (4 bytes)
                     view.Position = offsetStartLights;
-                    var bytesRead = view.Read(fastReadBuffer!, 0, 4);
+                    var bytesRead = view.Read(startLightReadBuffer!, 0, 4);
 
                     if (bytesRead == 4)
                     {
-                        int currentStartLights = BitConverter.ToInt32(fastReadBuffer!, 0);
+                        int currentStartLights = BitConverter.ToInt32(startLightReadBuffer!, 0);
 
                         // Only fire event if value changed
                         if (currentStartLights != lastStartLights)
