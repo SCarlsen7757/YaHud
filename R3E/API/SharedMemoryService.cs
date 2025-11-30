@@ -84,15 +84,26 @@ namespace R3E.API
             {
                 if (Utilities.IsRrreRunning() && file == null)
                 {
+                    bool lockAcquired = false;
                     try
                     {
+                        await fileLock.WaitAsync(stoppingToken).ConfigureAwait(false);
+                        lockAcquired = true;
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
                         logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
                         currentDelay = normalInterval;
+
                     }
                     catch (FileNotFoundException)
                     {
                         file = null;
+                    }
+                    finally
+                    {
+                        if (lockAcquired)
+                        {
+                            fileLock.Release();
+                        }
                     }
                 }
 
@@ -161,12 +172,23 @@ namespace R3E.API
                     catch (Exception ex)
                     {
                         logger.LogWarning(ex, "Error reading shared memory, disposing file handle");
-                        lock (fileLock)
+                        var lockAcquired = false;
+                        try
                         {
+                            await fileLock.WaitAsync(stoppingToken).ConfigureAwait(false);
+                            lockAcquired = true;
                             file?.Dispose();
                             file = null;
                         }
-                        currentDelay = notRunningInterval;
+                        finally
+                        {
+                            if (lockAcquired)
+                            {
+                                fileLock.Release();
+                            }
+
+                            currentDelay = notRunningInterval;
+                        }
                     }
                 }
                 else
