@@ -13,11 +13,10 @@ namespace R3E.API
         event Action<Shared>? DataUpdated;
 
         /// <summary>
-        /// Occurs when the number of start lights changes.
+        /// Occurs when start lights changes.
         /// </summary>
         /// <remarks>Subscribers receive the new count of start lights as an integer parameter. This event
-        /// is typically raised when the start light configuration is updated or when the system detects a change in the
-        /// number of available start lights.</remarks>
+        /// is raised when the start light changes.</remarks>
         event Action<int>? StartLightsChanged;
 
         /// <summary>
