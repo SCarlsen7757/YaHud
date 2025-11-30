@@ -161,8 +161,11 @@ namespace R3E.API
                     catch (Exception ex)
                     {
                         logger.LogWarning(ex, "Error reading shared memory, disposing file handle");
-                        file?.Dispose();
-                        file = null;
+                        lock (fileLock)
+                        {
+                            file?.Dispose();
+                            file = null;
+                        }
                         currentDelay = notRunningInterval;
                     }
                 }
