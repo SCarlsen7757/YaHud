@@ -240,7 +240,6 @@ namespace R3E.API
         private void UpdateFastStartLightPollingState(Shared sharedData)
         {
             var sessionPhase = (Constant.SessionPhase)sharedData.SessionPhase;
-            var startLights = sharedData.StartLights;
 
             bool shouldBeActive =
                 sessionPhase == Constant.SessionPhase.Countdown ||
@@ -255,7 +254,7 @@ namespace R3E.API
                 // Reset lastStartLights when transitioning to active
                 if (fastStartLightPollingActive)
                 {
-                    lastStartLights = startLights;
+                    lastStartLights = -1;
                 }
             }
         }
