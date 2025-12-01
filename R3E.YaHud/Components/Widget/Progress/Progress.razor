@@ -30,7 +30,6 @@
         </div>
         <div id="info-grid">
             <span id="estimate-lap-time" style="color: @Settings.SectorTimeAndInfoTextColor;">Est. Time: @GetTimeFormatted(EstimateLapTime)</span>
-            <span id="last-lap-time" style="color: @Settings.SectorTimeAndInfoTextColor;">Last Lap: @GetTimeFormatted(LastLapTime)</span>
             <span id="estimate-position" style="color: @Settings.SectorTimeAndInfoTextColor; display: @(IsQualifying ? "block" : "none");">Est. Pos: @(EstimatePosition != -1 ? EstimatePosition : "-")</span>
         </div>
     </div>
@@ -55,7 +54,6 @@
     private bool ShowSectorTimes { get; set; } = true;
     private double LapDistanceFraction { get; set; } = 0;
     private double EstimateLapTime { get; set; } = -1;
-    private double LastLapTime { get; set; } = -1;
     private int EstimatePosition { get; set; } = -1;
 
     // Style values
@@ -81,25 +79,10 @@
         hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
     }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-        // Logger.LogInformation("INIT");
-    }
-
     protected override Task OnSettingsLoadedAsync()
     {
         TimeDeltaBestLapSelfColor = Settings!.NeutralDeltaTimeColor;
         SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
-
-        // resetTimer = new System.Timers.Timer((int)(Settings!.CompletedLapSectorTimesVisibleTime * 1000));
-        // resetTimer.AutoReset = false;
-        // resetTimer.Elapsed += (sender, e) => {
-        //     Logger.LogInformation("EXECUTED TIMER");
-        //     SectorTimes = [-1, -1, -1];
-        //     OverrideSectorTimes = true;
-        //     InvokeAsync(StateHasChanged);
-        // };
 
         TelemetryService.NewLap += TelemetryService_NewLap;
         TelemetryService.SectorCompleted += TelemetryService_SectorCompleted;
@@ -131,17 +114,13 @@
         UpdateWithValuesFromR3E();
         UpdateVisuals();
 
-        // Logger.LogInformation("Override: {o} - {x} - {y}", OverrideSectorTimes, GetHashCode(), GetType().Name);
-
-        // Logger.LogInformation("S1: {s1} | S2: {s2} | S3: {s3}", SectorTimes[0], SectorTimes[1], SectorTimes[2]);
-        // Logger.LogInformation("Distance: {d}", TelemetryService.Data.Raw.LapDistanceFraction);
+        // Logger.LogInformation("Override: {o} | Crossed: {cr} | Now: {now} | Hash: {hsh}", OverrideSectorTimes, crossedFinishLineTime != null ? crossedFinishLineTime.Value : null, DateTime.Now, GetHashCode());
 
         /*
         * TODO:
          * 
          * Value for Estimate position
          * Velocity switches for number and bar display
-         * New Lap Shit
          */
 
 
@@ -220,8 +199,6 @@
             EstimateLapTime = -1;
         else
             EstimateLapTime = rawData.LapTimePreviousSelf + rawData.TimeDeltaBestSelf;
-
-        LastLapTime = rawData.LapTimePreviousSelf;
     }
 
     private void UpdateVisuals(bool isTest = false)
@@ -284,7 +261,6 @@
         LapDistanceFraction = rnd.NextDouble();
 
         EstimateLapTime = rnd.NextDouble() * 120;
-        LastLapTime = rnd.NextDouble() * 120;
         EstimatePosition = rnd.Next(1, 20);
 
         UpdateVisuals(true);
