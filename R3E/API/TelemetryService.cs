@@ -39,7 +39,7 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
-            SectorData = new SectorData(Data.Raw);
+            SectorData = new SectorData();
 
             sharedSource.DataUpdated += OnRawDataUpdated;
         }
