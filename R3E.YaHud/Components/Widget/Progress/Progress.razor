@@ -195,10 +195,10 @@
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
         //Info Grid
-        if (rawData.LapTimePreviousSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
+        if (rawData.LapTimeBestSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
             EstimateLapTime = -1;
         else
-            EstimateLapTime = rawData.LapTimePreviousSelf + rawData.TimeDeltaBestSelf;
+            EstimateLapTime = rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
     }
 
     private void UpdateVisuals(bool isTest = false)
