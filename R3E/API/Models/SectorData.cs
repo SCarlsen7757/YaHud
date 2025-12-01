@@ -21,11 +21,5 @@ namespace R3E.API.Models
                 return -1;
             }
         } 
-
-
-        public SectorData(Shared raw) {
-            Raw = raw;
-        }
-
     }
 }

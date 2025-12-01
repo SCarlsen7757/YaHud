@@ -113,58 +113,6 @@
     protected override void Update() {
         UpdateWithValuesFromR3E();
         UpdateVisuals();
-
-        // Logger.LogInformation("Override: {o} | Crossed: {cr} | Now: {now} | Hash: {hsh}", OverrideSectorTimes, crossedFinishLineTime != null ? crossedFinishLineTime.Value : null, DateTime.Now, GetHashCode());
-
-        /*
-        * TODO:
-         * 
-         * Value for Estimate position
-         * Velocity switches for number and bar display
-         */
-
-
-
-        /*
-        * public Single LapDistance;
-    // fraction of lap completed, 0.0-1.0, -1.0 = N/A
-    public Single LapDistanceFraction;
-
-    // The current best lap time for the leader of the session (-1.0 = N/A)
-    public Single LapTimeBestLeader;
-    // The current best lap time for the leader of the player's class in the current session (-1.0 = N/A)
-    public Single LapTimeBestLeaderClass;
-    // Sector times of fastest lap by anyone in session
-    // Unit: Seconds (-1.0 = N/A)
-    public Sectors<Single> SectorTimesSessionBestLap;
-    // Unit: Seconds (-1.0 = none)
-    public Single LapTimeBestSelf;
-    public Sectors<Single> SectorTimesBestSelf;
-    // Unit: Seconds (-1.0 = none)
-    public Single LapTimePreviousSelf;
-    public Sectors<Single> SectorTimesPreviousSelf;
-    // Unit: Seconds (-1.0 = none)
-    public Single LapTimeCurrentSelf;
-    public Sectors<Single> SectorTimesCurrentSelf;
-    // The time delta between the player's time and the leader of the current session (-1.0 = N/A)
-    public Single LapTimeDeltaLeader;
-    // The time delta between the player's time and the leader of the player's class in the current session (-1.0 = N/A)
-    public Single LapTimeDeltaLeaderClass;
-    // Time delta between the player and the car placed in front (-1.0 = N/A)
-    // Units: Seconds
-    public Single TimeDeltaFront;
-    // Time delta between the player and the car placed behind (-1.0 = N/A)
-    // Units: Seconds
-    public Single TimeDeltaBehind;
-    // Time delta between this car's current laptime and this car's best laptime
-    // Unit: Seconds (-1000.0 = N/A)
-    public Single TimeDeltaBestSelf;
-    // Best time for each individual sector no matter lap
-    // Unit: Seconds (-1.0 = N/A)
-    public Sectors<Single> BestIndividualSectorTimeSelf;
-    public Sectors<Single> BestIndividualSectorTimeLeader;
-    public Sectors<Single> BestIndividualSectorTimeLeaderClass;
-         */
     }
 
     private void UpdateWithValuesFromR3E() {
