@@ -93,23 +93,20 @@
             HideAgainAt = null;
         }
 
-        if (TestMode)
+        switch (SessionPhase)
         {
+            case R3E.Constant.SessionPhase.Countdown:
+            case R3E.Constant.SessionPhase.Formation:
             IsCountdownPhase = true;
-        }
-        else if (SessionPhase == R3E.Constant.SessionPhase.Countdown)
-        {
-            IsCountdownPhase = true;
-        }
-        else if (SessionPhase == R3E.Constant.SessionPhase.Formation)
-        {
-            IsCountdownPhase = true;
-        }
-        else if (SessionPhase == R3E.Constant.SessionPhase.Green)
-        {
+                break;
+            case R3E.Constant.SessionPhase.Green:
             IsCountdownPhase = (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
                 ? true
                 : IsStartPeriodActive();
+                break;
+            default:
+            IsCountdownPhase = false;
+                break;
         }
 
     }
@@ -125,18 +122,10 @@
     {
         var rolling = TelemetryService.Data.RollingStart;
 
+        if (StartLightPhase < 6) return false;
         if (PlayerControl != Constant.Control.Player)
         {
             return rolling && StartLightPhase == 6;
-        }
-
-        if (rolling)
-        {
-            if (StartLightPhase < 6) return false;
-        }
-        else
-        {
-            if (StartLightPhase < 1) return false;
         }
 
         if (Settings!.VisibleAfterStartDurationMs > 0 && HideAgainAt != null)
@@ -150,9 +139,11 @@
     {
         if (IsStartPeriodActive())
         {
-            return new(Settings!.StartColor, true);
+            return !TelemetryService.Data.RollingStart
+                ? new("#000000", false)
+                : new(Settings!.StartColor, true);
         }
-        if (StartLightPhase <= 5 && SessionPhase == Constant.SessionPhase.Formation)
+        if (SessionPhase == Constant.SessionPhase.Formation)
         {
             var blinkOn = (GameSimulationTime % 1) < 0.5;
             var positionEven = pos % 2 == 0;
