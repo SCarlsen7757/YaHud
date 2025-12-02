@@ -137,27 +137,21 @@
             ShowSectorTimes = false;
         }
 
-        if (ShowSectorTimes)
-        {
-            SectorTimes = [
+        SectorTimes = ShowSectorTimes
+            ? [
                 rawData.SectorTimesCurrentSelf.Sector1,
                 CompareDouble(rawData.SectorTimesCurrentSelf.Sector2, -1) ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
                 CompareDouble(rawData.SectorTimesCurrentSelf.Sector3, -1) ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
-            ];
-        }
-        else
-        {
-            SectorTimes = [-1, -1, -1];
-        }
+            ]
+            : [-1, -1, -1];
 
         // Lap Progress
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
         //Info Grid
-        if (CompareDouble(rawData.LapTimeBestSelf, -1) || CompareDouble(rawData.TimeDeltaBestSelf,-1000))
-            EstimateLapTime = -1;
-        else
-            EstimateLapTime = rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
+        EstimateLapTime = CompareDouble(rawData.LapTimeBestSelf, -1) || CompareDouble(rawData.TimeDeltaBestSelf,-1000)
+            ? -1
+            : rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
 
         if (IsQualifying)
             UpdateEstimatedPosition();
