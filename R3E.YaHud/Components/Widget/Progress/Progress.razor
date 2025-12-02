@@ -169,10 +169,9 @@
                 continue;
 
             if (
-                driver.SectorTimeBestSelf.Sector3 > EstimateLapTime ||
-                driver.PlaceClass >= rawData.PositionClass
+                driver.SectorTimeBestSelf.Sector3 > EstimateLapTime
             ) {
-                // If the driver is either slower or behind us stop
+                // If the driver is either slower stop
                 // Possibly the driver data is ordered by placement
                 break;
             }
