@@ -244,7 +244,7 @@ namespace R3E.YaHud.Components.Widget.Core
             }
         }
 
-        private volatile bool disposed;
+        protected volatile bool disposed;
 
         public virtual void Dispose()
         {
