@@ -43,7 +43,7 @@ namespace R3E.YaHud.Components.Widget.Progress
 
         [SettingType("Completed Lap Sector Times Visible Time", SettingsTypes.Number, 17,
             Min = 0, Max = 10, Step = 1,
-            Description = "The number of seconds, the sector times for a completed lap is vissible before resetting.",
+            Description = "The number of seconds, the sector times for a completed lap is visible before resetting.",
             ViewMode = SettingsViewMode.Beginner)]
         public double CompletedLapSectorTimesVisibleTime { get; set; } = 5;
 

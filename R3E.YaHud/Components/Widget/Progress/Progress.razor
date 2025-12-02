@@ -49,7 +49,7 @@
     public override bool Collidable => false;
 
     // Controlling values
-    private double TimeDeltaBestLapSelf { get; set; } = 0.0f;
+    private double TimeDeltaBestLapSelf { get; set; } = 0.0;
     private double[] SectorTimes { get; set; } = [-1, -1, -1];
     private bool ShowSectorTimes { get; set; } = true;
     private double LapDistanceFraction { get; set; } = 0;
@@ -126,7 +126,7 @@
             ShowSectorTimes = false;
         }
 
-        if (!ShowSectorTimes)
+        if (ShowSectorTimes)
         {
             SectorTimes = [
                 rawData.SectorTimesCurrentSelf.Sector1,
@@ -139,7 +139,7 @@
             SectorTimes = [-1, -1, -1];
         }
 
-        // Lap Progess
+        // Lap Progress
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
         //Info Grid
@@ -155,6 +155,8 @@
     private void UpdateEstimatedPosition()
     {
         var rawData = TelemetryService.Data.Raw;
+        if (rawData.DriverData == null)
+            return;
 
         EstimatedPosition = 1;
         for (int i = 0; i < rawData.DriverData.Length; i++)
@@ -192,14 +194,14 @@
 
         var rawData = TelemetryService.Data.Raw;
         double[] bestIndividualSectorTimesLeader = [
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector1,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector2,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeLeader.Sector3
+            rawData.BestIndividualSectorTimeLeader.Sector1,
+            rawData.BestIndividualSectorTimeLeader.Sector2,
+            rawData.BestIndividualSectorTimeLeader.Sector3
         ];
         double[] bestIndividualSectorTimesSelf = [
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector1,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector2,
-            TelemetryService.Data.Raw.BestIndividualSectorTimeSelf.Sector3
+            rawData.BestIndividualSectorTimeSelf.Sector1,
+            rawData.BestIndividualSectorTimeSelf.Sector2,
+            rawData.BestIndividualSectorTimeSelf.Sector3
         ];
         for (int i = 0; i < 3; i++)
         {
