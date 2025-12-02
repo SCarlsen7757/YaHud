@@ -5,7 +5,7 @@ using R3E.UdpRelay;
 using System.Net;
 using System.Runtime.InteropServices;
 
-internal class Program : IAsyncDisposable
+internal class Program : IDisposable
 {
     public SharedMemoryService sharedMemoryService;
     public UdpRelayService udpRelayService;
@@ -82,7 +82,7 @@ internal class Program : IAsyncDisposable
         return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         if (disposed)
         {
@@ -129,7 +129,7 @@ internal class Program : IAsyncDisposable
     {
         Console.WriteLine("Starting R3E API UDP relay service");
         Console.WriteLine("Waiting for R3E to start");
-        await using var program = new Program();
+        using var program = new Program();
 
         // Use a CancellationTokenSource to allow graceful shutdown
         using var cts = new CancellationTokenSource();
