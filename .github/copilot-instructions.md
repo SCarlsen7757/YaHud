@@ -98,6 +98,15 @@ public class FuelWidget : WidgetBase
 }
 ```
 
+### Accessibility for Widgets
+
+Widgets in this project are not intended to be consumed by screen readers. As a result:
+
+- Do not add `aria-*` attributes to widget HTML/Razor markup.
+- Do not add `role` attributes to widget HTML/Razor markup.
+- Avoid attributes like `aria-label`, `aria-hidden`, `role`, etc. inside widgets.
+
+
 ### Summary
 
 | Responsibility | Location |
