@@ -15,6 +15,8 @@ namespace R3E.API
 
         public event Action<Shared>? DataUpdated;
 
+        public event Action<int>? StartLightsChanged;
+
         public Shared Data { get; private set; }
 
         public RemoteSharedMemoryService(ILogger<RemoteSharedMemoryService>? logger = null)
