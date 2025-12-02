@@ -2,10 +2,16 @@
 
 namespace R3E.API.Models
 {
+    /// <summary>
+    /// Contains calculations done over the raw data, to provide properties around the sectors
+    /// </summary>
     public class SectorData
     {
         public Shared Raw { get; internal set; } = new Shared();
 
+        /// <summary>
+        /// Returns a 0-based sector index, or -1
+        /// </summary>
         public int CurrentSectorIndexSelf {
             get {
                 if (Raw.LapDistanceFraction >= Raw.SectorStartFactors.Sector1 && Raw.LapDistanceFraction < Raw.SectorStartFactors.Sector2) {
