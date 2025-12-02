@@ -4,7 +4,7 @@
     align-items: center; /* center horizontally */
     text-align: center;
     border-radius: 4px;
-    width: 300px; /* fixed width */
+    width: 200px; /* fixed width */
     height: 300px; /* fixed height */
     /*background-color: rgba(2, 0, 0, 0.5);*/
     position: absolute; /* can still be placed absolutely */
@@ -15,8 +15,8 @@
 
 #radar {
     border-radius: 50%;
-    width: 300px;
-    height: 300px;
+    width: 200px;
+    height: 200px;
     position: absolute !important;
     /*top: calc(100vh - 300px - 15px);*/
     /*left: calc(50% - 150px);*/
