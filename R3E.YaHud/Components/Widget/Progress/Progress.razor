@@ -12,7 +12,7 @@
     
         <div id="box-container">
             <PositiveNegativeBar 
-                Value=@(TimeDeltaBestLapSelf == -1000 ? 0 : TimeDeltaBestLapSelf * -1) 
+                Value=@(CompareDouble(TimeDeltaBestLapSelf, -1000) ? 0 : TimeDeltaBestLapSelf * -1) 
                 Range=@Settings.PositiveNegativeBarRange
                 RootElementClass="visual-bar" 
                 PositiveColor=@Settings.PositiveDeltaTimeColor 
@@ -37,6 +37,9 @@
 
 
 @code {
+
+    // Use epsilon for floating-point comparison
+    const double Epsilon = 1e-6;
 
     // Widget values
     public override string ElementId { get => "progressWidget"; }
@@ -63,8 +66,10 @@
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
     private DateTime? hideSectorTimesTime = null;
 
+    // ========================= Util ===============================
+
     private string GetTimeFormatted(double time, double naValue = -1, string naText = "-:--.---") {
-        if (time == naValue)
+        if (CompareDouble(time, naValue))
             return naText;
 
         var minutes = Math.Floor(time / 60);
@@ -74,10 +79,12 @@
         return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString(secondsFormat, CultureInfo.InvariantCulture)}";
     }
 
-    private void HideSectorTimes(double delaySeconds = 0)
+    private bool CompareDouble(double x, double y)
     {
-        hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
+        return Math.Abs(x - y) < Epsilon;
     }
+
+    // ================================================================
 
     protected override Task OnSettingsLoadedAsync()
     {
@@ -98,6 +105,10 @@
     private void TelemetryService_NewLap(TelemetryData data)
     {
         HideSectorTimes(delaySeconds: Settings!.CompletedLapSectorTimesVisibleTime);
+    }
+
+    private void HideSectorTimes(double delaySeconds = 0) {
+        hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
     }
 
     private void TelemetryService_SectorCompleted(TelemetryData data, int sectorIndex)
@@ -130,8 +141,8 @@
         {
             SectorTimes = [
                 rawData.SectorTimesCurrentSelf.Sector1,
-                rawData.SectorTimesCurrentSelf.Sector2 != -1 ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
-                rawData.SectorTimesCurrentSelf.Sector3 != -1 ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
+                CompareDouble(rawData.SectorTimesCurrentSelf.Sector2, -1) ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
+                CompareDouble(rawData.SectorTimesCurrentSelf.Sector3, -1) ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
             ];
         }
         else
@@ -143,7 +154,7 @@
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
         //Info Grid
-        if (rawData.LapTimeBestSelf == -1 || rawData.TimeDeltaBestSelf == -1000)
+        if (CompareDouble(rawData.LapTimeBestSelf, -1) || CompareDouble(rawData.TimeDeltaBestSelf,-1000))
             EstimateLapTime = -1;
         else
             EstimateLapTime = rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
@@ -207,7 +218,7 @@
         {
             var currentSectorTime = SectorTimes[i];
 
-            if (currentSectorTime == -1)
+            if (CompareDouble(currentSectorTime, -1))
             {
                 SectorColors[i] = Settings.NeutralSectorTimeColor;
             }

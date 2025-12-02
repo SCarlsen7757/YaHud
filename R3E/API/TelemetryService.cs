@@ -29,7 +29,7 @@ namespace R3E.API
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
-        private double lastSectorIndex = 0;
+        private int lastSectorIndex = 0;
 
 
         public TelemetryService(ILogger<TelemetryService> logger,
