@@ -209,7 +209,7 @@
                 driverStyling[i] = child;
             }
 
-            if (ownPlace == driver.Value.DriverData.Place)
+            if (ownDriver.DriverInfo.UserId == driver.Value.DriverData.DriverInfo.UserId)
             {
                 child.classlist.add("radar-car-self");
                 driverStyling[i] = child;
@@ -225,6 +225,17 @@
             }
         }
 
+        // if(closeLeft == 1)
+        // {
+        //     var driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
+        //     RadarStyling.appendStyleString("background-image", $",url({driverCloseLeftImg})");
+        // } 
+        // if(closeRight == 1)
+        // {
+        //     var driverCloseRightImg = "assets/img/radar/radar-grid-warning-left.png";
+        //     RadarStyling.appendStyleString("background-image", $",url({driverCloseRightImg})");
+        // }
+
         if (Settings.AutoHideRadar)
         {
             if (closest == null || closest > radarFadeRange)
@@ -235,7 +246,7 @@
 
             RadarStyling.setStyle("opacity", closest < Settings.RadarRange ? $"{Settings.RadarOpacity}" : $"{((closest - radarFadeRange) / (Settings.RadarRange - radarFadeRange)) * Settings.RadarOpacity}");
         }
-        
+
     }
 
 
@@ -370,6 +381,19 @@
             }
         }
 
+        public void appendStyleString(string key, string value)
+        {
+            if (styles.ContainsKey(key))
+            {
+                styles[key] += " " + value;
+            }
+            else
+            {
+                styles[key] = value;
+            }
+        }
+
+
         public override string ToString()
         {
 
@@ -378,7 +402,7 @@
                 return $"display: {displayValue};";
             }
 
-            return string.Join("; ", styles.Select(kvp => $"{kvp.Key}: {FormatValue(kvp.Key, kvp.Value)}"));
+            return string.Join("; ", styles.Where(kvp => kvp.Key != "display").Select(kvp => $"{kvp.Key}: {FormatValue(kvp.Key, kvp.Value)}"));
 
             // if (display != null)
             //     return$"display: {display}";
@@ -391,10 +415,11 @@
             if (key is "width" or "height" or "top" or "left" or "border-radius" or "opacity")
             {
                 return value.Replace(",", ".");
-            } else if (key is "display")
-            {
-                return "";
-            }
+            } 
+            // else if (key is "display")
+            // {
+            //     return "";
+            // }
             else
             {
                 return value;
