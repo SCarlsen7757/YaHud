@@ -134,6 +134,7 @@
             }
 
             var childSlotId = radarChildren[i];
+            Console.WriteLine($"ChildSlot ID: {childSlotId}, index: {i}, all radar children count: {radarChildren.Count}, {string.Join(", ", radarChildren.Select(rc => $"{rc}"))}");
 
             var child = driverStyling[childSlotId];
             var driver = closeDrivers[i];
@@ -188,7 +189,7 @@
                 }
 
                 child.setStyle("opacity", $"pointerOpacity");//child.opacity = $"{pointerOpacity}";
-                driverStyling[i] = child;
+                driverStyling[childSlotId] = child;
 
             }
             else
@@ -206,13 +207,14 @@
                 child.setStyle("transform", $"rotate({driverRotation.ToString().Replace(",", ".")}rad)");//child.transform = $"rotate({driverRotation.ToString().Replace(",",".")}rad)";
 
                 child.setStyle("opacity", "1");//child.opacity = "1";
-                driverStyling[i] = child;
+                //driverStyling.
+                driverStyling[childSlotId] = child;
             }
 
-            if (ownDriver.DriverInfo.UserId == driver.Value.DriverData.DriverInfo.UserId)
+            if (ownDriver.DriverInfo.SlotId == driver.Value.DriverData.DriverInfo.SlotId)
             {
                 child.classlist.add("radar-car-self");
-                driverStyling[i] = child;
+                driverStyling[childSlotId] = child;
             }
             else
             {
@@ -221,20 +223,28 @@
                     closest = distance;
                 }
                 child.classlist.remove("radar-car-self");
-                driverStyling[i] = child;
+                driverStyling[childSlotId] = child;
             }
         }
 
-        // if(closeLeft == 1)
-        // {
-        //     var driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
-        //     RadarStyling.appendStyleString("background-image", $",url({driverCloseLeftImg})");
-        // } 
-        // if(closeRight == 1)
-        // {
-        //     var driverCloseRightImg = "assets/img/radar/radar-grid-warning-left.png";
-        //     RadarStyling.appendStyleString("background-image", $",url({driverCloseRightImg})");
-        // }
+        if(closeLeft == 1)
+        {
+            var driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
+            RadarStyling.appendStyleString("background-image", $",url({driverCloseLeftImg})");
+        } else
+        {
+            var driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
+            RadarStyling.removeStyleString("background-image", $",url({driverCloseLeftImg})");
+        }
+        if(closeRight == 1)
+        {
+            var driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
+            RadarStyling.appendStyleString("background-image", $",url({driverCloseRightImg})");
+        } else
+        {
+            var driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
+            RadarStyling.removeStyleString("background-image", $",url({driverCloseRightImg})");
+        }
 
         if (Settings.AutoHideRadar)
         {
@@ -393,6 +403,13 @@
             }
         }
 
+        public void removeStyleString(string key, string value)
+        {
+            if (styles.ContainsKey(key))
+            {
+                styles[key] = styles[key].Replace(" " + value, "");
+            }
+        }
 
         public override string ToString()
         {
