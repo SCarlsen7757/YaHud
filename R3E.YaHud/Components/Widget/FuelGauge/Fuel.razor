@@ -80,34 +80,20 @@
         FuelPerLap = data.FuelPerLap;
         LapsEstimatedLeft  = data.LapsEstimatedLeft;
 
-        //Color numbers for widget
-        if (data.FuelRemainingProcentage >= 50.0)
+        FuelRemainingColor = data.FuelRemainingProcentage switch
         {
-            FuelRemainingColor = Settings!.ColorHigh;
-        }   
-        else if  (50.0 > data.FuelRemainingProcentage && data.FuelRemainingProcentage >= 35.0)
-        {
-            FuelRemainingColor = Settings!.ColorMidHigh; 
-        }
-        else if  (35.0 > data.FuelRemainingProcentage && data.FuelRemainingProcentage >= 15.0)
-        {
-            FuelRemainingColor = Settings!.ColorMidLow; 
-        }
-        else if  (15.0 > data.FuelRemainingProcentage && data.FuelRemainingProcentage >= 0.0)
-        {
-            FuelRemainingColor = Settings!.ColorLow;
-        }
-        if (data.FuelToEnd < data.FuelLeft)
-        {
-            FuelToEndColor = Settings!.ColorHigh; 
-        }   
-        else 
-        {
-            FuelToEndColor = Settings!.ColorLow; 
-        }
+            //Color numbers for widget
+            >= 50.0 => Settings!.ColorHigh,
+            < 50.0 and >= 35.0 => Settings!.ColorMidHigh,
+            < 35.0 and >= 15.0 => Settings!.ColorMidLow,
+            < 15.0 and >= 0.0 => Settings!.ColorLow,
+            _ => FuelRemainingColor
+        };
+        
+        FuelToEndColor = data.FuelToEnd < data.FuelLeft ? Settings!.ColorHigh : Settings!.ColorLow;
         
         //ready variables for text to round or change format so it can be shown correctly
-        TimeSpan t = TimeSpan.FromSeconds(data.TimeEstimatedLeft);
+        var t = TimeSpan.FromSeconds(data.TimeEstimatedLeft);
         if(t.Hours >= 1) 
         {
             TimeEstimatedLeftFormatted = t.ToString(format: @"hh\:mm");
