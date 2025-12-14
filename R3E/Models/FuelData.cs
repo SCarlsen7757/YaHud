@@ -34,101 +34,57 @@ public class FuelData: IDisposable
         oldFuelRemaining = telemetryData.FuelLeft;
     }
 
-    public double FuelLeft
-    {
-        get
-        {
-            if (telemetryData.FuelLeft <= 0) return 0.0f;
-            return telemetryData.FuelLeft;
-        }
-    }
-    
-    public double TimeEstimatedLeft
-        {
-            get
-            {
-                if (telemetryData.LapTimeBestSelf <= 0 || telemetryData.FuelPerLap <= 0) return double.NaN;
-                return (telemetryData.FuelLeft / telemetryData.FuelPerLap) * telemetryData.LapTimeBestSelf;
-            }
-        }
-    public double FuelRemainingProcentage
-    {
-        get
-        {
-            if (telemetryData.FuelCapacity <= 0) return double.NaN;
-            return (telemetryData.FuelLeft / telemetryData.FuelCapacity) * 100;
-        }
-    }
+    public double FuelLeft => telemetryData.FuelLeft <= 0 ? 0.0f : telemetryData.FuelLeft;
 
-    public double LapsEstimatedLeft
-    {
-        get
-        {
-            if (telemetryData.FuelPerLap <= 0) return double.NaN;
-            return telemetryData.FuelLeft / telemetryData.FuelPerLap;
-        }
-    }
-        
-    public double FuelPerLap
-    {
-        get
-        {
-            if (telemetryData.FuelPerLap <= 0) return double.NaN;
-            return telemetryData.FuelPerLap;
-        }
-    }
+    public double TimeEstimatedLeft => telemetryData.LapTimeBestSelf <= 0 || telemetryData.FuelPerLap <= 0 ? 0
+        : (telemetryData.FuelLeft / telemetryData.FuelPerLap) * telemetryData.LapTimeBestSelf;
+    
+    public double FuelRemainingProcentage => telemetryData.FuelCapacity <= 0 ? 0.0f : (telemetryData.FuelLeft / telemetryData.FuelCapacity) * 100;
+
+    public double LapsEstimatedLeft => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelLeft / telemetryData.FuelPerLap;
+
+    public double FuelPerLap => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelPerLap;
 
     public double FuelToEnd
     {
-        get 
+        get
         {
-            switch ((Constant.SessionLengthFormat)telemetryData.SessionLengthFormat) 
+            return (Constant.SessionLengthFormat)telemetryData.SessionLengthFormat switch
             {
-                case Constant.SessionLengthFormat.Unavailable:
-                    return double.NaN; //Nothing to calculate
-                
+                Constant.SessionLengthFormat.Unavailable => double.NaN //Nothing to calculate
+                ,
                 // TimeBased
-                case Constant.SessionLengthFormat.TimeBased: 
-                    return (telemetryData.SessionTimeRemaining / telemetryData.LapTimeBestSelf) * telemetryData.FuelPerLap;
-
+                Constant.SessionLengthFormat.TimeBased => (telemetryData.SessionTimeRemaining /
+                                                           telemetryData.LapTimeBestSelf) * telemetryData.FuelPerLap,
                 // LapBased
-                case Constant.SessionLengthFormat.LapBased:
-                    return telemetryData.NumberOfLaps / telemetryData.FuelPerLap;
-                
+                Constant.SessionLengthFormat.LapBased => telemetryData.NumberOfLaps / telemetryData.FuelPerLap,
                 // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
-                case Constant.SessionLengthFormat.TimeAndLapBased:
-                    return (telemetryData.NumberOfLaps+1) / telemetryData.FuelPerLap;
-            
-                 default: 
-                    return double.NaN;
-            } 
+                Constant.SessionLengthFormat.TimeAndLapBased => (telemetryData.NumberOfLaps + 1) /
+                                                                telemetryData.FuelPerLap,
+                _ => double.NaN
+            };
         }
     }
 
     public double FuelToAdd
     {
-        get 
+        get
         {
-            switch ((Constant.SessionLengthFormat)telemetryData.SessionLengthFormat) 
+            return (Constant.SessionLengthFormat)telemetryData.SessionLengthFormat switch
             {
-                case Constant.SessionLengthFormat.Unavailable:
-                    return double.NaN; //Nothing to calculate
-
+                Constant.SessionLengthFormat.Unavailable => double.NaN //Nothing to calculate
+                ,
                 // TimeBased
-                case Constant.SessionLengthFormat.TimeBased: 
-                    return Math.Min(FuelToEnd - telemetryData.FuelLeft, telemetryData.FuelCapacity - telemetryData.FuelLeft); 
-
+                Constant.SessionLengthFormat.TimeBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
+                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
                 // LapBased
-                case Constant.SessionLengthFormat.LapBased:
-                    return Math.Min(FuelToEnd - telemetryData.FuelLeft, telemetryData.FuelCapacity - telemetryData.FuelLeft); 
-
+                Constant.SessionLengthFormat.LapBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
+                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
                 // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
-                case Constant.SessionLengthFormat.TimeAndLapBased:
-                    return Math.Min(FuelToEnd - telemetryData.FuelLeft, telemetryData.FuelCapacity - telemetryData.FuelLeft); 
-            
-                default: 
-                    return double.NaN;
-            } 
+                Constant.SessionLengthFormat.TimeAndLapBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
+                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
+                _ => double.NaN
+            };
         } 
     }
 

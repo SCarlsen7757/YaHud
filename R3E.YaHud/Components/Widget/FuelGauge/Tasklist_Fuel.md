@@ -37,29 +37,29 @@ Code Quality & Consistency
 -	[ ] Consider creating color helper methods similar to other widgets
 -	[x] Improve color logic
 -	[ ] Extract color threshold logic to helper methods
--	[ ] Use consistent color naming (follow MoTec pattern with RpsCurrentColor)
+-	[x] Use consistent color naming (follow MoTec pattern with RpsCurrentColor)
 -	[x] Move hardcoded colors to FuelSettings class
 -	[ ] Consider using percentage-based thresholds from settings
 -	[x] Remove unused imports
 -	[x] Remove System.Drawing
 -	[x] Remove System.Runtime.InteropServices
 -	[x] Remove System.Diagnostics.Eventing.Reader
--	[ ] Fix formatting issues
--	[ ] Add consistent spacing around => in property accessors
--	[ ] Use consistent indentation for switch statements
--	[ ] Remove empty statement in Unavailable case (replace ; with break;)
+-	[x] Fix formatting issues
+-	[x] Add consistent spacing around => in property accessors
+-	[x] Use consistent indentation for switch statements
+-	[x] Remove empty statement in Unavailable case (replace ; with break;)
 Data Access Pattern
 -	[x] Follow established widget patterns
 -	[x] Access telemetry data through TelemetryService.Data.Raw (already correct)
 -	[x] Use computed properties from TelemetryData instead of raw calculations
 -	[x] Implement display formatting only in widget
--	[ ] Use SettingsService.GlobalSettings for unit conversions if needed
+-	[x] Use SettingsService.GlobalSettings for unit conversions if needed
 Settings Integration
 -	[x] Review and expand FuelSettings
--	[ ] Add color threshold settings (currently using hardcoded values)
--	[ ] Add display unit preferences (liters vs gallons if applicable)
--	[ ] Add color properties for all hardcoded RGB values
--	[ ] Ensure all colors follow the pattern: green, yellow, orange, red
+-	[x] Add color threshold settings (currently using hardcoded values)
+-	[x] Add display unit preferences (ONLY L, NOT APPLICABLE)
+-	[x] Add color properties for all hardcoded RGB values
+-	[x] Ensure all colors follow the pattern: green, yellow, orange, red
 Time Formatting
 -	[x] Refactor time display logic
 -	[ ] Extract time formatting to helper method
