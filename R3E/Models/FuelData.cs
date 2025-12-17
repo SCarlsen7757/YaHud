@@ -3,14 +3,25 @@ using R3E.Data;
 
 namespace R3E.Models;
 
+/// <summary>
+/// Represents fuel-related telemetry for a session.
+/// Provides calculations for fuel remaining, fuel per lap, time and lap estimates, and fuel to add.
+/// </summary>
 public class FuelData: IDisposable
 {
-    private volatile bool disposed = false;
+    private volatile bool disposed;
     private readonly Shared telemetryData;
     private readonly ITelemetryService telemetryService;
-    private double oldFuelRemaining = 0.0f;
-    public double LastLapFuelUsage { get; set; } = 0.0f;
+    private double oldFuelRemaining;
+    /// <summary>
+    /// Fuel used in the last completed lap (liters or relevant unit from telemetry).
+    /// </summary>
+    public double LastLapFuelUsage { get; set; } 
     
+    /// <summary>
+    /// Initializes a new instance of <see cref="FuelData"/>.
+    /// Subscribes to telemetry service events to update fuel calculations on lap and session changes.
+    /// </summary>
     public FuelData(Shared telemetryData, ITelemetryService telemetryService)
     {
         this.telemetryData = telemetryData;
@@ -19,6 +30,10 @@ public class FuelData: IDisposable
         telemetryService.SessionPhaseChanged += TelemetryServiceOnSessionPhaseChanged;
     }
 
+    /// <summary>
+    /// Called when session phase changes.
+    /// Resets old fuel remaining at the start of the session countdown.
+    /// </summary>
     private void TelemetryServiceOnSessionPhaseChanged(TelemetryData obj)
     {
         if ((Constant.SessionPhase)telemetryData.SessionPhase == Constant.SessionPhase.Countdown)
@@ -27,24 +42,49 @@ public class FuelData: IDisposable
         }
     }
 
+    /// <summary>
+    /// Called when a new lap starts.
+    /// Updates <see cref="LastLapFuelUsage"/>.
+    /// </summary>
     private void TelemetryServiceOnNewLap(TelemetryData obj)
     {
-        //Everytime we pass raceline NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
+        //Everytime we pass race line NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
         LastLapFuelUsage = oldFuelRemaining - telemetryData.FuelLeft;
         oldFuelRemaining = telemetryData.FuelLeft;
     }
 
+    /// <summary>
+    /// Current fuel left in the tank (liters or telemetry unit). Returns 0 if negative.
+    /// </summary>
     public double FuelLeft => telemetryData.FuelLeft <= 0 ? 0.0f : telemetryData.FuelLeft;
 
+    /// <summary>
+    /// Estimated time left in the session based on fuel and lap time (seconds).
+    /// Returns 0 if lap time or fuel per lap is unavailable.
+    /// </summary>
     public double TimeEstimatedLeft => telemetryData.LapTimeBestSelf <= 0 || telemetryData.FuelPerLap <= 0 ? 0
         : (telemetryData.FuelLeft / telemetryData.FuelPerLap) * telemetryData.LapTimeBestSelf;
     
-    public double FuelRemainingProcentage => telemetryData.FuelCapacity <= 0 ? 0.0f : (telemetryData.FuelLeft / telemetryData.FuelCapacity) * 100;
+    /// <summary>
+    /// Fuel remaining as a percentage of total capacity.
+    /// Returns 0 if capacity is zero.
+    /// </summary>
+    public double FuelRemainingPercentage => telemetryData.FuelCapacity <= 0 ? 0.0f : (telemetryData.FuelLeft / telemetryData.FuelCapacity) * 100;
 
+    /// <summary>
+    /// Estimated laps remaining with current fuel.
+    /// </summary>
     public double LapsEstimatedLeft => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelLeft / telemetryData.FuelPerLap;
 
+    /// <summary>
+    /// Fuel consumption per lap.
+    /// </summary>
     public double FuelPerLap => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelPerLap;
 
+    /// <summary>
+    /// Fuel required to reach session end based on session type.
+    /// Assumes even fuel usage per lap or per time unit.
+    /// </summary>
     public double FuelToEnd
     {
         get
@@ -66,6 +106,9 @@ public class FuelData: IDisposable
         }
     }
 
+    /// <summary>
+    /// Fuel needed to add to reach session end, constrained by tank capacity.
+    /// </summary>
     public double FuelToAdd
     {
         get
@@ -88,6 +131,9 @@ public class FuelData: IDisposable
         } 
     }
 
+    /// <summary>
+    /// Releases resources and unsubscribes from telemetry events.
+    /// </summary>
     public void Dispose()
     {
         if (disposed)
