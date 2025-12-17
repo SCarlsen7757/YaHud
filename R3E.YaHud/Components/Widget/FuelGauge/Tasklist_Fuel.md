@@ -11,7 +11,7 @@ Architecture & Separation of Concerns
 - [x] Track lap-to-lap fuel consumption internally (using NewLap event pattern)
 - [x] Handle session phase state tracking (countdown initialization)
 - [x] Store oldFuelRemaining and session-specific data inside TelemetryData
-- [ ] Create a dedicated FuelCalculationService (alternative approach)
+- [x] Create a dedicated FuelCalculationService (alternative approach)
 - [x] Implement service to handle heavy fuel calculations
 - [x] Subscribe to TelemetryService.NewLap event
 - [x] Expose calculated properties via events or properties
@@ -34,12 +34,12 @@ Code Quality & Consistency
 -	[ ] Fix HTML/CSS issues
 -	[x] Fix missing space in style="color: @FRColor" (all instances)
 -	[x] Replace hardcoded RGB colors with Settings properties or constants
--	[ ] Consider creating color helper methods similar to other widgets
+-	[x] Consider creating color helper methods similar to other widgets
 -	[x] Improve color logic
--	[ ] Extract color threshold logic to helper methods
+-	[x] Extract color threshold logic to helper methods
 -	[x] Use consistent color naming (follow MoTec pattern with RpsCurrentColor)
 -	[x] Move hardcoded colors to FuelSettings class
--	[ ] Consider using percentage-based thresholds from settings
+-	[x] Consider using percentage-based thresholds from settings
 -	[x] Remove unused imports
 -	[x] Remove System.Drawing
 -	[x] Remove System.Runtime.InteropServices
@@ -72,8 +72,8 @@ Dispose Pattern
 Testing & Validation
 -	[x Improve test data
 -	[x] Ensure UpdateWithTestData() represents realistic scenarios
--	[ ] Test all color states
--	[ ] Test all session length formats
+-	[x] Test all color states
+-	[x] Test all session length formats
 Documentation
 -	[x] Add XML documentation
 -	[x] Document properties (purpose and units)
