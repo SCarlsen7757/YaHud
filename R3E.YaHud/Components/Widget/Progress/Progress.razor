@@ -107,6 +107,10 @@
         HideSectorTimes(delaySeconds: Settings!.CompletedLapSectorTimesVisibleTime);
     }
 
+    /// <summary>
+    /// Schedules the sector times to be hidden after a specified delay.
+    /// </summary>
+    /// <param name="delaySeconds">The number of seconds to wait before hiding the sector times. Defaults to 0 for immediate hiding.</param>
     private void HideSectorTimes(double delaySeconds = 0) {
         hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
     }
@@ -140,15 +144,15 @@
         SectorTimes = ShowSectorTimes
             ? [
                 rawData.SectorTimesCurrentSelf.Sector1,
-                CompareDouble(rawData.SectorTimesCurrentSelf.Sector2, -1) ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
-                CompareDouble(rawData.SectorTimesCurrentSelf.Sector3, -1) ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
+                !CompareDouble(rawData.SectorTimesCurrentSelf.Sector2, -1) ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
+                !CompareDouble(rawData.SectorTimesCurrentSelf.Sector3, -1) ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
             ]
             : [-1, -1, -1];
 
         // Lap Progress
         LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
 
-        //Info Grid
+        // Info Grid
         EstimateLapTime = CompareDouble(rawData.LapTimeBestSelf, -1) || CompareDouble(rawData.TimeDeltaBestSelf,-1000)
             ? -1
             : rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
@@ -178,8 +182,8 @@
             if (
                 driver.SectorTimeBestSelf.Sector3 > EstimateLapTime
             ) {
-                // If the driver is either slower stop
-                // Possibly the driver data is ordered by placement
+                // If the driver is slower, stop
+                // The driver data is ordered by placement
                 break;
             }
 
@@ -187,7 +191,7 @@
         }
     }
 
-    private void UpdateVisuals(bool isTest = false)
+    private void UpdateVisuals()
     {
         TimeDeltaBestLapSelfColor = TimeDeltaBestLapSelf switch 
         {
@@ -249,7 +253,7 @@
         EstimateLapTime = rnd.NextDouble() * 120;
         EstimatedPosition = rnd.Next(1, 20);
 
-        UpdateVisuals(true);
+        UpdateVisuals();
     }
 
     public override void Dispose() {
