@@ -10,7 +10,7 @@ namespace R3E.Models;
 public class FuelData: IDisposable
 {
     private volatile bool disposed;
-    private readonly Shared telemetryData;
+    public Shared TelemetryData { get; set; }
     private readonly ITelemetryService telemetryService;
     private double oldFuelRemaining;
     /// <summary>
@@ -24,7 +24,7 @@ public class FuelData: IDisposable
     /// </summary>
     public FuelData(Shared telemetryData, ITelemetryService telemetryService)
     {
-        this.telemetryData = telemetryData;
+        this.TelemetryData = telemetryData;
         this.telemetryService = telemetryService;
         telemetryService.NewLap += TelemetryServiceOnNewLap;
         telemetryService.SessionPhaseChanged += TelemetryServiceOnSessionPhaseChanged;
@@ -36,9 +36,9 @@ public class FuelData: IDisposable
     /// </summary>
     private void TelemetryServiceOnSessionPhaseChanged(TelemetryData obj)
     {
-        if ((Constant.SessionPhase)telemetryData.SessionPhase == Constant.SessionPhase.Countdown)
+        if ((Constant.SessionPhase)TelemetryData.SessionPhase == Constant.SessionPhase.Countdown)
         {
-            oldFuelRemaining = telemetryData.FuelLeft;
+            oldFuelRemaining = TelemetryData.FuelLeft;
         }
     }
 
@@ -49,37 +49,37 @@ public class FuelData: IDisposable
     private void TelemetryServiceOnNewLap(TelemetryData obj)
     {
         //Everytime we pass race line NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
-        LastLapFuelUsage = oldFuelRemaining - telemetryData.FuelLeft;
-        oldFuelRemaining = telemetryData.FuelLeft;
+        LastLapFuelUsage = oldFuelRemaining - TelemetryData.FuelLeft;
+        oldFuelRemaining = TelemetryData.FuelLeft;
     }
 
     /// <summary>
     /// Current fuel left in the tank (liters or telemetry unit). Returns 0 if negative.
     /// </summary>
-    public double FuelLeft => telemetryData.FuelLeft <= 0 ? 0.0f : telemetryData.FuelLeft;
+    public double FuelLeft => TelemetryData.FuelLeft <= 0 ? 0.0f : TelemetryData.FuelLeft;
 
     /// <summary>
     /// Estimated time left in the session based on fuel and lap time (seconds).
     /// Returns 0 if lap time or fuel per lap is unavailable.
     /// </summary>
-    public double TimeEstimatedLeft => telemetryData.LapTimeBestSelf <= 0 || telemetryData.FuelPerLap <= 0 ? 0
-        : (telemetryData.FuelLeft / telemetryData.FuelPerLap) * telemetryData.LapTimeBestSelf;
+    public double TimeEstimatedLeft => TelemetryData.LapTimeBestSelf <= 0 || TelemetryData.FuelPerLap <= 0 ? 0
+        : (TelemetryData.FuelLeft / TelemetryData.FuelPerLap) * TelemetryData.LapTimeBestSelf;
     
     /// <summary>
     /// Fuel remaining as a percentage of total capacity.
     /// Returns 0 if capacity is zero.
     /// </summary>
-    public double FuelRemainingPercentage => telemetryData.FuelCapacity <= 0 ? 0.0f : (telemetryData.FuelLeft / telemetryData.FuelCapacity) * 100;
+    public double FuelRemainingPercentage => TelemetryData.FuelCapacity <= 0 ? 0.0f : (TelemetryData.FuelLeft / TelemetryData.FuelCapacity) * 100;
 
     /// <summary>
     /// Estimated laps remaining with current fuel.
     /// </summary>
-    public double LapsEstimatedLeft => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelLeft / telemetryData.FuelPerLap;
+    public double LapsEstimatedLeft => TelemetryData.FuelPerLap <= 0 ? 0.0f : TelemetryData.FuelLeft / TelemetryData.FuelPerLap;
 
     /// <summary>
     /// Fuel consumption per lap.
     /// </summary>
-    public double FuelPerLap => telemetryData.FuelPerLap <= 0 ? 0.0f : telemetryData.FuelPerLap;
+    public double FuelPerLap => TelemetryData.FuelPerLap <= 0 ? 0.0f : TelemetryData.FuelPerLap;
 
     /// <summary>
     /// Fuel required to reach session end based on session type.
@@ -89,20 +89,31 @@ public class FuelData: IDisposable
     {
         get
         {
-            return (Constant.SessionLengthFormat)telemetryData.SessionLengthFormat switch
+            switch ((Constant.SessionLengthFormat)TelemetryData.SessionLengthFormat)
             {
-                Constant.SessionLengthFormat.Unavailable => double.NaN //Nothing to calculate
-                ,
+                case Constant.SessionLengthFormat.Unavailable:
+                    return double.NaN; //Nothing to calculate
                 // TimeBased
-                Constant.SessionLengthFormat.TimeBased => (telemetryData.SessionTimeRemaining /
-                                                           telemetryData.LapTimeBestSelf) * telemetryData.FuelPerLap,
+                case Constant.SessionLengthFormat.TimeBased: 
+                    return TelemetryData.LapTimeBestSelf <= 0
+                        ? 0.0
+                        : (TelemetryData.SessionTimeRemaining / TelemetryData.LapTimeBestSelf) *
+                          TelemetryData.FuelPerLap;
+                
                 // LapBased
-                Constant.SessionLengthFormat.LapBased => telemetryData.NumberOfLaps / telemetryData.FuelPerLap,
+                case Constant.SessionLengthFormat.LapBased:
+                    if (TelemetryData.NumberOfLaps <= 0) return 0.0; // default safe value until telemetry is valid
+                    return TelemetryData.NumberOfLaps / TelemetryData.FuelPerLap;
+                
                 // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
-                Constant.SessionLengthFormat.TimeAndLapBased => (telemetryData.NumberOfLaps + 1) /
-                                                                telemetryData.FuelPerLap,
-                _ => double.NaN
-            };
+                case Constant.SessionLengthFormat.TimeAndLapBased:
+                    if (TelemetryData.NumberOfLaps <= 0) return 0.0; // default safe value until telemetry is valid
+                    return (TelemetryData.NumberOfLaps + 1) / TelemetryData.FuelPerLap;
+                
+                //No value / exception
+                default:
+                    return double.NaN;
+            }
         }
     }
 
@@ -113,22 +124,28 @@ public class FuelData: IDisposable
     {
         get
         {
-            return (Constant.SessionLengthFormat)telemetryData.SessionLengthFormat switch
+            double fuelToAdd;
+            switch ((Constant.SessionLengthFormat)TelemetryData.SessionLengthFormat)
             {
-                Constant.SessionLengthFormat.Unavailable => double.NaN //Nothing to calculate
-                ,
+                case Constant.SessionLengthFormat.Unavailable:
+                    fuelToAdd = double.NaN; //Nothing to calculate
+                    break;
                 // TimeBased
-                Constant.SessionLengthFormat.TimeBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
-                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
+                case Constant.SessionLengthFormat.TimeBased:
                 // LapBased
-                Constant.SessionLengthFormat.LapBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
-                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
+                case Constant.SessionLengthFormat.LapBased:
                 // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
-                Constant.SessionLengthFormat.TimeAndLapBased => Math.Min(FuelToEnd - telemetryData.FuelLeft,
-                    telemetryData.FuelCapacity - telemetryData.FuelLeft),
-                _ => double.NaN
-            };
+                case Constant.SessionLengthFormat.TimeAndLapBased:
+                    fuelToAdd = Math.Min(FuelToEnd - TelemetryData.FuelLeft,
+                        TelemetryData.FuelCapacity - TelemetryData.FuelLeft);
+                    break;
+                default:
+                    fuelToAdd = double.NaN;
+                    break;
+            }
+            return fuelToAdd <= 0 ? 0.0 : fuelToAdd; 
         } 
+        
     }
 
     /// <summary>

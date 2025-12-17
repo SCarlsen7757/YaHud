@@ -45,6 +45,7 @@ namespace R3E.API
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
+            FuelData.TelemetryData = raw;
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;

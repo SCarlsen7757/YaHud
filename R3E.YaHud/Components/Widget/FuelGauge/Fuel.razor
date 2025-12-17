@@ -1,4 +1,5 @@
-﻿@using R3E.YaHud.Components.Widget.Core
+﻿@using R3E.Data
+@using R3E.YaHud.Components.Widget.Core
 @using R3E.Models
 @inherits HudWidgetBase<FuelSettings>
 
@@ -27,7 +28,7 @@
             </div>
 
             <div class="data-box large-box">
-                <p class="value" style="color: @Settings.FuelToAddColor">@(FuelToAdd.ToString("F1"))</p>
+                <p class="value" style="color: @Settings.FuelToAddColor">@(sFuelToAdd)</p>
                 <div class="label">Fuel<br />to Add</div>
             </div>
 
@@ -104,6 +105,7 @@
     private int testScenarioIndex;
     private const int TestScenarioCount = 6;
     private int testTick;
+    private string sFuelToAdd = string.Empty;
 
     public Fuel()
     {
@@ -142,10 +144,18 @@
         //Start mapping of variables  
         FuelRemaining = data.FuelLeft;
         LastLapFuelUsage = data.LastLapFuelUsage;
-        FuelToEnd = data.FuelToEnd;
-        FuelToAdd = data.FuelToAdd;
         FuelPerLap = data.FuelPerLap;
         LapsEstimatedLeft  = data.LapsEstimatedLeft;
+        FuelToEnd = data.FuelToEnd;
+        FuelToAdd = data.FuelToAdd;
+        
+        if (FuelToEnd > data.TelemetryData.FuelCapacity)
+            sFuelToAdd = "MAX";
+        else if (FuelToAdd >= data.TelemetryData.FuelLeft)
+            sFuelToAdd = (FuelToAdd.ToString("F1"));
+        else if (FuelToAdd <= data.TelemetryData.FuelLeft)
+            sFuelToAdd = "0.0";
+        
 
         FuelRemainingColor = data.FuelRemainingPercentage switch
         {
@@ -201,20 +211,20 @@
                 TimeEstimatedLeftColor = Settings!.ColorHigh;
                 FuelToEnd = 60;
                 FuelToEndColor = Settings!.ColorHigh;
-                FuelToAdd = 0;
+                sFuelToAdd = "0.0";
                 LastLapFuelUsage = 2.4;
                 break;
 
             case 1: // Mid fuel – caution zone
                 FuelRemaining = 40.0;
                 FuelRemainingColor = Settings!.ColorMidHigh;
-                FuelPerLap = 3.0;
-                LapsEstimatedLeft = 13;
+                FuelPerLap = 5.0;
+                LapsEstimatedLeft = 35;
                 TimeEstimatedLeftFormatted = "18:30";
                 TimeEstimatedLeftColor = Settings!.ColorMidLow;
-                FuelToEnd = 45;
-                FuelToEndColor = Settings!.ColorLow;
-                FuelToAdd = 5;
+                FuelToEnd = 135;
+                FuelToEndColor = Settings!.ColorHigh;
+                sFuelToAdd = "MAX";
                 LastLapFuelUsage = 3.1;
                 break;
 
@@ -227,7 +237,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorLow;
                 FuelToEnd = 20;
                 FuelToEndColor = Settings!.ColorLow;
-                FuelToAdd = 8;
+                sFuelToAdd = "8.0";
                 LastLapFuelUsage = 3.3;
                 break;
 
@@ -240,7 +250,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorLow;
                 FuelToEnd = 6;
                 FuelToEndColor = Settings!.ColorLow;
-                FuelToAdd = 1;
+                sFuelToAdd = "1.0";
                 LastLapFuelUsage = 4.1;
                 break;
 
@@ -253,7 +263,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorMidLow;
                 FuelToEnd = 25;
                 FuelToEndColor = Settings!.ColorHigh;
-                FuelToAdd = 0;
+                sFuelToAdd = "0.0";
                 LastLapFuelUsage = 2.6;
                 break;
 
@@ -266,7 +276,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorHigh;
                 FuelToEnd = 70;
                 FuelToEndColor = Settings!.ColorHigh;
-                FuelToAdd = 0;
+                sFuelToAdd = "0.0";
                 LastLapFuelUsage = 1.9;
                 break;
         }
