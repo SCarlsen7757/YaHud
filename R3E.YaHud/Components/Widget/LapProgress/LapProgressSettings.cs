@@ -1,9 +1,9 @@
 ﻿using R3E.YaHud.Components.Widget.Core;
 using R3E.YaHud.Services.Settings;
 
-namespace R3E.YaHud.Components.Widget.Progress
+namespace R3E.YaHud.Components.Widget.LapProgress
 {
-    public class ProgressSettings : BasicSettings
+    public class LapProgressSettings : BasicSettings
     {
         [SettingType("Positive Negative Bar Range", SettingsTypes.Number, 10,
             Min = 0.1, Max = 10, Step = 0.01,
