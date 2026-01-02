@@ -14,6 +14,6 @@ namespace R3E.YaHud.Components.Widget.Radar
         [SettingType("Auto hide radar", SettingsTypes.Checkbox, 0,Description ="Hides the radar if no opponents are within radar range", ViewMode = SettingsViewMode.Beginner)]
         public bool AutoHideRadar { get; set; } = true;
 
-        public bool UseJsBatching { get; set; } = true;
+        public bool Use3DTranslate { get; set; } = true;
     }
 }

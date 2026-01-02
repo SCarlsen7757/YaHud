@@ -193,18 +193,8 @@
                 child.setStyle("transform", transformStr);
                 opacityStr = Fmt(pointerOpacity);
                 child.setStyle("opacity", opacityStr);
+                
                 driverStyling[childSlotId] = child;
-
-                batch.Add(new
-                {
-                    id = childSlotId.ToString(),
-                    display = "",
-                    transform = transformStr,
-                    opacity = opacityStr,
-                    width = FmtPx(width),
-                    height = "20px",
-                    classes = child.classlist.ToString()
-                });
             }
             else
             {
@@ -217,25 +207,22 @@
                 child.setStyle("display", null);
                 child.setStyle("background-color", ownPlace == driverState.DriverData.Place ? "white" : "red");
                 child.setStyle("border-radius", "6px");
-                child.setStyle("left", FmtPx(leftVal));
-                child.setStyle("top", FmtPx(topVal));
+                
+                if(!Settings.Use3DTranslate){
+                    child.setStyle("left", FmtPx(leftVal));
+                    child.setStyle("top", FmtPx(topVal));
+                    child.setStyle("transform", $"rotate({Fmt(driverRotation)}rad)");
+                }
+                
                 child.setStyle("width", FmtPx(width));
                 child.setStyle("height", FmtPx(height));
+                
                 child.setStyle("translate", "none");
-                child.setStyle("transform", $"rotate({Fmt(driverRotation)}rad)");
+                if(Settings.Use3DTranslate)
+                    child.setStyle("transform", $"{transformStr}");
                 child.setStyle("opacity", "1");
+                
                 driverStyling[childSlotId] = child;
-
-                batch.Add(new
-                {
-                    id = childSlotId.ToString(),
-                    display = "",
-                    transform = transformStr,
-                    opacity = opacityStr,
-                    width = FmtPx(width),
-                    height = FmtPx(height),
-                    classes = child.classlist.ToString()
-                });
             }
 
             if (ownDriver.DriverInfo.SlotId == driverState.DriverData.DriverInfo.SlotId)
@@ -279,8 +266,6 @@
             if (closest == null || closest > radarFadeRange)
             {
                 RadarStyling.setStyle("opacity", "0");
-                if(Settings.UseJsBatching)
-                    _ = JS.InvokeVoidAsync("radarInterop.updateDrivers", batch);
                 return;
             }
 
@@ -288,8 +273,6 @@
 
             RadarStyling.setStyle("opacity", Fmt(opacityValue));
         }
-        if (Settings.UseJsBatching)
-            _ = JS.InvokeVoidAsync("radarInterop.updateDrivers", batch);
     }
 
 
