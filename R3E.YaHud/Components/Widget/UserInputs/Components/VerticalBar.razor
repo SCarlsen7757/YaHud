@@ -16,7 +16,7 @@
     [Parameter] public double Value { get; set; } = 0;
     [Parameter] public string PrimaryColor { get; set; } = "white";
     [Parameter] public string BackgroundColor { get; set; } = "darkgray";
-    [Parameter] public string? DiffColor { get; set; } = "lightgray";
+    [Parameter] public string DiffColor { get; set; } = "lightgray";
 
     string PercentRaw =>
         Max == Min
@@ -29,10 +29,7 @@
     {
         get
         {
-            if (ValueRaw < 0.001)
-            {
-                return "0%";
-            }
+            if (ValueRaw < 0.01) return "0%";
 
             return Math.Clamp((ValueRaw - Value) / ValueRaw * 100.0, 0.0, 100.0)
             .ToString("0.##")
