@@ -20,6 +20,7 @@
                                  Value="@Clutch"
                                  ValueRaw="@ClutchRaw"
                                  PrimaryColor="@Settings.ClutchColor"
+                                 DiffColor="@Settings.DiffColor"
                                  BackgroundColor="@BarBackgroundColor" />
                 </div>
             }
@@ -34,6 +35,7 @@
                              Value="@Brake"
                              ValueRaw="@BrakeRaw"
                              PrimaryColor="@Settings.BrakeColor"
+                             DiffColor="@Settings.DiffColor"
                              BackgroundColor="@BarBackgroundColor" />
             </div>
             <div class="throttle-component">
@@ -47,6 +49,7 @@
                              Value="@Throttle"
                              ValueRaw="@ThrottleRaw"
                              PrimaryColor="@Settings.ThrottleColor"
+                             DiffColor="@Settings.DiffColor"
                              BackgroundColor="@BarBackgroundColor" />
             </div>
         </div>
@@ -102,11 +105,22 @@
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
         ClutchRaw = (double)data.ClutchRaw;
-        Clutch = (double)data.Clutch;
         ThrottleRaw = (double)data.ThrottleRaw;
-        Throttle = (double)data.Throttle;
         BrakeRaw = (double)data.BrakeRaw;
-        Brake = (double)data.Brake;
+
+        if (!Settings!.ShowPedalDiff)
+        {
+            Clutch = ClutchRaw;
+            Brake = BrakeRaw;
+            Throttle = ThrottleRaw;
+        }
+        else
+        {
+            Clutch = (double)data.Clutch;
+            Brake = (double)data.Brake;
+            Throttle = (double)data.Throttle;
+        }
+
         SteeringInputRaw = data.SteerInputRaw;
         SteeringWheelDeg = (data.SteerInputRaw * data.SteerWheelRangeDegrees / 2).ToString().Replace(",", ".") + "deg";
     }
@@ -114,11 +128,22 @@
     protected override void UpdateWithTestData()
     {
         ClutchRaw = 0.35;
-        Clutch = ClutchRaw;
-        ThrottleRaw = 0.85;
-        Throttle = 0.50;
         BrakeRaw = 0.15;
-        Brake = BrakeRaw;
+        ThrottleRaw = 0.85;
+
+        if (!Settings!.ShowPedalDiff)
+        {
+            Clutch = ClutchRaw;
+            Brake = BrakeRaw;
+            Throttle = ThrottleRaw;
+        }
+        else
+        {
+            Clutch = ClutchRaw - 0.15;
+            Throttle = ThrottleRaw - 0.35;
+            Brake = BrakeRaw - 0.05;
+        }
+
         SteeringWheelDeg = "45deg";
         SteeringInputRaw = 0.5;
     }
