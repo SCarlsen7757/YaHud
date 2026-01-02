@@ -15,7 +15,6 @@
     border-radius: 4px;
     overflow: hidden;
     box-sizing: border-box;
-    position: relative;
 }
 
 .vertical-bar-fill-raw {
@@ -24,14 +23,9 @@
     transition: height;
     box-sizing: border-box;
     align-self: stretch;
-}
-
-.vertical-bar-fill {
-    width: 100%;
-    height: 0%;
-    transition: height;
-    box-sizing: border-box;
-    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
 
 .vertical-bar-fill-diff {
@@ -39,8 +33,4 @@
     height: 0%;
     transition: height;
     box-sizing: border-box;
-    align-self: stretch;
-    position: absolute;
-    bottom: 0;
-    left: 0;
 }
