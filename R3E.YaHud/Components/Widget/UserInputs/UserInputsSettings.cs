@@ -151,7 +151,7 @@ namespace R3E.YaHud.Components.Widget.UserInputs
 
         private bool showPedalDiff = true;
         [SettingType("Show diff of pedal input", SettingsTypes.Checkbox, 25,
-            Description = "Show diff of pedal input and the ingame pedal input after TC and ABS",
+            Description = "Show difference between raw pedal input and in-game pedal values after TC and ABS",
             ViewMode = SettingsViewMode.Intermediate)]
         public bool ShowPedalDiff
         {
@@ -164,9 +164,9 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
-        private string diffColor = "000000bf";
+        private string diffColor = "#000000bf";
         [SettingType("Pedal diff Color", SettingsTypes.ColorPicker, 26,
-            Description = "Color when there is a difference between Pedal raw and actual pedal value",
+            Description = "Color of the difference between raw and processed pedal input",
             ViewMode = SettingsViewMode.Expert)]
         public string DiffColor
         {
