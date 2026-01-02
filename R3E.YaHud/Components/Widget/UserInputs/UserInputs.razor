@@ -10,30 +10,42 @@
             @if (Settings.ShowClutch)
             {
                 <div class="clutch-component">
-                    <p class="value-label">@((int)(Clutch * 100))</p>
+                    @if (Settings.ShowPedalValues)
+                    {
+                        <p class="value-label">@((int)(ClutchRaw * 100))</p>
+                    }
                     <VerticalBar @key="Clutch"
                                  Min="0.0d"
                                  Max="1.0d"
                                  Value="@Clutch"
+                                 ValueRaw="@ClutchRaw"
                                  PrimaryColor="@Settings.ClutchColor"
                                  BackgroundColor="@BarBackgroundColor" />
                 </div>
             }
             <div class="brake-component">
-                <p class="value-label">@((int)(Brake * 100))</p>
+                @if (Settings.ShowPedalValues)
+                {
+                    <p class="value-label">@((int)(BrakeRaw * 100))</p>
+                }
                 <VerticalBar @key="Brake"
                              Min="0.0d"
                              Max="1.0d"
                              Value="@Brake"
+                             ValueRaw="@BrakeRaw"
                              PrimaryColor="@Settings.BrakeColor"
                              BackgroundColor="@BarBackgroundColor" />
             </div>
             <div class="throttle-component">
-                <p class="value-label">@((int)(Throttle * 100))</p>
+                @if (Settings.ShowPedalValues)
+                {
+                    <p class="value-label">@((int)(ThrottleRaw * 100))</p>
+                }
                 <VerticalBar @key="Throttle"
                              Min="0.0d"
                              Max="1.0d"
                              Value="@Throttle"
+                             ValueRaw="@ThrottleRaw"
                              PrimaryColor="@Settings.ThrottleColor"
                              BackgroundColor="@BarBackgroundColor" />
             </div>
@@ -59,8 +71,11 @@
 }
 
 @code {
+    private double ClutchRaw { get; set; } = 0.0d;
     private double Clutch { get; set; } = 0.0d;
+    private double ThrottleRaw { get; set; } = 0.0d;
     private double Throttle { get; set; } = 0.0d;
+    private double BrakeRaw { get; set; } = 0.0d;
     private double Brake { get; set; } = 0.0d;
     private string SteeringWheelDeg { get; set; } = "0deg";
     private double SteeringInputRaw { get; set; } = 0.0d;
@@ -86,18 +101,24 @@
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 
-        Clutch = (double)data.ClutchRaw;
-        Throttle = (double)data.ThrottleRaw;
-        Brake = (double)data.BrakeRaw;
+        ClutchRaw = (double)data.ClutchRaw;
+        Clutch = (double)data.Clutch;
+        ThrottleRaw = (double)data.ThrottleRaw;
+        Throttle = (double)data.Throttle;
+        BrakeRaw = (double)data.BrakeRaw;
+        Brake = (double)data.Brake;
         SteeringInputRaw = data.SteerInputRaw;
         SteeringWheelDeg = (data.SteerInputRaw * data.SteerWheelRangeDegrees / 2).ToString().Replace(",", ".") + "deg";
     }
 
     protected override void UpdateWithTestData()
     {
-        Clutch = 0.35;
-        Throttle = 0.85;
-        Brake = 0.15;
+        ClutchRaw = 0.35;
+        Clutch = ClutchRaw;
+        ThrottleRaw = 0.85;
+        Throttle = 0.50;
+        BrakeRaw = 0.15;
+        Brake = BrakeRaw;
         SteeringWheelDeg = "45deg";
         SteeringInputRaw = 0.5;
     }

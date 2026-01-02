@@ -69,6 +69,22 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
+        private bool showPedalValues = true;
+
+        [SettingType("Show Pedal Values", SettingsTypes.Checkbox, 14,
+        Description = "Show throttle/brake input values",
+        ViewMode = SettingsViewMode.Intermediate)]
+        public bool ShowPedalValues
+        {
+            get => showPedalValues;
+            set
+            {
+                if (value == showPedalValues) return;
+                showPedalValues = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private bool showClutch = true;
 
         [SettingType("Show Clutch", SettingsTypes.Checkbox, 15,
