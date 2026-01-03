@@ -1,0 +1,32 @@
+﻿@using System.Globalization
+<div class="positive-negative-bar @RootElementClass">
+    <div class="bar-positive" style="width: @GetPositiveValueString()%; background-color: @PositiveColor;"></div>
+    <div class="bar-negative" style="width: @GetNegativeValueString()%; background-color: @NegativeColor;"></div>
+</div>
+
+@code {
+    /// <summary>
+    /// This class is applied to the root element.
+    /// </summary>
+    [Parameter] public string RootElementClass { get; set; } = "";
+
+    [Parameter] public double Value { get; set; } = 0.0;
+    /// <summary>
+    /// The bar will visualize values in range [-Range ; Range]
+    /// </summary>
+    [Parameter] public double Range { get; set; } = 1;
+
+    [Parameter] public string PositiveColor { get; set; } = "green";
+    [Parameter] public string NegativeColor { get; set; } = "red";
+
+    private string GetPositiveValueString()
+    {
+        var value = (Math.Clamp(Value, 0, Range) / Range) * 100;
+        return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private string GetNegativeValueString() {
+        var value = (Math.Abs(Math.Clamp(Value, -Range, 0)) / Range) * 100;
+        return value.ToString(CultureInfo.InvariantCulture);
+    }
+}
