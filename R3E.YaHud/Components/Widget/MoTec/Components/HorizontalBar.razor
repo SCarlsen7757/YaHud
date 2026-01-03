@@ -15,9 +15,9 @@
     [Parameter] public string PrimaryColor { get; set; } = "white";
     [Parameter] public string BackgroundColor { get; set; } = "darkgray";
 
-    string Percent => 
-        Max == Min 
-            ? "0%" 
+    string Percent =>
+        Max == Min
+            ? "0%"
             : (Math.Clamp((Value - Min) / (Max - Min) * 100.0, 0.0, 100.0)
                 .ToString("0.##")
                 .Replace(",", ".") + "%");

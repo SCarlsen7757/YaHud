@@ -69,6 +69,22 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             }
         }
 
+        private bool showPedalValues = true;
+
+        [SettingType("Show Pedal Values", SettingsTypes.Checkbox, 14,
+        Description = "Show throttle/brake input values",
+        ViewMode = SettingsViewMode.Beginner)]
+        public bool ShowPedalValues
+        {
+            get => showPedalValues;
+            set
+            {
+                if (value == showPedalValues) return;
+                showPedalValues = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private bool showClutch = true;
 
         [SettingType("Show Clutch", SettingsTypes.Checkbox, 15,
@@ -128,6 +144,37 @@ namespace R3E.YaHud.Components.Widget.UserInputs
             {
                 if (value == brakeColor) return;
                 brakeColor = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+
+        private bool showPedalDiff = true;
+        [SettingType("Show diff of pedal input", SettingsTypes.Checkbox, 25,
+            Description = "Show difference between raw pedal input and in-game pedal values after TC and ABS",
+            ViewMode = SettingsViewMode.Intermediate)]
+        public bool ShowPedalDiff
+        {
+            get => showPedalDiff;
+            set
+            {
+                if (value == showPedalDiff) return;
+                showPedalDiff = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        private string diffColor = "#000000bf";
+        [SettingType("Pedal diff Color", SettingsTypes.ColorPicker, 26,
+            Description = "Color of the difference between raw and processed pedal input",
+            ViewMode = SettingsViewMode.Expert)]
+        public string DiffColor
+        {
+            get => diffColor;
+            set
+            {
+                if (value == diffColor) return;
+                diffColor = value;
                 NotifyPropertyChanged();
             }
         }

@@ -5,7 +5,7 @@ using R3E.UdpRelay;
 using System.Net;
 using System.Runtime.InteropServices;
 
-internal class Program : IAsyncDisposable
+internal class Program : IDisposable
 {
     public SharedMemoryService sharedMemoryService;
     public UdpRelayService udpRelayService;
@@ -82,7 +82,7 @@ internal class Program : IAsyncDisposable
         return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         if (disposed)
         {
@@ -94,10 +94,33 @@ internal class Program : IAsyncDisposable
         // Unsubscribe from events before disposing
         sharedMemoryService.DataUpdated -= OnDataUpdated;
 
-        // Dispose services asynchronously
-        await sharedMemoryService.DisposeAsync().ConfigureAwait(false);
-        udpRelayService.Dispose();
-        loggerFactory?.Dispose();
+        try
+        {
+            sharedMemoryService.Dispose();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error disposing SharedMemoryService");
+        }
+
+        try
+        {
+            udpRelayService.Dispose();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error disposing UdpRelayService");
+        }
+
+        try
+        {
+            loggerFactory?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            // Dispose of logger factory shouldn't throw, but guard anyway
+            logger.LogError(ex, "Error disposing LoggerFactory");
+        }
 
         GC.SuppressFinalize(this);
     }
@@ -106,7 +129,7 @@ internal class Program : IAsyncDisposable
     {
         Console.WriteLine("Starting R3E API UDP relay service");
         Console.WriteLine("Waiting for R3E to start");
-        await using var program = new Program();
+        using var program = new Program();
 
         // Use a CancellationTokenSource to allow graceful shutdown
         using var cts = new CancellationTokenSource();
