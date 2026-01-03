@@ -13,7 +13,7 @@ namespace R3E.YaHud.Components.Widget.Radar
 
         [SettingType("Auto hide radar", SettingsTypes.Checkbox, 0, Description = "Hides the radar if no opponents are within radar range", ViewMode = SettingsViewMode.Beginner)]
         public bool AutoHideRadar { get; set; } = true;
-        [SettingType("Radar beeping", SettingsTypes.Checkbox, 0, Description = "Use Translate3D for radar car placement (Performance option)", ViewMode = SettingsViewMode.Expert)]
+        [SettingType("Use Translate3d", SettingsTypes.Checkbox, 0, Description = "Use Translate3D for radar car placement (Performance option)", ViewMode = SettingsViewMode.Expert)]
         public bool Use3DTranslate { get; set; } = true;
 
         [SettingType("Minimum beeping speed", SettingsTypes.Number, 1, Description = "Minimum speed for the radar beeping to begin in KPH", ViewMode = SettingsViewMode.Expert, Max = 80, Min = 15)]
@@ -21,7 +21,7 @@ namespace R3E.YaHud.Components.Widget.Radar
 
         [SettingType("Radar beeping", SettingsTypes.Checkbox, 0, Description = "Have the radar beeping at you when an opponent is on either side of you", ViewMode = SettingsViewMode.Beginner)]
         public bool RadarBeeping { get; set; } = false;
-        [SettingType("Beeping speed", SettingsTypes.Number, 1, Description = "Interval of of fast the beeping runs", ViewMode = SettingsViewMode.Expert, Max = 5000, Min = 50)]
+        [SettingType("Beeping interval", SettingsTypes.Number, 1, Description = "Interval of of fast the beeping runs", ViewMode = SettingsViewMode.Expert, Max = 5000, Min = 50)]
         public int BeepingInterval { get; set; } = 200;
     }
 }
