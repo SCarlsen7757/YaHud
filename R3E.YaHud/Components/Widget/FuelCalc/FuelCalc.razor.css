@@ -1,19 +1,15 @@
 ﻿.Fuel-widget {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    text-align: center;
-    border-radius: 0.4vmin;
-    height: 10vmin;  /* scales with whichever side is smaller */
-    width: auto;
-    /* scales with screen height */
     position: absolute;
-    box-sizing: border-box;
-    overflow: hidden;
-    /*padding: 0.5vmin;
-    min-height: 90px;   /* prevents clipping on 1080p */
-    /* optional, but good for ABSOLUTE positioned elements */
+
+    height: auto;        /* <-- key change */
+    min-height: 10vmin;  /* keeps it visually consistent */
     max-width: fit-content;
+
+    box-sizing: border-box;
+    border-radius: 0.4vmin;
+    overflow: visible;   /* important */
 }
 
 .data-grid {
