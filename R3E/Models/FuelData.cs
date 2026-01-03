@@ -36,7 +36,7 @@ public class FuelData: IDisposable
     /// </summary>
     private void TelemetryServiceOnSessionPhaseChanged(TelemetryData obj)
     {
-        if ((Constant.SessionPhase)TelemetryData.SessionPhase == Constant.SessionPhase.Countdown)
+        if ((Constant.SessionPhase)TelemetryData.SessionPhase == Constant.SessionPhase.Countdown || (Constant.SessionPhase)TelemetryData.SessionPhase == Constant.SessionPhase.Formation)
         {
             oldFuelRemaining = TelemetryData.FuelLeft;
         }
@@ -48,7 +48,7 @@ public class FuelData: IDisposable
     /// </summary>
     private void TelemetryServiceOnNewLap(TelemetryData obj)
     {
-        // Every time we pass race line NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
+        // This method is invoked on the NewLap event (lap completion) and is used as a trigger to calculate the remaining variables
         LastLapFuelUsage = oldFuelRemaining - TelemetryData.FuelLeft;
         oldFuelRemaining = TelemetryData.FuelLeft;
     }
@@ -56,7 +56,7 @@ public class FuelData: IDisposable
     /// <summary>
     /// Current fuel left in the tank (liters or telemetry unit). Returns 0 if negative.
     /// </summary>
-    public double FuelLeft => TelemetryData.FuelLeft <= 0 ? 0.0f : TelemetryData.FuelLeft;
+    public double FuelLeft => TelemetryData.FuelLeft <= 0 ? 0.0 : TelemetryData.FuelLeft;
 
     /// <summary>
     /// Estimated time left in the session based on fuel and lap time (seconds).
@@ -69,17 +69,17 @@ public class FuelData: IDisposable
     /// Fuel remaining as a percentage of total capacity.
     /// Returns 0 if capacity is zero.
     /// </summary>
-    public double FuelRemainingPercentage => TelemetryData.FuelCapacity <= 0 ? 0.0f : (TelemetryData.FuelLeft / TelemetryData.FuelCapacity) * 100;
+    public double FuelRemainingPercentage => TelemetryData.FuelCapacity <= 0 ? 0.0 : (TelemetryData.FuelLeft / TelemetryData.FuelCapacity) * 100;
 
     /// <summary>
     /// Estimated laps remaining with current fuel.
     /// </summary>
-    public double LapsEstimatedLeft => TelemetryData.FuelPerLap <= 0 ? 0.0f : TelemetryData.FuelLeft / TelemetryData.FuelPerLap;
+    public double LapsEstimatedLeft => TelemetryData.FuelPerLap <= 0 ? 0.0 : TelemetryData.FuelLeft / TelemetryData.FuelPerLap;
 
     /// <summary>
     /// Fuel consumption per lap.
     /// </summary>
-    public double FuelPerLap => TelemetryData.FuelPerLap <= 0 ? 0.0f : TelemetryData.FuelPerLap;
+    public double FuelPerLap => TelemetryData.FuelPerLap <= 0 ? 0.0 : TelemetryData.FuelPerLap;
 
     /// <summary>
     /// Fuel required to reach session end based on session type.

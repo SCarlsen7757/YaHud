@@ -14,7 +14,7 @@
 
             <div class="data-box">
                 <p class="value" style="color: @TimeEstimatedLeftColor">@TimeEstimatedLeftFormatted</p>
-                <div class="label">Time Estimated</div>
+                <div class="label">Time Est</div>
             </div>
 
             <div class="data-box">
@@ -28,13 +28,13 @@
             </div>
 
             <div class="data-box large-box">
-                <p class="value" style="color: @Settings.FuelToAddColor">@(sFuelToAdd)</p>
+                <p class="value" style="color: @Settings.FuelToAddColor">@(fuelToAddDisplay)</p>
                 <div class="label">Fuel<br />to Add</div>
             </div>
 
             <div class="data-box">
                 <p class="value" style="color: @Settings.LapsEstimatedLeftColor">@(LapsEstimatedLeft.ToString("F1"))</p>
-                <div class="label">Laps Est.</div>
+                <div class="label">Laps Est</div>
             </div>
 
             <div class="data-box">
@@ -97,7 +97,7 @@
     private double FuelToAdd { get; set; } 
     
     public override string ElementId => "FuelWidget";
-    public override string Name => "Fuel";
+    public override string Name => "FuelCalc";
     public override string Category => "Telemetry";
     public override double DefaultXPercent => 50;
     public override double DefaultYPercent => 50;
@@ -105,34 +105,28 @@
     private int testScenarioIndex;
     private const int TestScenarioCount = 6;
     private int testTick;
-    private string sFuelToAdd = "0.0";
+    private string fuelToAddDisplay = "0.0";
 
-    public Fuel()
+    public FuelCalc()
     {
         UseR3EData = true;
         UpdateInterval = TimeSpan.FromMilliseconds(30);
     }
 
-    
+
     /// <summary>
     /// Format a TimeSpan for display in the widget.
     /// </summary>
-    /// <param name="t">Time remaining.</param>
+    /// <param name="time">Time remaining.</param>
     /// <returns>Formatted string (hh:mm, mm:ss, or ss).</returns>
-    private static string FormatTimeLeft(TimeSpan t)
-    {
-        return t.TotalHours >= 1 ? t.ToString(@"hh\:mm") : t.ToString(t.TotalMinutes >= 1 ? @"mm\:ss" : @"ss");
-    }
+    private static string FormatTimeLeft(TimeSpan time) => time.TotalHours >= 1 ? time.ToString(@"hh\:mm") : time.ToString(time.TotalMinutes >= 1 ? @"mm\:ss" : @"ss");
 
     /// <summary>
     /// Determines the color of the time left text based on thresholds.
     /// </summary>
     /// <param name="t">Time remaining.</param>
     /// <returns>Color as a CSS string.</returns>
-    private string GetTimeLeftColor(TimeSpan t)
-    {
-        return  t.TotalHours >= 1 ? Settings!.ColorHigh : t.TotalMinutes >= 1 ? Settings!.ColorMidLow : Settings!.ColorLow;
-    }
+    private string GetTimeLeftColor(TimeSpan time) => time.TotalHours >= 1 ? Settings!.ColorHigh : time.TotalMinutes >= 1 ? Settings!.ColorMidLow : Settings!.ColorLow;
     
     /// <summary>
     /// Updates the widget's values based on telemetry data.
@@ -150,11 +144,11 @@
         FuelToAdd = data.FuelToAdd;
         
         if (FuelToEnd > data.TelemetryData.FuelCapacity)
-            sFuelToAdd = "MAX";
+            fuelToAddDisplay = "MAX";
         else if (FuelToAdd >= data.TelemetryData.FuelLeft)
-            sFuelToAdd = (FuelToAdd.ToString("F1"));
+            fuelToAddDisplay = (FuelToAdd.ToString("F1"));
         else
-            sFuelToAdd = "0.0";
+            fuelToAddDisplay = "0.0";
         
 
         FuelRemainingColor = data.FuelRemainingPercentage switch
@@ -171,10 +165,10 @@
         
         //ready variables for text to round or change format so it can be shown correctly
         
-        var t = TimeSpan.FromSeconds(data.TimeEstimatedLeft);
+        var time = TimeSpan.FromSeconds(data.TimeEstimatedLeft);
 
-        TimeEstimatedLeftFormatted = FormatTimeLeft(t);
-        TimeEstimatedLeftColor = GetTimeLeftColor(t);
+        TimeEstimatedLeftFormatted = FormatTimeLeft(time);
+        TimeEstimatedLeftColor = GetTimeLeftColor(time);
     }
     
 
@@ -211,7 +205,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorHigh;
                 FuelToEnd = 60;
                 FuelToEndColor = Settings!.ColorHigh;
-                sFuelToAdd = "0.0";
+                fuelToAddDisplay = "0.0";
                 LastLapFuelUsage = 2.4;
                 break;
 
@@ -224,7 +218,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorMidLow;
                 FuelToEnd = 135;
                 FuelToEndColor = Settings!.ColorHigh;
-                sFuelToAdd = "MAX";
+                fuelToAddDisplay = "MAX";
                 LastLapFuelUsage = 3.1;
                 break;
 
@@ -237,7 +231,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorLow;
                 FuelToEnd = 20;
                 FuelToEndColor = Settings!.ColorLow;
-                sFuelToAdd = "8.0";
+                fuelToAddDisplay = "8.0";
                 LastLapFuelUsage = 3.3;
                 break;
 
@@ -250,7 +244,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorLow;
                 FuelToEnd = 6;
                 FuelToEndColor = Settings!.ColorLow;
-                sFuelToAdd = "1.0";
+                fuelToAddDisplay = "1.0";
                 LastLapFuelUsage = 4.1;
                 break;
 
@@ -263,7 +257,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorMidLow;
                 FuelToEnd = 25;
                 FuelToEndColor = Settings!.ColorHigh;
-                sFuelToAdd = "0.0";
+                fuelToAddDisplay = "0.0";
                 LastLapFuelUsage = 2.6;
                 break;
 
@@ -276,7 +270,7 @@
                 TimeEstimatedLeftColor = Settings!.ColorHigh;
                 FuelToEnd = 70;
                 FuelToEndColor = Settings!.ColorHigh;
-                sFuelToAdd = "0.0";
+                fuelToAddDisplay = "0.0";
                 LastLapFuelUsage = 1.9;
                 break;
         }
