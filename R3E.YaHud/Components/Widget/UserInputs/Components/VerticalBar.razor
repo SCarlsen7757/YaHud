@@ -1,20 +1,39 @@
 ﻿<div class="vertical-bar">
     <div class="vertical-bar-track" style="background-color:@BackgroundColor">
-        <div class="vertical-bar-fill" style="height:@Percent; background-color:@PrimaryColor"></div>
+        <div class="vertical-bar-fill-raw" style="height:@PercentRaw; background-color:@PrimaryColor">
+            @if (Value < ValueRaw)
+            {
+                <div class="vertical-bar-fill-diff" style="height:@PercentDiffRelative; background-color:@DiffColor"></div>
+            }
+        </div>
     </div>
 </div>
 
 @code {
     [Parameter] public double Min { get; set; } = 0;
     [Parameter] public double Max { get; set; } = 100;
-    [Parameter] public double Value { get; set; }
+    [Parameter] public double ValueRaw { get; set; } = 0;
+    [Parameter] public double Value { get; set; } = 0;
     [Parameter] public string PrimaryColor { get; set; } = "white";
     [Parameter] public string BackgroundColor { get; set; } = "darkgray";
+    [Parameter] public string DiffColor { get; set; } = "lightgray";
 
-    string Percent =>
+    string PercentRaw =>
         Max == Min
             ? "0%"
-            : (Math.Clamp((Value - Min) / (Max - Min) * 100.0, 0.0, 100.0)
+            : (Math.Clamp((ValueRaw - Min) / (Max - Min) * 100.0, 0.0, 100.0)
                 .ToString("0.##")
                 .Replace(",", ".") + "%");
+
+    string PercentDiffRelative
+    {
+        get
+        {
+            if (ValueRaw < 0.01) return "0%";
+
+            return Math.Clamp((ValueRaw - Value) / ValueRaw * 100.0, 0.0, 100.0)
+            .ToString("0.##")
+            .Replace(",", ".") + "%";
+        }
+    }
 }
