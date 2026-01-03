@@ -167,6 +167,7 @@ namespace R3E.API
             }
 
             disposed = true;
+            FuelData.Dispose();
             sharedSource.DataUpdated -= OnRawDataUpdated;
             sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
