@@ -1,6 +1,6 @@
 ﻿using R3E.YaHud.Components.Widget.Core;
 
-namespace R3E.YaHud.Components.Widget.FuelGauge
+namespace R3E.YaHud.Components.Widget.FuelCalc
 {
     public class FuelSettings : BasicSettings
     {
