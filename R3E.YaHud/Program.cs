@@ -39,8 +39,19 @@ builder.Services.AddSingleton<ShortcutService>();
 if (OperatingSystem.IsWindows())
 {
     builder.Services.AddSingleton<SharedMemoryService>();
-    builder.Services.AddSingleton<ISharedSource>(sp => sp.GetRequiredService<SharedMemoryService>());
-    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SharedMemoryService>());
+    builder.Services.AddSingleton<ISharedSource>(sp =>
+    {
+#pragma warning disable CA1416 // Validate platform compatibility
+        return sp.GetRequiredService<SharedMemoryService>();
+#pragma warning restore CA1416 // Validate platform compatibility
+    });
+    builder.Services.AddSingleton<IHostedService>(sp =>
+    {
+#pragma warning disable CA1416 // Validate platform compatibility
+        return sp.GetRequiredService<SharedMemoryService>();
+#pragma warning restore CA1416 // Validate platform compatibility
+
+    });
 }
 else
 {
