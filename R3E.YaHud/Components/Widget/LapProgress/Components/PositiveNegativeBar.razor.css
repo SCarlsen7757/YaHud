@@ -1,0 +1,20 @@
+﻿.positive-negative-bar {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "negative positive";
+}
+
+.bar-positive {
+    grid-area: positive;
+    height: 100%;
+    place-self: center start;
+    border-top-right-radius: 4px;
+}
+
+.bar-negative {
+    grid-area: negative;
+    height: 100%;
+    place-self: center end;
+    border-top-left-radius: 4px;
+}

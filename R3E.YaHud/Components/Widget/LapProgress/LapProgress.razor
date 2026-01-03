@@ -1,0 +1,265 @@
+﻿@using R3E.API
+@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.LapProgress.Components
+@using System.Globalization
+@inherits HudWidgetBase<LapProgressSettings>
+@implements IDisposable
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId>
+        <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@GetTimeFormatted(TimeDeltaBestLapSelf, -1000)</span>
+    
+        <div id="box-container">
+            <PositiveNegativeBar 
+                Value=@(CompareDouble(TimeDeltaBestLapSelf, -1000) ? 0 : TimeDeltaBestLapSelf * -1) 
+                Range=@Settings.PositiveNegativeBarRange
+                RootElementClass="visual-bar" 
+                PositiveColor=@Settings.PositiveDeltaTimeColor 
+                NegativeColor=@Settings.NegativeDeltaTimeColor />
+
+            <div id="sector-times">
+                @for (int i = 0; i < 3; i++)
+                {
+                    <div class="sector-time" style="background: @SectorColors[i]; color: @Settings.SectorTimeAndInfoTextColor;">
+                        <span>S@(i+1): @GetTimeFormatted(SectorTimes[i])</span>
+                    </div>
+                }
+            </div>
+            <div id="lap-distance-fraction" style="width: @((LapDistanceFraction * 100).ToString(CultureInfo.InvariantCulture))%; background: @Settings.LapDistanceBarColor"></div>
+        </div>
+        <div id="info-grid">
+            <span id="estimate-lap-time" style="color: @Settings.SectorTimeAndInfoTextColor;">Est. Time: @GetTimeFormatted(EstimateLapTime)</span>
+            <span id="estimate-position" style="color: @Settings.SectorTimeAndInfoTextColor; display: @(IsQualifying ? "block" : "none");">Est. Pos: @(EstimatedPosition != -1 ? EstimatedPosition : "-")</span>
+        </div>
+    </div>
+}
+
+
+@code {
+
+    // Use epsilon for floating-point comparison
+    const double Epsilon = 1e-6;
+
+    // Widget values
+    public override string ElementId { get => "progressWidget"; }
+    public override string Name => "Progress";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 20;
+
+    public override bool Collidable => false;
+
+    // Controlling values
+    private double TimeDeltaBestLapSelf { get; set; } = 0.0;
+    private double[] SectorTimes { get; set; } = [-1, -1, -1];
+    private bool ShowSectorTimes { get; set; } = true;
+    private double LapDistanceFraction { get; set; } = 0;
+    private double EstimateLapTime { get; set; } = -1;
+    private int EstimatedPosition { get; set; } = -1;
+
+    // Style values
+    private string TimeDeltaBestLapSelfColor = "#000000";
+    private string[] SectorColors = ["#000000", "#000000", "#000000"];
+
+    private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
+    private DateTime? hideSectorTimesTime = null;
+
+    // ========================= Util ===============================
+
+    private string GetTimeFormatted(double time, double naValue = -1, string naText = "-:--.---") {
+        if (CompareDouble(time, naValue))
+            return naText;
+
+        var minutes = Math.Floor(time / 60);
+        var seconds = time % 60;
+
+        var secondsFormat = $"{(minutes > 0 ? "0" : "")}0.000";
+        return $"{(minutes > 0 ? minutes + ":" : "")}{seconds.ToString(secondsFormat, CultureInfo.InvariantCulture)}";
+    }
+
+    private bool CompareDouble(double x, double y)
+    {
+        return Math.Abs(x - y) < Epsilon;
+    }
+
+    // ================================================================
+
+    protected override Task OnSettingsLoadedAsync()
+    {
+        TimeDeltaBestLapSelfColor = Settings!.NeutralDeltaTimeColor;
+        SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
+
+        TelemetryService.NewLap += TelemetryService_NewLap;
+        TelemetryService.SectorCompleted += TelemetryService_SectorCompleted;
+
+        if (TelemetryService.SectorData.CurrentSectorIndexSelf == 0) {
+            // When HUD is reloaded while in sector 1
+            HideSectorTimes();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void TelemetryService_NewLap(TelemetryData data)
+    {
+        HideSectorTimes(delaySeconds: Settings!.CompletedLapSectorTimesVisibleTime);
+    }
+
+    /// <summary>
+    /// Schedules the sector times to be hidden after a specified delay.
+    /// </summary>
+    /// <param name="delaySeconds">The number of seconds to wait before hiding the sector times. Defaults to 0 for immediate hiding.</param>
+    private void HideSectorTimes(double delaySeconds = 0) {
+        hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
+    }
+
+    private void TelemetryService_SectorCompleted(TelemetryData data, int sectorIndex)
+    {
+        if (sectorIndex == 0 || sectorIndex == 1)
+        {
+            hideSectorTimesTime = null;
+            ShowSectorTimes = true;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override void Update() {
+        UpdateWithValuesFromR3E();
+        UpdateVisuals();
+    }
+
+    private void UpdateWithValuesFromR3E() {
+        var rawData = TelemetryService.Data.Raw;
+
+        // Number and Bar display
+        TimeDeltaBestLapSelf = rawData.TimeDeltaBestSelf;
+
+        // Sector Times
+        if (hideSectorTimesTime != null && DateTime.Now > hideSectorTimesTime) {
+            ShowSectorTimes = false;
+        }
+
+        SectorTimes = ShowSectorTimes
+            ? [
+                rawData.SectorTimesCurrentSelf.Sector1,
+                !CompareDouble(rawData.SectorTimesCurrentSelf.Sector2, -1) ? rawData.SectorTimesCurrentSelf.Sector2 - rawData.SectorTimesCurrentSelf.Sector1 : -1,
+                !CompareDouble(rawData.SectorTimesCurrentSelf.Sector3, -1) ? rawData.SectorTimesCurrentSelf.Sector3 - rawData.SectorTimesCurrentSelf.Sector2 : -1
+            ]
+            : [-1, -1, -1];
+
+        // Lap Progress
+        LapDistanceFraction = Math.Max(rawData.LapDistanceFraction, 0); // Max to remove -1
+
+        // Info Grid
+        EstimateLapTime = CompareDouble(rawData.LapTimeBestSelf, -1) || CompareDouble(rawData.TimeDeltaBestSelf,-1000)
+            ? -1
+            : rawData.LapTimeBestSelf + rawData.TimeDeltaBestSelf;
+
+        if (IsQualifying)
+            UpdateEstimatedPosition();
+    }
+
+    private void UpdateEstimatedPosition()
+    {
+        var rawData = TelemetryService.Data.Raw;
+        if (rawData.DriverData == null)
+            return;
+
+        EstimatedPosition = 1;
+        for (int i = 0; i < rawData.DriverData.Length; i++)
+        {
+            var driver = rawData.DriverData[i];
+
+            var isSameClass =
+                driver.DriverInfo.ClassPerformanceIndex ==
+                rawData.VehicleInfo.ClassPerformanceIndex;
+
+            if (!isSameClass)
+                continue;
+
+            if (
+                driver.SectorTimeBestSelf.Sector3 > EstimateLapTime
+            ) {
+                // If the driver is slower, stop
+                // The driver data is ordered by placement
+                break;
+            }
+
+            EstimatedPosition = driver.PlaceClass + 1;
+        }
+    }
+
+    private void UpdateVisuals()
+    {
+        TimeDeltaBestLapSelfColor = TimeDeltaBestLapSelf switch 
+        {
+            -1000 => Settings!.NeutralDeltaTimeColor,
+            > 0.0 => Settings!.NegativeDeltaTimeColor,
+            < 0.0 => Settings!.PositiveDeltaTimeColor,
+            _ => Settings!.NeutralDeltaTimeColor
+        };
+
+        var rawData = TelemetryService.Data.Raw;
+        double[] bestIndividualSectorTimesLeader = [
+            rawData.BestIndividualSectorTimeLeader.Sector1,
+            rawData.BestIndividualSectorTimeLeader.Sector2,
+            rawData.BestIndividualSectorTimeLeader.Sector3
+        ];
+        double[] bestIndividualSectorTimesSelf = [
+            rawData.BestIndividualSectorTimeSelf.Sector1,
+            rawData.BestIndividualSectorTimeSelf.Sector2,
+            rawData.BestIndividualSectorTimeSelf.Sector3
+        ];
+        for (int i = 0; i < 3; i++)
+        {
+            var currentSectorTime = SectorTimes[i];
+
+            if (CompareDouble(currentSectorTime, -1))
+            {
+                SectorColors[i] = Settings.NeutralSectorTimeColor;
+            }
+            else if (currentSectorTime < bestIndividualSectorTimesLeader[i])
+            {
+                SectorColors[i] = Settings.FastestSectorTimeAllColor;
+            }
+            else if (currentSectorTime < bestIndividualSectorTimesSelf[i]) {
+                SectorColors[i] = Settings.FastestSectorTimeSelfColor;
+            }
+            else
+            {
+                SectorColors[i] = Settings.NeutralSectorTimeColor;
+            }
+        }
+    }
+
+    protected override void UpdateWithTestData() {
+        var rnd = new Random();
+        TimeDeltaBestLapSelf = rnd.NextDouble() * 2 - 1;
+        for (int i = 0; i < 3; i++)
+        {
+            SectorTimes[i] = rnd.NextDouble() * 180;
+        }
+
+        SectorColors = [
+            Settings!.NeutralSectorTimeColor,
+            Settings!.FastestSectorTimeSelfColor,
+            Settings!.FastestSectorTimeAllColor
+        ];
+
+        LapDistanceFraction = rnd.NextDouble();
+
+        EstimateLapTime = rnd.NextDouble() * 120;
+        EstimatedPosition = rnd.Next(1, 20);
+
+        UpdateVisuals();
+    }
+
+    public override void Dispose() {
+        base.Dispose();
+
+        TelemetryService.NewLap -= TelemetryService_NewLap;
+        TelemetryService.SectorCompleted -= TelemetryService_SectorCompleted;
+    }
+}
