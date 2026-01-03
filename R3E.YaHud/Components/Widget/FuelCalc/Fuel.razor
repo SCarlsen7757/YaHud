@@ -105,7 +105,7 @@
     private int testScenarioIndex;
     private const int TestScenarioCount = 6;
     private int testTick;
-    private string sFuelToAdd = string.Empty;
+    private string sFuelToAdd = "0.0";
 
     public Fuel()
     {
@@ -153,7 +153,7 @@
             sFuelToAdd = "MAX";
         else if (FuelToAdd >= data.TelemetryData.FuelLeft)
             sFuelToAdd = (FuelToAdd.ToString("F1"));
-        else if (FuelToAdd <= data.TelemetryData.FuelLeft)
+        else
             sFuelToAdd = "0.0";
         
 
