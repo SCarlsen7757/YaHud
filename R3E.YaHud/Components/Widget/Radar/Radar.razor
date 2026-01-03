@@ -39,6 +39,8 @@
     private bool RadarPointer = true;
     private ElementReference radarElement;
     private double radarWidth;
+    private DateTime lastAlertUtc = DateTime.MinValue;
+    private TimeSpan alertCooldown = new TimeSpan(0, 0, 0, 0, 200);
 
     public Radar()
     {
@@ -64,6 +66,12 @@
                     radarElement
                 );
 
+                // preload an effect file (wwwroot/assets/sounds/alert.mp3)
+                _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
+                _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
+                // optionally unlock on first user gesture
+                _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
+
                 StateHasChanged();
             }
 
@@ -76,6 +84,8 @@
         R3E.Data.Shared data = TelemetryService.Data.Raw;
         if (data.DriverData == null)
             return;
+
+        alertCooldown = new TimeSpan(0, 0, 0, 0, Settings.BeepingInterval);
 
         foreach (var driver in data.DriverData)
         {
@@ -91,6 +101,8 @@
             return;
 
         var ownPlace = ownDriver.Place;
+
+        var speed = MpsToKph(ownDriver.CarSpeed);
 
         foreach (var driver in data.DriverData)
         {
@@ -193,7 +205,7 @@
                 child.setStyle("transform", transformStr);
                 opacityStr = Fmt(pointerOpacity);
                 child.setStyle("opacity", opacityStr);
-                
+
                 driverStyling[childSlotId] = child;
             }
             else
@@ -207,21 +219,21 @@
                 child.setStyle("display", null);
                 child.setStyle("background-color", ownPlace == driverState.DriverData.Place ? "white" : "red");
                 child.setStyle("border-radius", "6px");
-                
+
                 if(!Settings.Use3DTranslate){
                     child.setStyle("left", FmtPx(leftVal));
                     child.setStyle("top", FmtPx(topVal));
                     child.setStyle("transform", $"rotate({Fmt(driverRotation)}rad)");
                 }
-                
+
                 child.setStyle("width", FmtPx(width));
                 child.setStyle("height", FmtPx(height));
-                
+
                 child.setStyle("translate", "none");
                 if(Settings.Use3DTranslate)
                     child.setStyle("transform", $"{transformStr}");
                 child.setStyle("opacity", "1");
-                
+
                 driverStyling[childSlotId] = child;
             }
 
@@ -260,6 +272,20 @@
             var driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
             RadarStyling.removeStyleString("background-image", $",url({driverCloseRightImg})");
         }
+
+        if (Settings.RadarBeeping)
+        {
+            if ((closeLeft == 1 || closeRight == 1) && speed >= Settings.MinBeepSpeed)
+            {
+                if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
+                {
+                    _ = PlayAlert(1 - closest!.Value / Settings.RadarRange, closeLeft * -1 + closeRight * 1);
+                    lastAlertUtc = DateTime.UtcNow;
+                }
+
+            }
+        }
+
 
         if (Settings.AutoHideRadar)
         {
@@ -357,6 +383,11 @@
         }
     }
 
+    public static double MpsToKph(Single mps)
+    {
+        return mps * 3.6;
+    }
+
     private static string Fmt(double v) =>
         v.ToString("G", CultureInfo.InvariantCulture);
 
@@ -364,4 +395,9 @@
         Fmt(v) + "px";
     
     
+    private Task PlayAlert(double amount, double pan)
+    {
+        // amount 1..10, pan -1..1
+        return JS.InvokeVoidAsync("audioControllerManager.play", "alert", amount, pan).AsTask();
+    }
 }

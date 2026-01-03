@@ -499,3 +499,158 @@ window.colorisHelper = (function () {
         }
     };
 })();
+
+// AudioController manager — uses WebAudio for volume/playbackRate/pan, falls back to HTMLAudio
+(function () {
+    if (window.audioControllerManager) return;
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const hasAudioCtx = !!AudioCtx;
+    const ctx = hasAudioCtx ? new AudioCtx() : null;
+    const controllers = Object.create(null);
+
+    function ensureCtxResumed() {
+        if (!ctx) return Promise.resolve();
+        if (ctx.state === 'running') return Promise.resolve();
+        // Try to resume; may require a user gesture in some browsers
+        return ctx.resume().catch(() => { });
+    }
+
+    function createController(id, opts = {}) {
+        if (!id) return;
+        if (controllers[id]) return controllers[id];
+
+        const cfg = {
+            soundFile: opts.soundFile || '',
+            minPlaybackRate: opts.minPlaybackRate ?? 0.1,
+            maxPlaybackRate: opts.maxPlaybackRate ?? 3,
+            playbackRateMultiplier: opts.playbackRateMultiplier ?? 1,
+            volumeMultiplier: opts.volumeMultiplier ?? 1
+        };
+
+        const audioEl = new Audio();
+        audioEl.preload = 'auto';
+        audioEl.crossOrigin = 'anonymous';
+        if (cfg.soundFile) audioEl.src = cfg.soundFile;
+
+        let mediaSource = null;
+        let stereo = null;
+
+        if (ctx) {
+            try {
+                mediaSource = ctx.createMediaElementSource(audioEl);
+                stereo = ctx.createStereoPanner();
+                mediaSource.connect(stereo);
+                stereo.connect(ctx.destination);
+            } catch (e) {
+                mediaSource = null;
+                stereo = null;
+            }
+        }
+
+        controllers[id] = {
+            id,
+            cfg,
+            audioEl,
+            mediaSource,
+            stereo,
+            isPlaying: false
+        };
+
+        audioEl.onplaying = () => { controllers[id].isPlaying = true; };
+        audioEl.onended = () => { controllers[id].isPlaying = false; };
+
+        return controllers[id];
+    }
+
+    function play(id, amount = 1, pan = 0) {
+        const c = controllers[id];
+        if (!c) return Promise.reject(`no-controller:${id}`);
+
+        const volume = Math.max(0, Math.min(1, (amount / 10) * c.cfg.volumeMultiplier));
+        const rate = Math.min(Math.max(c.cfg.minPlaybackRate, amount * c.cfg.playbackRateMultiplier), c.cfg.maxPlaybackRate);
+
+        c.audioEl.volume = volume;
+        try { c.audioEl.playbackRate = rate; } catch (e) { }
+
+        if (c.stereo) {
+            try { c.stereo.pan.value = Math.max(-1, Math.min(1, pan)); } catch (e) { }
+        } else {
+           
+        }
+
+        // ensure audio context running if present
+        return ensureCtxResumed().then(() => {
+            // If already playing, rewind unless loop is wanted
+            try { c.audioEl.currentTime = 0; } catch (e) { }
+            const p = c.audioEl.play();
+            if (p && typeof p.then === 'function') return p;
+            return Promise.resolve();
+        }).catch(err => {
+            // play may be blocked by autoplay policy
+            return Promise.reject(err);
+        });
+    }
+
+    function preload(id, src) {
+        const c = controllers[id] || createController(id, { soundFile: src });
+        if (src) {
+            c.audioEl.src = src;
+        }
+        // touching the element triggers preload
+        try { c.audioEl.load(); } catch (e) { }
+        return Promise.resolve();
+    }
+
+    function stop(id) {
+        const c = controllers[id];
+        if (!c) return;
+        try {
+            c.audioEl.pause();
+            c.audioEl.currentTime = 0;
+        } catch (e) { }
+        c.isPlaying = false;
+    }
+
+    function setVolume(id, vol) {
+        const c = controllers[id];
+        if (!c) return;
+        c.cfg.volumeMultiplier = vol;
+    }
+
+    function dispose(id) {
+        const c = controllers[id];
+        if (!c) return;
+        try {
+            c.audioEl.pause();
+            c.audioEl.src = '';
+            if (c.mediaSource) try { c.mediaSource.disconnect(); } catch (e) { }
+            if (c.stereo) try { c.stereo.disconnect(); } catch (e) { }
+        } catch (e) { }
+        delete controllers[id];
+    }
+
+    // Optional helper to unlock audio on first user gesture:
+    function unlockAudioOnGestureOnce() {
+        if (!ctx) return;
+        function onGesture() {
+            try { ctx.resume().catch(() => { }); } catch (e) { }
+            window.removeEventListener('click', onGesture, true);
+            window.removeEventListener('keydown', onGesture, true);
+        }
+        window.addEventListener('click', onGesture, true);
+        window.addEventListener('keydown', onGesture, true);
+    }
+
+    // Export API
+    window.audioControllerManager = {
+        create: function (id, opts) { return createController(id, opts); },
+        play: function (id, amount, pan) { return play(id, amount, pan); },
+        preload: function (id, src) { return preload(id, src); },
+        stop: function (id) { return stop(id); },
+        setVolume: function (id, vol) { return setVolume(id, vol); },
+        dispose: function (id) { return dispose(id); },
+        unlockAudioOnGestureOnce: unlockAudioOnGestureOnce,
+        _debug_listControllers: function () { return Object.keys(controllers); }
+    };
+})();
