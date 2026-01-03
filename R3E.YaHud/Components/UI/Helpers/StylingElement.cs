@@ -5,6 +5,12 @@
         public Dictionary<string, string> styles = new Dictionary<string, string>();
         public classList classlist = new classList();
 
+        public void Clear()
+        {
+            styles = new Dictionary<string, string>();
+            classlist = new classList();
+        }
+
         public void setStyle(string key, string value)
         {
             styles[key] = value;

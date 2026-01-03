@@ -51,6 +51,52 @@
 
     protected override void UpdateWithTestData()
     {
+        radarChildren.Clear();
+        driverStyling.Clear();
+
+        RadarStyling.setStyle("opacity", Fmt(1));
+        var driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
+        RadarStyling.appendStyleString("background-image", $",url({driverCloseRightImg})");
+
+        radarChildren.Add(0);
+        var se = new StylingElement();
+        se.classlist.add("radar-car");
+        se.classlist.add("radar-car-self");
+        se.setStyle("width", FmtPx(16.605));
+        se.setStyle("height", FmtPx(37.899));
+        se.setStyle("translate", "none");
+        se.setStyle("transform", "translate3d(91.69718px,81.05032px,0) rotate(0rad);");
+        se.setStyle("opacity", "1");
+        driverStyling[0] = se;
+
+        radarChildren.Add(1);
+        var se2 = new StylingElement();
+        se2.classlist.add("radar-car");
+        se2.setStyle("width", FmtPx(16.416));
+        se2.setStyle("height", FmtPx(33.306));
+        se2.setStyle("translate", "none");
+        se2.setStyle("transform", "translate3d(137.726px,51.27176px,0) rotate(0.004727272443771362305rad);");
+        se2.setStyle("opacity", "1");
+        driverStyling[1] = se2;
+
+        radarChildren.Add(2);
+        var se3 = new StylingElement();
+        se3.classlist.add("radar-car");
+        se3.setStyle("width", FmtPx(15.899));
+        se3.setStyle("height", FmtPx(38.949));
+        se3.setStyle("translate", "none");
+        se3.setStyle("transform", "translate3d(70.538px,129.28278px,0) rotate(-0.03006303310394287rad);");
+        se3.setStyle("opacity", "1");
+        driverStyling[2] = se3;
+
+        if (Settings.RadarBeeping)
+        {
+            if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
+            {
+                _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
+                lastAlertUtc = DateTime.UtcNow;
+            }
+        }
 
     }
 
@@ -138,7 +184,6 @@
                 driverStyling[slotId] = se;
             }
         }
-        var batch = new List<object>(radarChildren.Count);
 
         foreach (var childSlotId in radarChildren)
         {
@@ -150,16 +195,6 @@
                     driverStyling[childSlotId] = stylingHidden;
                 }
 
-                batch.Add(new
-                {
-                    id = childSlotId.ToString(),
-                    display = "none",
-                    transform = (string?)null,
-                    opacity = (string?)null,
-                    width = (string?)null,
-                    height = (string?)null,
-                    classes = driverStyling.GetValueOrDefault(childSlotId)?.classlist.ToString() ?? ""
-                });
                 continue;
             }
 
@@ -397,7 +432,6 @@
     
     private Task PlayAlert(double amount, double pan)
     {
-        // amount 1..10, pan -1..1
         return JS.InvokeVoidAsync("audioControllerManager.play", "alert", amount, pan).AsTask();
     }
 }
