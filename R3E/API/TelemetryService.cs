@@ -1,3 +1,4 @@
+using R3E.API.Models;
 using R3E.Data;
 using R3E.Extensions;
 
@@ -10,14 +11,17 @@ namespace R3E.API
         private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
+        public event Action<int>? StartLightsChanged;
         public event Action<TelemetryData>? NewLap;
         public event Action<TelemetryData>? SessionTypeChanged;
         public event Action<TelemetryData>? SessionPhaseChanged;
         public event Action<TelemetryData>? CarPositionChanged;
         public event Action<TelemetryData>? TrackChanged;
         public event Action<TelemetryData>? CarChanged;
+        public event Action<TelemetryData, int>? SectorCompleted;
 
         public TelemetryData Data { get; init; }
+        public SectorData SectorData { get; init; }
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -26,6 +30,7 @@ namespace R3E.API
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
+        private int lastSectorIndex = -1;
 
 
         public TelemetryService(ILogger<TelemetryService> logger,
@@ -35,13 +40,21 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
+            SectorData = new SectorData();
 
             sharedSource.DataUpdated += OnRawDataUpdated;
+            sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+        }
+
+        private void SharedSource_StartLightsChanged(int startLights)
+        {
+            StartLightsChanged?.Invoke(startLights);
         }
 
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
+            SectorData.Raw = raw;
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;
@@ -119,8 +132,28 @@ namespace R3E.API
                 CarChanged?.Invoke(Data);
             }
 
+            if (lastSectorIndex != SectorData.CurrentSectorIndexSelf) {
+                switch (SectorData.CurrentSectorIndexSelf) {
+                    case 0:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 2");
+                        SectorCompleted?.Invoke(Data, 2);
+                        break;
+                    case 1:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 0");
+                        SectorCompleted?.Invoke(Data, 0);
+                        break;
+                    case 2:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 1");
+                        SectorCompleted?.Invoke(Data, 1);
+                        break;
+                }
+
+                lastSectorIndex = SectorData.CurrentSectorIndexSelf;
+            }
+
             DataUpdated?.Invoke(Data);
         }
+
 
         public void Dispose()
         {
@@ -131,6 +164,7 @@ namespace R3E.API
 
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
+            sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
         }
     }
