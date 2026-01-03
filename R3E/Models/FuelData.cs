@@ -24,7 +24,7 @@ public class FuelData: IDisposable
     /// </summary>
     public FuelData(Shared telemetryData, ITelemetryService telemetryService)
     {
-        this.TelemetryData = telemetryData;
+        TelemetryData = telemetryData;
         this.telemetryService = telemetryService;
         telemetryService.NewLap += TelemetryServiceOnNewLap;
         telemetryService.SessionPhaseChanged += TelemetryServiceOnSessionPhaseChanged;
@@ -48,7 +48,7 @@ public class FuelData: IDisposable
     /// </summary>
     private void TelemetryServiceOnNewLap(TelemetryData obj)
     {
-        //Everytime we pass race line NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
+        // Every time we pass race line NumberOfLaps should update so we use this as a trigger to calculate the remaining variables 
         LastLapFuelUsage = oldFuelRemaining - TelemetryData.FuelLeft;
         oldFuelRemaining = TelemetryData.FuelLeft;
     }
@@ -103,12 +103,12 @@ public class FuelData: IDisposable
                 // LapBased
                 case Constant.SessionLengthFormat.LapBased:
                     if (TelemetryData.NumberOfLaps <= 0) return 0.0; // default safe value until telemetry is valid
-                    return TelemetryData.NumberOfLaps / TelemetryData.FuelPerLap;
+                    return TelemetryData.NumberOfLaps * TelemetryData.FuelPerLap;
                 
                 // TimeAndLapBased - Time and lap based session means there will be an extra lap after the time has run out
                 case Constant.SessionLengthFormat.TimeAndLapBased:
                     if (TelemetryData.NumberOfLaps <= 0) return 0.0; // default safe value until telemetry is valid
-                    return (TelemetryData.NumberOfLaps + 1) / TelemetryData.FuelPerLap;
+                    return (TelemetryData.NumberOfLaps + 1) * TelemetryData.FuelPerLap;
                 
                 //No value / exception
                 default:
