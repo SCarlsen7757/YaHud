@@ -1,6 +1,5 @@
-using R3E.Models;
-
 using R3E.API.Models;
+using R3E.Models;
 
 namespace R3E.API
 {
