@@ -50,7 +50,6 @@ if (OperatingSystem.IsWindows())
 #pragma warning disable CA1416 // Validate platform compatibility
         return sp.GetRequiredService<SharedMemoryService>();
 #pragma warning restore CA1416 // Validate platform compatibility
-
     });
 }
 else
