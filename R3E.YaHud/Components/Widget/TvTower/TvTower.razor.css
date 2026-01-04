@@ -1,0 +1,112 @@
+﻿.tv-tower-widget {
+    z-index: 5000;
+    text-align: left;
+    width: 300px;
+    height: 800px;
+    position: absolute;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 11px;
+    color: #ffffff;
+}
+
+.tv-header-bar {
+    background: #d7c858;
+    color: #ffffff;
+    padding: 2px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tv-header-session {
+    font-weight: 600;
+}
+
+.tv-header-right {
+    display: flex;
+    gap: 10px;
+    font-size: 10px;
+}
+
+.tv-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.tv-table thead {
+    background: rgba(0, 0, 0, 0.65);
+    font-size: 10px;
+    text-align: left;
+}
+
+.tv-table th,
+.tv-table td {
+    padding: 2px 4px;
+}
+
+.tv-table th.col-pos,
+.tv-table td.col-pos {
+    width: 18px;
+    text-align: right;
+}
+
+.tv-table th.col-delta,
+.tv-table td.col-delta {
+    width: 20px;
+    text-align: left;
+}
+
+.tv-table th.col-manu,
+.tv-table td.col-manu {
+    width: 20px;
+}
+
+.tv-table th.col-car,
+.tv-table td.col-car {
+    width: 24px;
+    text-align: right;
+}
+
+.tv-table th.col-gap,
+.tv-table td.col-gap {
+    text-align: right;
+    width: 60px;
+}
+
+.tv-table th.col-tyre,
+.tv-table td.col-tyre {
+    width: 30px;
+    text-align: center;
+}
+
+.tv-table th.col-pit,
+.tv-table td.col-pit {
+    width: 25px;
+    text-align: center;
+}
+
+.tv-row:nth-child(odd) {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.tv-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.tv-row-player {
+    background: rgba(255, 230, 0, 0.5);
+    color: #000000;
+    font-weight: 600;
+}
+
+.tv-manu-img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
