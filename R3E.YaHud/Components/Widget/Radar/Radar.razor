@@ -10,7 +10,7 @@
 {
     <div id=@ElementId class="radar-widget">
         <div id="radar" @ref="radarElement" style="@RadarStyling.ToString()">
-            @foreach (var child in radarChildren)
+            @foreach (var child in activeDriverSlots)
             {
                 <div id="@child" class="@driverStyling.GetValueOrDefault(child)!.Classes.ToString()" style="@driverStyling.GetValueOrDefault(child)!.ToString()">
 
@@ -30,11 +30,11 @@
 
     public override double DefaultXPercent => 90;
     public override double DefaultYPercent => 90;
-    private static string RadarGridImagePath = $"assets/img/radar/radar-grid.png";
-    private StylingElement RadarStyling = new StylingElement();
+    private static readonly string RadarGridImagePath = $"assets/img/radar/radar-grid.png";
+    private readonly StylingElement RadarStyling = new StylingElement();
 
     private Dictionary<int, DriverState> drivers = new Dictionary<int, DriverState>();
-    private List<int> radarChildren = new List<int>();
+    private List<int> activeDriverSlots = new List<int>();
     private readonly Dictionary<int, StylingElement> driverStyling = new Dictionary<int, StylingElement>();
     private bool RadarPointer = true;
     private ElementReference radarElement;
@@ -43,7 +43,7 @@
     private TimeSpan alertCooldown = new TimeSpan(0, 0, 0, 0, 200);
     private readonly double pointerStartRangeFactor = 1.1;
     private readonly double opacityPowerFactor = 0.5;
-    private readonly int ordinalTranslateVertialOffset = 150;
+    private readonly int ordinalTranslateVertialOffset = 150; // Vertical offset in px to position ordinal labels relative to the radar center (tuned for the base radar dimensions)
 
     public Radar()
     {
@@ -54,14 +54,14 @@
 
     protected override void UpdateWithTestData()
     {
-        radarChildren.Clear();
+        activeDriverSlots.Clear();
         driverStyling.Clear();
 
         RadarStyling.SetStyle("opacity", Fmt(1));
         var driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
         RadarStyling.AppendStyleString("background-image", $",url({driverCloseRightImg})");
 
-        radarChildren.Add(0);
+        activeDriverSlots.Add(0);
         var se = new StylingElement();
         se.Classes.Add("radar-car");
         se.Classes.Add("radar-car-self");
@@ -72,7 +72,7 @@
         se.SetStyle("opacity", "1");
         driverStyling[0] = se;
 
-        radarChildren.Add(1);
+        activeDriverSlots.Add(1);
         var se2 = new StylingElement();
         se2.Classes.Add("radar-car");
         se2.SetStyle("width", FmtPx(16.416));
@@ -82,7 +82,7 @@
         se2.SetStyle("opacity", "1");
         driverStyling[1] = se2;
 
-        radarChildren.Add(2);
+        activeDriverSlots.Add(2);
         var se3 = new StylingElement();
         se3.Classes.Add("radar-car");
         se3.SetStyle("width", FmtPx(15.899));
@@ -92,13 +92,10 @@
         se3.SetStyle("opacity", "1");
         driverStyling[2] = se3;
 
-        if (Settings.RadarBeeping)
+        if (Settings.RadarBeeping && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
         {
-            if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
-            {
-                _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
-                lastAlertUtc = DateTime.UtcNow;
-            }
+            _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
+            lastAlertUtc = DateTime.UtcNow;
         }
 
     }
@@ -106,25 +103,20 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        if (firstRender)
+        if (firstRender && radarElement.Context != null)
         {
-            if(radarElement.Context != null)
-            {
-                radarWidth = await JS.InvokeAsync<double>(
-                    "radarInterop.getOffsetWidth",
-                    radarElement
-                );
-
-                // preload an effect file (wwwroot/assets/sounds/alert.mp3)
-                _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
-                _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
-                // optionally unlock on first user gesture
-                _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
-
-                StateHasChanged();
-            }
-
+            radarWidth = await JS.InvokeAsync<double>(
+                "radarInterop.getOffsetWidth",
+                radarElement
+            );
+            // preload an effect file (wwwroot/assets/sounds/alert.mp3)
+            _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
+            _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
+            // optionally unlock on first user gesture
+            _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
+            StateHasChanged();
         }
+
     }
 
     protected override void Update()
@@ -179,9 +171,8 @@
         foreach (var kv in drivers)
         {
             var slotId = kv.Key;
-            var dd = kv.Value.DriverData;
-            if (!radarChildren.Contains(slotId))
-                radarChildren.Add(slotId);
+            if (!activeDriverSlots.Contains(slotId))
+                activeDriverSlots.Add(slotId);
             if (!driverStyling.ContainsKey(slotId))
             {
                 var se = new StylingElement();
@@ -191,7 +182,7 @@
             }
         }
 
-        foreach (var childSlotId in radarChildren)
+        foreach (var childSlotId in activeDriverSlots)
         {
             if (!closeBySlot.TryGetValue(childSlotId, out var state))
             {
@@ -248,7 +239,17 @@
             if (RadarPointer && distance > pointerStartRange)
             {
                 var pointerRotation = GetRadarPointerRotation(distance, driverState.RelativePos.X, driverState.RelativePos.Z);
-                var pointerOpacity = Math.Pow((distance - radarFadeRange) / (Settings.RadarRange - radarFadeRange), opacityPowerFactor);
+                var fadeDenominator = Settings.RadarRange - radarFadeRange;
+                double pointerOpacity;
+                if (fadeDenominator > 0)
+                {
+                    pointerOpacity = Math.Pow((distance - radarFadeRange) / fadeDenominator, opacityPowerFactor);
+                }
+                else
+                {
+                    // Fallback to fully visible pointer if configuration would cause division by zero
+                    pointerOpacity = 1.0;
+                }
 
                 child.SetStyle("display", null);
                 child.SetStyle("background-color", "red");
@@ -269,13 +270,12 @@
                 var topVal = (driverFrontBack / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2;
 
                 transformStr = $"translate3d({FmtPx(leftVal)},{FmtPx(topVal)},0) rotate({Fmt(driverRotation)}rad)";
-                opacityStr = "1";
 
                 child.SetStyle("display", null);
                 child.SetStyle("background-color", ownPlace == driverState.DriverData.Place ? "white" : "red");
                 child.SetStyle("border-radius", "6px");
 
-                if(!Settings.Use3DTranslate){
+                if (!Settings.Use3DTranslate){
                     child.SetStyle("left", FmtPx(leftVal));
                     child.SetStyle("top", FmtPx(topVal));
                     child.SetStyle("transform", $"rotate({Fmt(driverRotation)}rad)");
@@ -285,7 +285,7 @@
                 child.SetStyle("height", FmtPx(height));
 
                 child.SetStyle("translate", "none");
-                if(Settings.Use3DTranslate)
+                if (Settings.Use3DTranslate)
                     child.SetStyle("transform", $"{transformStr}");
                 child.SetStyle("opacity", "1");
 
@@ -327,17 +327,15 @@
             RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
         }
 
-        if (Settings.RadarBeeping)
+        if (Settings.RadarBeeping && (closeLeft == 1 || closeRight == 1) && speed >= Settings.MinBeepSpeed && closest.HasValue)
         {
-            if ((closeLeft == 1 || closeRight == 1) && speed >= Settings.MinBeepSpeed)
+            if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
             {
-                if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
-                {
-                    _ = PlayAlert(1 - closest!.Value / Settings.RadarRange, closeLeft * -1 + closeRight * 1);
-                    lastAlertUtc = DateTime.UtcNow;
-                }
-
+                var proximity = 1 - closest.Value / Settings.RadarRange;
+                _ = PlayAlert(proximity, closeLeft * -1 + closeRight * 1);
+                lastAlertUtc = DateTime.UtcNow;
             }
+
         }
 
 
@@ -349,7 +347,17 @@
                 return;
             }
 
-            var opacityValue = closest.Value < Settings.RadarRange ? Settings.RadarOpacity : ((closest.Value - radarFadeRange) / (Settings.RadarRange - radarFadeRange)) * Settings.RadarOpacity;
+            double opacityValue;
+            if (Settings.RadarRange <= radarFadeRange)
+            {
+                opacityValue = closest.Value < Settings.RadarRange ? Settings.RadarOpacity : 0;
+            }
+            else
+            {
+                opacityValue = closest.Value < Settings.RadarRange
+                    ? Settings.RadarOpacity
+                    : ((closest.Value - radarFadeRange) / (Settings.RadarRange - radarFadeRange)) * Settings.RadarOpacity;
+            }
 
             RadarStyling.SetStyle("opacity",Fmt(opacityValue));
         }

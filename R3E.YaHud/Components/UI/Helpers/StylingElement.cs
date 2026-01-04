@@ -15,12 +15,12 @@
         /// Dictionary of CSS property -> value pairs. Values should be preformatted (use invariant
         /// culture for numbers) when possible so <see cref="ToString"/> can emit them directly.
         /// </summary>
-        public Dictionary<string, string> Styles = new Dictionary<string, string>();
+        public Dictionary<string, string> Styles { get; set; } = new Dictionary<string, string>();
 
         /// <summary>
         /// Helper to maintain a deduplicated set of CSS classes for the element.
         /// </summary>
-        public ClassList Classes = new ClassList();
+        public ClassList Classes { get; set; } = new ClassList();
 
         /// <summary>
         /// Clear all styles and classes and reset to an empty state.

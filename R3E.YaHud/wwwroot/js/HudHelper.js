@@ -1,6 +1,6 @@
 ﻿window.radarInterop = {
     getOffsetWidth: function (element) {
-        if (!element) return 0;   // or null
+        if (!element) return 0;   // Returns 0 if element is null or undefined, otherwise returns the element's offsetWidth.
         return element.offsetWidth;
     }
 };
@@ -564,7 +564,7 @@ window.colorisHelper = (function () {
     }
 
     function play(id, amount = 1, pan = 0) {
-        const VOLUME_SCALE = 10; // scale factor for volume calculation
+        const VOLUME_SCALE = 10; // scales 'amount' (expected 0–10) into the 0–1 range used by audioEl.volume
         const c = controllers[id];
         if (!c) return Promise.reject(`no-controller:${id}`);
 
