@@ -1,0 +1,160 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@inherits HudWidgetBase<TvTowerSettings>
+@implements IDisposable
+
+@if (Settings?.Visible ?? false)
+{
+    <div id="@ElementId" class="tv-tower-widget">
+        <table class="tv-table">
+            <thead>
+                <tr>
+                    <th class="col-pos"></th>
+                    <th class="col-manu"></th>
+                    <th class="col-car"></th>
+                    <th class="col-driver">Driver</th>
+                    <th class="col-best">Best</th>
+                    <th class="col-tyre">Tyres</th>
+                    <th class="col-pit">Pit</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Drivers.OrderBy(x => x.Position))
+                {
+                    var rowClasses = "tv-row";
+                    if (d.IsPlayer)
+                    {
+                        rowClasses += " tv-row-player";
+                    }
+
+                    <tr class="@rowClasses">
+                        <td class="col-pos">@d.Position</td>
+
+                        <td class="col-manu">
+                            @if (!string.IsNullOrWhiteSpace(d.ManufacturerImageUrl))
+                            {
+                                <img src="@d.ManufacturerImageUrl" class="tv-manu-img" />
+                            }
+                        </td>
+                        <td class="col-car">@d.CarNumber</td>
+                        <td class="col-driver">@d.Name</td>
+                        <td class="col-best">
+                            @if (d.BestLap is not null)
+                            {
+                                @FormatLap(d.BestLap)
+                            }
+                        </td>
+                        <td class="col-tyre">@FormatTyre(d.TireCompoundFront, d.TireCompoundRear)</td>
+                        <td class="col-pit">@(d.PitStopServed ? string.Empty : "PIT")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+
+    public override string ElementId => "tvTowerWidget";
+    public override string Name => "TV Tower";
+    public override string Category => "Utility";
+
+    public override double DefaultXPercent => 0;
+    public override double DefaultYPercent => 20;
+
+    public override bool Collidable => true;
+
+    private List<DriverInfo> drivers = new();
+
+    public IEnumerable<DriverInfo> Drivers => drivers;
+
+    public TvTower()
+    {
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void Update()
+    {
+    }
+
+    protected override void UpdateWithTestData()
+    {
+
+        drivers = new()
+        {
+            new() { Name = "Kevin Magnussen", Position = 1, CarNumber = 15,  BestLap = TimeSpan.FromSeconds(122), IsPlayer = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
+            new() { Name = "Mirko Bortolotti", Position = 2, CarNumber = 63,  BestLap = TimeSpan.FromSeconds(125), TireCompoundRear = TireCompound.Soft, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp" },
+            new() { Name = "Kévin Estre", Position = 3, CarNumber = 6, BestLap = TimeSpan.FromSeconds(120), IsPlayer = false, PitStopServed = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
+            new() { Name = "You", Position = 4, CarNumber = 7, BestLap = TimeSpan.FromSeconds(115), IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
+            new() { Name = "Maro Engel", Position = 5, CarNumber = 5, BestLap = TimeSpan.FromSeconds(118), IsPlayer = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
+            new() { Name = "Oliver Jarvis", Position = 6, CarNumber = 77, BestLap = TimeSpan.FromSeconds(125), IsPlayer = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
+            new() { Name = "Nick Cassidy", Position = 7, CarNumber = 37, BestLap = TimeSpan.FromSeconds(122), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
+        };
+    }
+
+    private static string FormatLap(TimeSpan? time)
+    {
+        if(time is null)
+        {
+            return "--:--.--";
+        }
+
+        var totalMinutes = (int)time.Value.TotalMinutes;
+        var seconds = time.Value.Seconds;
+        var millis = time.Value.Milliseconds;
+        return $"{totalMinutes}:{seconds:00},{millis:000}";
+    }
+
+    private static string FormatTyre(TireCompound front, TireCompound rear)
+    {
+        if(front == rear)
+        {
+            return TireCompoundToShortString(front);
+        }
+        return $"{TireCompoundToShortString(front)}/{TireCompoundToShortString(rear)}";
+    }
+
+    private static string TireCompoundToShortString(TireCompound compound)
+    {
+        return compound switch
+        {
+            TireCompound.Soft => "S",
+            TireCompound.Medium => "M",
+            TireCompound.Hard => "H",
+            TireCompound.Intermediate => "I",
+            TireCompound.Wet => "W",
+            _ => string.Empty
+        };
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+    }
+
+    public class DriverInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Position { get; set; }
+        public int? ClassPosition { get; set; } = null;
+        public int CarNumber { get; set; }
+        public string ManufacturerImageUrl { get; set; } = string.Empty;
+        public TimeSpan? BestLap { get; set; } = null;
+        public TireCompound TireCompoundFront { get; set; } = TireCompound.Hard;
+        public TireCompound TireCompoundRear { get; set; } = TireCompound.Hard;
+        public bool IsPlayer { get; set; } = false;
+        public bool PitStopServed { get; set; } = true;
+    }
+
+    public enum TireCompound
+    {
+        Soft,
+        Medium,
+        Hard,
+        Intermediate,
+        Wet
+    }
+}
