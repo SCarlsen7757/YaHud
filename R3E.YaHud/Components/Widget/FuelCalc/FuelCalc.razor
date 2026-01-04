@@ -54,7 +54,7 @@
     /// <summary>
     /// Color of the fuel remaining text.
     /// </summary>
-    private string FuelRemainingColor { get; set; } = "rgb(0, 128, 0)";
+    private string FuelRemainingColor { get; set; } = "#008000";
 
     /// <summary>
     /// Formatted estimated time left (hh:mm, mm:ss, or ss).
@@ -64,7 +64,7 @@
     /// <summary>
     /// Color for the estimated time left display.
     /// </summary>
-    private string TimeEstimatedLeftColor { get; set; } = "rgb(0, 128, 0)";
+    private string TimeEstimatedLeftColor { get; set; } = "#008000";
 
     /// <summary>
     /// Estimated laps remaining based on fuel per lap.
@@ -94,10 +94,10 @@
     /// <summary>
     /// Color for the FuelToEnd display.
     /// </summary>
-    private string FuelToEndColor { get; set; } = "rgb(0, 128, 0)";
+    private string FuelToEndColor { get; set; } = "#008000";
     
     public override string ElementId => "FuelWidget";
-    public override string Name => "FuelCalc";
+    public override string Name => "Fuel Calc";
     public override string Category => "Telemetry";
     public override double DefaultXPercent => 50;
     public override double DefaultYPercent => 50;
@@ -123,7 +123,7 @@
     /// <summary>
     /// Determines the color of the time left text based on thresholds.
     /// </summary>
-    /// <param name="t">Time remaining.</param>
+    /// <param name="time">Time remaining.</param>
     /// <returns>Color as a CSS string.</returns>
     private string GetTimeLeftColor(TimeSpan time) => time.TotalHours >= 1 ? Settings!.ColorHigh : time.TotalMinutes >= 1 ? Settings!.ColorMidLow : Settings!.ColorLow;
     
