@@ -564,10 +564,11 @@ window.colorisHelper = (function () {
     }
 
     function play(id, amount = 1, pan = 0) {
+        const VOLUME_SCALE = 10; // scale factor for volume calculation
         const c = controllers[id];
         if (!c) return Promise.reject(`no-controller:${id}`);
 
-        const volume = Math.max(0, Math.min(1, (amount / 10) * c.cfg.volumeMultiplier));
+        const volume = Math.max(0, Math.min(1, (amount / VOLUME_SCALE) * c.cfg.volumeMultiplier));
         const rate = Math.min(Math.max(c.cfg.minPlaybackRate, amount * c.cfg.playbackRateMultiplier), c.cfg.maxPlaybackRate);
 
         c.audioEl.volume = volume;
@@ -575,8 +576,6 @@ window.colorisHelper = (function () {
 
         if (c.stereo) {
             try { c.stereo.pan.value = Math.max(-1, Math.min(1, pan)); } catch (e) { }
-        } else {
-           
         }
 
         // ensure audio context running if present
