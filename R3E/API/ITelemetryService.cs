@@ -1,4 +1,5 @@
-﻿using R3E.API.Models;
+using R3E.API.Models;
+using R3E.Models;
 
 namespace R3E.API
 {
@@ -19,5 +20,6 @@ namespace R3E.API
 
         TelemetryData Data { get; }
         SectorData SectorData { get; }
+        FuelData FuelData { get; }
     }
 }
