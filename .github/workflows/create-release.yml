@@ -1,0 +1,91 @@
+# Reusable workflow: Creates GitHub release from artifacts
+name: Create Release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version string for the release"
+        required: true
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: false
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      release_url:
+        description: "URL of the created release"
+        value: ${{ jobs.release.outputs.release_url }}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    outputs:
+      release_url: ${{ steps.create_release.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: ./artifacts
+
+      - name: List artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find ./artifacts -type f -name "*.zip"
+
+      - name: Generate Release Notes
+        id: release_notes
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v${{ inputs.version }}'
+            });
+            return data.body;
+          result-encoding: string
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Release v${{ inputs.version }}
+          body: ${{ steps.release_notes.outputs.result }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          files: |
+            ./artifacts/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "### Release v${{ inputs.version }} Created!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ inputs.draft == true && 'Draft' || 'Published' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifacts:**" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.Relay (Windows x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Windows x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Linux x64)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](${{ steps.create_release.outputs.url }})" >> $GITHUB_STEP_SUMMARY

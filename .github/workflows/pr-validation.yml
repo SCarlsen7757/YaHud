@@ -1,0 +1,106 @@
+# PR validation: build check + version preview
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  # Calculate version (runs in parallel with build)
+  version:
+    name: Version Preview
+    uses: ./.github/workflows/calculate-version.yml
+
+  # Build validation (runs in parallel with version)
+  build:
+    name: Build Validation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.sln
+
+      - name: Build Solution
+        run: dotnet build R3E.sln --configuration Release --no-restore
+
+      - name: Build Summary
+        run: |
+          echo "### Build Validation Passed" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "All projects compiled successfully." >> $env:GITHUB_STEP_SUMMARY
+
+  # Post version comment on PR (depends on version job)
+  comment:
+    name: Post Version Comment
+    needs: [version, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Comment PR with Version
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const output = `### Version Preview
+
+            This PR will create release: **v${{ needs.version.outputs.semVer }}**
+
+            | Property | Value |
+            |----------|-------|
+            | Full SemVer | \`${{ needs.version.outputs.fullSemVer }}\` |
+            | Major.Minor.Patch | \`${{ needs.version.outputs.majorMinorPatch }}\` |
+            | Branch | \`${{ needs.version.outputs.branchName }}\` |
+            | Pre-release Tag | \`${{ needs.version.outputs.preReleaseTag }}\` |
+
+            ### Build Status
+            All projects compiled successfully.
+
+            **What happens when merged:**
+            1. A GitHub release will be created with tag \`v${{ needs.version.outputs.semVer }}\`
+            2. Build artifacts will be attached (Windows & Linux)
+            3. Release notes will be auto-generated
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Version Preview')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
