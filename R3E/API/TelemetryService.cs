@@ -1,6 +1,7 @@
 using R3E.API.Models;
 using R3E.Data;
 using R3E.Extensions;
+using R3E.Models;
 
 namespace R3E.API
 {
@@ -22,6 +23,7 @@ namespace R3E.API
 
         public TelemetryData Data { get; init; }
         public SectorData SectorData { get; init; }
+        public FuelData FuelData { get; init; }
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -40,6 +42,7 @@ namespace R3E.API
             this.logger = logger;
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
+            FuelData = new FuelData(Data.Raw, this);
             SectorData = new SectorData();
 
             sharedSource.DataUpdated += OnRawDataUpdated;
@@ -54,6 +57,7 @@ namespace R3E.API
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
+            FuelData.TelemetryData = raw;
             SectorData.Raw = raw;
 
             var tick = raw.Player.GameSimulationTicks;
@@ -163,6 +167,7 @@ namespace R3E.API
             }
 
             disposed = true;
+            FuelData.Dispose();
             sharedSource.DataUpdated -= OnRawDataUpdated;
             sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
