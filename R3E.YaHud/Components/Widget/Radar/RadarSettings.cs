@@ -6,7 +6,7 @@ namespace R3E.YaHud.Components.Widget.Radar
 {
     public class RadarSettings : BasicSettings
     {
-        [SettingType("Radar rage", SettingsTypes.Number, 1, Description = "Range of the radar to start detecting opponents in meters", ViewMode = SettingsViewMode.Expert, Max = 80, Min = 1)]
+        [SettingType("Radar range", SettingsTypes.Number, 1, Description = "Range of the radar to start detecting opponents in meters", ViewMode = SettingsViewMode.Expert, Max = 80, Min = 1)]
         public int RadarRange { get; set; } = 12;
         public float RadarOpacity { get; set; } = 0.8f;
         public int RadarFadeRange { get; set; } = 2;
@@ -21,7 +21,7 @@ namespace R3E.YaHud.Components.Widget.Radar
 
         [SettingType("Radar beeping", SettingsTypes.Checkbox, 0, Description = "Have the radar beeping at you when an opponent is on either side of you", ViewMode = SettingsViewMode.Beginner)]
         public bool RadarBeeping { get; set; } = false;
-        [SettingType("Beeping interval", SettingsTypes.Number, 1, Description = "Interval of of fast the beeping runs", ViewMode = SettingsViewMode.Expert, Max = 5000, Min = 50)]
+        [SettingType("Beeping interval", SettingsTypes.Number, 1, Description = "Interval of how fast the beeping runs", ViewMode = SettingsViewMode.Expert, Max = 5000, Min = 50)]
         public int BeepingInterval { get; set; } = 200;
     }
 }
