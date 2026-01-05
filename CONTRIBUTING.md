@@ -275,17 +275,6 @@ git push origin <branch-name>
 # Then create PR via GitHub web interface
 ```
 
-## 🛠️ SDK version (global.json)
-
-The repository's .NET SDK version for both CI is declared in `global.json`. GitHub Actions workflows in this repository must not hardcode or declare a .NET SDK/version inside their YAML files. `global.json` is the single source of truth for the SDK used by CI and contributors.
-
-Guidelines:
-
-- Do not add or change `dotnet` version identifiers in any `.github/workflows/*.yml` files (for example, do not set `dotnet-version`, `actions/setup-dotnet` with an explicit version, or similar fields).
-- If a workflow needs to install the SDK, it should read the version from `global.json` or rely on the workflow runner to use the repository `global.json` behavior.
-
-Rationale: keeping the SDK pinned in `global.json` ensures consistent builds between local environments and CI, prevents divergent SDK usage in different workflows, and centralizes SDK updates.
-
 ## ❓ FAQ
 
 **Q: Why don't we use underscore prefixes for private fields?**  
