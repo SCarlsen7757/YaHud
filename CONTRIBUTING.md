@@ -275,6 +275,17 @@ git push origin <branch-name>
 # Then create PR via GitHub web interface
 ```
 
+## 🛠️ SDK version (global.json)
+
+The repository's .NET SDK version for both CI is declared in `global.json`. GitHub Actions workflows in this repository must not hardcode or declare a .NET SDK/version inside their YAML files. `global.json` is the single source of truth for the SDK used by CI and contributors.
+
+Guidelines:
+
+- Do not add or change `dotnet` version identifiers in any `.github/workflows/*.yml` files (for example, do not set `dotnet-version`, `actions/setup-dotnet` with an explicit version, or similar fields).
+- If a workflow needs to install the SDK, it should read the version from `global.json` or rely on the workflow runner to use the repository `global.json` behavior.
+
+Rationale: keeping the SDK pinned in `global.json` ensures consistent builds between local environments and CI, prevents divergent SDK usage in different workflows, and centralizes SDK updates.
+
 ## ❓ FAQ
 
 **Q: Why don't we use underscore prefixes for private fields?**  
@@ -291,9 +302,6 @@ A: No. Versions are calculated by GitVersion based on Git history and tags. To s
 
 **Q: What happens if I name my branch incorrectly?**  
 A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `hotfix/`.
-
-**Q: How do I test the workflows without merging?**  
-A: Create a PR and the validation workflows will run automatically. The version preview will show you what version would be created.
 
 ---
 
