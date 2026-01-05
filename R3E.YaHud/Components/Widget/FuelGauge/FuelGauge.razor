@@ -1,0 +1,65 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.FuelGauge.Components
+@inherits HudWidgetBase<FuelGaugeSettings>
+@implements IDisposable
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="fuel-gauge-widget">
+        <p class="fuel-level-text">@FuelLevel</p>
+        <div class="fuel-component">
+            <VerticalBar @key="FuelLevel"
+                           Min="0.0d"
+                           Max="@FuelCapacity"
+                           Value="@FuelLevel"
+                           PrimaryColor="@BarCurrentColor"
+                           BackgroundColor="@BarBackgroundColor" />
+        </div>
+    </div>
+}
+
+@code {
+
+    public override string ElementId { get => "fuelGaugeWidget"; }
+    public override string Name => "Fuel Gauge";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 99;
+    public override double DefaultYPercent => 90;
+
+    public override bool Collidable => false;
+
+    public double FuelCapacity { get; set; } = 0.0;
+    public double FuelLevel { get; set; } = 0.0;
+
+    private string BarBackgroundColor => "#454545";
+    private string BarCurrentColor { get; set; } = "#ffffff";
+
+    public FuelGauge()
+    {
+        UpdateInterval = TimeSpan.FromMilliseconds(500);
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void Update()
+    {
+        var data = TelemetryService.Data.Raw;
+        FuelCapacity = data.FuelCapacity;
+        FuelLevel = data.FuelLeft;
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        FuelCapacity = 100.0;
+        FuelLevel = 75.0;
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+    }
+}
