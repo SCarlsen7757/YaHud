@@ -11,7 +11,7 @@
                          Min="0.0d"
                          Max="@FuelCapacity"
                          Value="@FuelLevel"
-                         PrimaryColor="@BarCurrentColor"
+                         PrimaryColor="@ValueColor"
                          BackgroundColor="@BarBackgroundColor" />
         </div>
         <p class="fuel-level-text" style="color:@ValueColor">@FuelLevel</p>
@@ -36,25 +36,20 @@
     public double FuelLevel { get; set; } = 0.0;
 
     private string ValueColor { get; set; } = "#ffffff";
-
     private string BarBackgroundColor => "#454545";
-    private string BarCurrentColor { get; set; } = "#ffffff";
 
     public FuelGauge()
     {
         UpdateInterval = TimeSpan.FromMilliseconds(500);
     }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
     protected override void Update()
     {
         var data = TelemetryService.Data.Raw;
         FuelCapacity = data.FuelCapacity;
-        FuelLevel = data.FuelLeft;
+        var fuelLevel = data.FuelLeft;
+
+        FuelLevel = fuelLevel < 100 ? Math.Round(fuelLevel, 1) : fuelLevel;
 
         var percent = CalculateFuelPercent(FuelLevel, FuelCapacity, 1);
         ValueColor = percent < 10 ? Settings!.LowColor : Settings!.NormalColor;
@@ -64,7 +59,7 @@
     protected override void UpdateWithTestData()
     {
         FuelCapacity = 100.0;
-        FuelLevel = 75.0;
+        FuelLevel = 75.5;
 
         var percent = CalculateFuelPercent(FuelLevel, FuelCapacity, 1);
         ValueColor = percent < 10 ? Settings!.LowColor : Settings!.NormalColor;
@@ -82,10 +77,5 @@
         // Clamp between 0 and 100
         percent = Math.Max(0.0, Math.Min(100.0, percent));
         return Math.Round(percent, decimals);
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 }
