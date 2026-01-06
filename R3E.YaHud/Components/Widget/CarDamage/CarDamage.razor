@@ -1,0 +1,109 @@
+﻿@using R3E.YaHud.Components.Widget.CarDamage.Components
+@using R3E.YaHud.Components.Widget.Core
+@inherits HudWidgetBase<CarDamageSettings>
+@implements IDisposable
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="car-damage-widget">
+        <div class="damage-item">
+            <div class="damage-label" style="color: @EngineDamageColor">Engine</div>
+            <div class="damage-bar"><HorizontalBar Value="@EngineDamage" Min="0" Max="1" PrimaryColor="@EngineDamageColor" BackgroundColor="#333333" /></div>
+        </div>
+        <div class="damage-item">
+            <div class="damage-label" style="color: @AeroDamageColor">Aero</div>
+            <div class="damage-bar"><HorizontalBar Value="@AeroDamage" Min="0" Max="1" PrimaryColor="@AeroDamageColor" BackgroundColor="#333333" /></div>
+        </div>  
+        <div class="damage-item">
+            <div class="damage-label" style="color: @TransmissionDamageColor">Transmission</div>
+            <div class="damage-bar"><HorizontalBar Value="@TransmissionDamage" Min="0" Max="1" PrimaryColor="@TransmissionDamageColor" BackgroundColor="#333333" /></div>
+        </div>
+        <div class="damage-item">
+            <div class="damage-label" style="color: @SuspensionDamageColor">Suspension</div>
+            <div class="damage-bar"><HorizontalBar Value="@SuspensionDamage" Min="0" Max="1" PrimaryColor="@SuspensionDamageColor" BackgroundColor="#333333" /></div>
+        </div>
+    </div>
+}
+
+@code {
+
+
+    public override string ElementId { get => "carDamageWidget"; }
+    public override string Name => "Car Damage";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 20;
+    public override double DefaultYPercent => 90;
+
+    public override bool Collidable => true;
+
+    public float EngineDamage { get; set; } = 1;
+    public float AeroDamage { get; set; } = 1;
+    public float TransmissionDamage { get; set; } = 1;
+    public float SuspensionDamage { get; set; } = 1;
+
+    private string EngineDamageColor { get; set; } = "#ffffff";
+    private string AeroDamageColor { get; set; } = "#ffffff";
+    private string TransmissionDamageColor { get; set; } = "#ffffff";
+    private string SuspensionDamageColor { get; set; } = "#ffffff";
+
+    public CarDamage()
+    {
+        UpdateInterval = TimeSpan.FromMilliseconds(500);
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void Update()
+    {
+        var carDamage = TelemetryService.Data.Raw.CarDamage;
+
+        EngineDamage = carDamage.Engine;
+        AeroDamage = carDamage.Aerodynamics;
+        TransmissionDamage = carDamage.Transmission;
+        SuspensionDamage = carDamage.Suspension;
+
+        EngineDamageColor = DamageColor(EngineDamage);
+        AeroDamageColor = DamageColor(AeroDamage);
+        TransmissionDamageColor = DamageColor(TransmissionDamage);
+        SuspensionDamageColor = DamageColor(SuspensionDamage);
+
+    }
+
+    private string DamageColor(float damage)
+    {
+        if(damage >= Settings!.WornThreshold)
+        {
+            return Settings!.PristineColor;
+        }else if(damage >= Settings!.DamagedThreshold)
+        {
+            return Settings!.WornColor;
+        }
+        else
+        {
+            return Settings!.DamagedColor;
+        }
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        EngineDamage = 0.9f;
+        AeroDamage = 0.75f;
+        TransmissionDamage = 0.5f;
+        SuspensionDamage = 0.2f;
+
+        EngineDamageColor = DamageColor(EngineDamage);
+        AeroDamageColor = DamageColor(AeroDamage);
+        TransmissionDamageColor = DamageColor(TransmissionDamage);
+        SuspensionDamageColor = DamageColor(SuspensionDamage);
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+    }
+
+}
