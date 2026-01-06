@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using R3E.API.Models;
+using R3E.API.Radar;
 using R3E.Data;
 using R3E.Extensions;
 
@@ -23,6 +25,9 @@ namespace R3E.API
         public TelemetryData Data { get; init; }
         public SectorData SectorData { get; init; }
 
+        public RadarData RadarData { get; init; }
+        private readonly RadarService? radarService;
+
         private int lastTick = 0;
         private int lastLapNumber = 0;
         private Constant.Session lastSessionType = Constant.Session.Unavailable;
@@ -41,9 +46,18 @@ namespace R3E.API
             this.sharedSource = sharedSource;
             Data = new TelemetryData(serviceProvider);
             SectorData = new SectorData();
+            RadarData = new RadarData();
 
             sharedSource.DataUpdated += OnRawDataUpdated;
             sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+
+            // Construct RadarService that updates RadarData. Prefer DI logger if available.
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            var radarLogger = loggerFactory != null
+                ? loggerFactory.CreateLogger<RadarService>()
+                : (ILogger<RadarService>)NullLogger<RadarService>.Instance;
+
+            radarService = new RadarService(radarLogger, this, RadarData);
         }
 
         private void SharedSource_StartLightsChanged(int startLights)

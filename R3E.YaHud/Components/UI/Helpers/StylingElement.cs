@@ -91,6 +91,19 @@
             }
         }
 
+        public void AppendStyleStringIfNotExist(string key, string value)
+        {
+            if (Styles.TryGetValue(key, out var existing))
+            {
+                if (!string.IsNullOrEmpty(existing) && !existing.Contains(value))
+                    Styles[key] = string.IsNullOrEmpty(existing) ? value : existing + " " + value;
+            }
+            else
+            {
+                Styles[key] = value;
+            }
+        }
+
         /// <summary>
         /// Remove a whitespace-separated token from an existing style entry.
         /// The operation is safe and will only remove exact token matches.

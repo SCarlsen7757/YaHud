@@ -75,5 +75,42 @@ namespace R3E.YaHud.Components.Widget.Radar
         {
             return mps * 3.6;
         }
+
+        // Heuristic to determine whether another car should be considered "close" on a side.
+        // Parameters:
+        //  - frontBack: longitudinal offset (positive in front of player)
+        //  - leftRight: lateral offset (positive = right, negative = left) after rotation into player-local coords
+        //  - length: the other car's length (meters) from telemetry
+        //
+        // We treat a car as "close" on a side only when:
+        //  - its lateral offset is within a tuned lateral threshold (based on car length),
+        //  - AND its longitudinal offset is within a tuned longitudinal window.
+        // The constants below are conservative defaults and can be tuned if needed.
+        public static bool IsCarClose(double frontBack, double leftRight, double length, double width)
+        {
+            var absFrontBack = Math.Abs(frontBack);
+            var absLeftRight = Math.Abs(leftRight);
+
+            // Tunable thresholds:
+            // lateralDeadzone: if lateral offset is smaller than this, treat as "center" (not left/right).
+            // lateralThreshold: how far to the side we still consider "close" (use car width as proxy).
+            // longitudinalThreshold: how far forward/back we still consider "close" (allow a couple car widths).
+            double lateralDeadzone = Math.Max(width * 0.15, 0.3);       // avoid flagging tiny lateral jitter
+            double lateralThreshold = Math.Max(width * 0.6, 1.0);
+            double longitudinalThreshold = Math.Max(width * 2.0, 2.0);
+
+            // If car is effectively centered laterally, it's not left/right close.
+            if (absLeftRight < lateralDeadzone) return false;
+
+            // Require both lateral AND longitudinal proximity to consider it "close" on a side.
+            return absLeftRight <= lateralThreshold && absFrontBack <= longitudinalThreshold;
+            //return absFrontBack <= longitudinalThreshold || 
+            //return absFrontBack < absLeftRight || absFrontBack <= length;
+        }
+
+        public static double DistanceFromZero(Vector3 v)
+        {
+            return Math.Sqrt(v.X * v.X + v.Z * v.Z);
+        }
     }
 }

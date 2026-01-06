@@ -19,5 +19,6 @@ namespace R3E.API
 
         TelemetryData Data { get; }
         SectorData SectorData { get; }
+        RadarData RadarData { get; }
     }
 }
