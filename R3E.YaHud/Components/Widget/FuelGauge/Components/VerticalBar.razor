@@ -1,6 +1,6 @@
 ﻿<div class="vertical-bar">
     <div class="vertical-bar-track" style="background-color:@BackgroundColor">
-        <div class="vertical-bar-fill" style="height:@PercentRaw; background-color:@PrimaryColor;">
+        <div class="vertical-bar-fill" style="height:@Percent; background-color:@PrimaryColor;">
         </div>
     </div>
 </div>
@@ -12,7 +12,7 @@
     [Parameter] public string PrimaryColor { get; set; } = "white";
     [Parameter] public string BackgroundColor { get; set; } = "darkgray";
 
-    string PercentRaw =>
+    string Percent =>
         Max == Min
             ? "0%"
             : (Math.Clamp((Value - Min) / (Max - Min) * 100.0, 0.0, 100.0)
