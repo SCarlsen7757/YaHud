@@ -2,6 +2,8 @@
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
 @using R3E.API
+@using R3E.API.Models
+@using R3E.API.Radar
 @using System.Numerics
 @using System.Globalization
 @inherits HudWidgetBase<RadarSettings>
@@ -33,17 +35,16 @@
     private static readonly string RadarGridImagePath = $"assets/img/radar/radar-grid.png";
     private readonly StylingElement RadarStyling = new StylingElement();
 
-    private Dictionary<int, DriverState> drivers = new Dictionary<int, DriverState>();
+    // UI state only
     private List<int> activeDriverSlots = new List<int>();
     private readonly Dictionary<int, StylingElement> driverStyling = new Dictionary<int, StylingElement>();
-    private bool RadarPointer = true;
     private ElementReference radarElement;
     private double radarWidth;
     private DateTime lastAlertUtc = DateTime.MinValue;
     private TimeSpan alertCooldown = new TimeSpan(0, 0, 0, 0, 200);
     private readonly double pointerStartRangeFactor = 1.1;
     private readonly double opacityPowerFactor = 0.5;
-    private readonly int ordinalTranslateVertialOffset = 150; // Vertical offset in px to position ordinal labels relative to the radar center (tuned for the base radar dimensions)
+    private readonly int ordinalTranslateVertialOffset = 150; // tuned for base radar dimensions
 
     public Radar()
     {
@@ -54,6 +55,7 @@
 
     protected override void UpdateWithTestData()
     {
+        // keep test-rendering so editor previews still work
         activeDriverSlots.Clear();
         driverStyling.Clear();
 
@@ -97,7 +99,6 @@
             _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
             lastAlertUtc = DateTime.UtcNow;
         }
-
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -109,145 +110,111 @@
                 "radarInterop.getOffsetWidth",
                 radarElement
             );
-            // preload an effect file (wwwroot/assets/sounds/alert.mp3)
+            // preload beep
             _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
             _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
-            // optionally unlock on first user gesture
             _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
             StateHasChanged();
         }
-
     }
 
     protected override void Update()
     {
         if (Settings is null) return;
-        R3E.Data.Shared data = TelemetryService.Data.Raw;
-        if (data.DriverData == null)
-            return;
 
-        alertCooldown = new TimeSpan(0, 0, 0, 0, Settings.BeepingInterval);
+        var radarModel = TelemetryService.RadarData;
+        if (radarModel is null) return;
 
-        foreach (var driver in data.DriverData)
-        {
-            drivers.TryAdd(driver.DriverInfo.SlotId, new DriverState());
-        }
+        const string driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
+        const string driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
 
-        var rotationMatrix = RadarCalculator.RotationMatrixFromEuler(data.Player.Orientation);
+        // set alert cooldown from settings
+        alertCooldown = TimeSpan.FromMilliseconds(Settings.BeepingInterval);
+
+        // if radar hasn't been measured yet, skip visual layout
+        if (radarWidth <= 0) return;
+
+        // snapshot for rendering
+        var snapshot = radarModel.DriverStates ?? new Dictionary<int, RadarDriverSnapshot>();
+
+        activeDriverSlots.Clear();
+        foreach (var k in snapshot.Keys.OrderBy(k => k))
+            activeDriverSlots.Add(k);
+
+        // Build styling for each visible driver
+        driverStyling.Clear();
+
         var pointerStartRange = Settings.RadarRange * pointerStartRangeFactor;
         var radarFadeRange = Settings.RadarRange + Settings.RadarFadeRange;
 
-        var ownDriverCandidates = data.DriverData
-            .Where(d => d.DriverInfo.UserId == data.Player.UserId)
-            .ToList();
-        if (ownDriverCandidates.Count == 0)
-            return;
-        var ownDriver = ownDriverCandidates[0];
-
-        var ownPlace = ownDriver.Place;
-
-        var speed = RadarCalculator.MpsToKph(ownDriver.CarSpeed);
-
-        foreach (var driver in data.DriverData)
+        float carSpeed = 0;
+        if (radarModel.Raw.DriverData != null)
         {
-            var slot = driver.DriverInfo.SlotId;
-            if (ownPlace != driver.Place)
-            {
-                drivers[slot].RelativePos = RadarCalculator.RotateVector(rotationMatrix, RadarCalculator.SubtractVector(ownDriver.Position, driver.Position));
-                var tmp = RadarCalculator.SubtractVector(driver.Orientation, ownDriver.Orientation);
-                drivers[slot].RelativeOri = new Vector3(tmp.X, tmp.Y, tmp.Z);
-            }
-            drivers[slot].DriverData = driver;
+            var ownDriverCandidates = radarModel.Raw.DriverData
+                .Where(d => d.DriverInfo.UserId == radarModel.Raw.Player.UserId)
+                .ToList();
+
+            if (ownDriverCandidates.Count == 0)
+                return;
+            var ownDriver = ownDriverCandidates[0];
+            carSpeed = ownDriver.CarSpeed;  
         }
 
-        var closeBySlot = drivers
-            .Where(kvp => DistanceFromZero(kvp.Value.RelativePos) < radarFadeRange)
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        double? closest = null;
-        int closeLeft = 0;
-        int closeRight = 0;
 
-        foreach (var kv in drivers)
+        double? closest = radarModel.ClosestDistance;
+
+        var closeBySlot = snapshot.Where(kvp => kvp.Value.Distance < radarFadeRange).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        foreach (var kv in snapshot)
         {
-            var slotId = kv.Key;
-            if (!activeDriverSlots.Contains(slotId))
-                activeDriverSlots.Add(slotId);
-            if (!driverStyling.ContainsKey(slotId))
+            var slot = kv.Key;
+            if (!closeBySlot.TryGetValue(slot, out var state))
             {
-                var se = new StylingElement();
-                se.SetStyle("display", "none");
-                se.Classes.Add("radar-car");
-                driverStyling[slotId] = se;
-            }
-        }
-
-        foreach (var childSlotId in activeDriverSlots)
-        {
-            if (!closeBySlot.TryGetValue(childSlotId, out var state))
-            {
-                if (driverStyling.TryGetValue(childSlotId, out var stylingHidden))
+                if (driverStyling.TryGetValue(slot, out var styllingHidden))
                 {
-                    stylingHidden.SetStyle("display", "none");
-                    driverStyling[childSlotId] = stylingHidden;
-                }
-                else
+                    styllingHidden.SetStyle("display", null);
+                    driverStyling[slot] = styllingHidden;
+                } else
                 {
                     var hidden = new StylingElement();
                     hidden.SetStyle("display", "none");
                     hidden.Classes.Add("radar-car");
-                    driverStyling[childSlotId] = hidden;
+                    driverStyling[slot] = hidden;
                 }
-
                 continue;
             }
 
-            if (!driverStyling.TryGetValue(childSlotId, out var child))
+            if (!driverStyling.TryGetValue(slot, out var child))
             {
                 child = new StylingElement();
                 child.Classes.Add("radar-car");
                 child.SetStyle("display", "none");
-                driverStyling[childSlotId] = child;
+                driverStyling[slot] = child;
             }
 
-            var driverState = state;
-            var driverRotation = driverState.RelativeOri.Y;
-            var driverLeftRight = driverState.RelativePos.X;
-            var driverFrontBack = driverState.RelativePos.Z;
 
-            var carWidth = (double)driverState.DriverData.DriverInfo.CarWidth;
-            var carLength = (double)driverState.DriverData.DriverInfo.CarLength;
 
-            var distance = DistanceFromZero(driverState.RelativePos);
+            var driverState = kv.Value;
+           
+            child.Classes.Add("radar-car");
 
-            if (distance < Settings.RadarRange)
+            // compute scaled size
+            var width = driverState.CarWidth / Settings.RadarRange * radarWidth / 2;
+            var height = driverState.CarLength / Settings.RadarRange * radarWidth / 2;
+
+            if (/* Settings.RadarPointer */false && driverState.Distance > pointerStartRange)
             {
-                if (driverLeftRight < 0 && IsCarClose(driverFrontBack, driverLeftRight, carLength))
-                    closeLeft = 1;
-                else if (driverLeftRight > 0 && IsCarClose(driverFrontBack, driverLeftRight, carLength))
-                    closeRight = 1;
-            }
-
-            driverFrontBack = -driverFrontBack;
-
-            var width = carWidth / Settings.RadarRange * radarWidth / 2;
-            var height = carLength / Settings.RadarRange * radarWidth / 2;
-
-            string transformStr;
-            string opacityStr;
-
-            if (RadarPointer && distance > pointerStartRange)
-            {
-                var pointerRotation = RadarCalculator.GetRadarPointerRotation(distance, driverState.RelativePos.X, driverState.RelativePos.Z);
+                // pointer rendering
+                var pointerRotation = RadarCalculator.GetRadarPointerRotation(driverState.Distance, driverState.RelativePos.X, driverState.RelativePos.Z);
                 var fadeDenominator = Settings.RadarRange - radarFadeRange;
                 double pointerOpacity;
                 if (fadeDenominator > 0)
                 {
-                    pointerOpacity = Math.Pow((distance - radarFadeRange) / fadeDenominator, opacityPowerFactor);
+                    pointerOpacity = Math.Pow((driverState.Distance - radarFadeRange) / fadeDenominator, opacityPowerFactor);
                 }
                 else
                 {
-                    // Fallback to fully visible pointer if configuration would cause division by zero
                     pointerOpacity = 1.0;
                 }
 
@@ -257,88 +224,78 @@
                 child.SetStyle("width", FmtPx(width));
                 child.SetStyle("height", "20px");
                 child.SetStyle("translate", "-50% -50%");
-                transformStr = driverState.RelativePos.Z > 0 ? $"rotate({Fmt(pointerRotation)}rad) translate3d(0px,-{FmtPx(ordinalTranslateVertialOffset)},0px)" : $"rotate({Fmt(pointerRotation)}rad) translate3d(0px,{FmtPx(ordinalTranslateVertialOffset)},0px)";
-                child.SetStyle("transform", transformStr);
-                opacityStr = Fmt(pointerOpacity);
-                child.SetStyle("opacity", opacityStr);
 
-                driverStyling[childSlotId] = child;
+                string transformStr = driverState.RelativePos.Z > 0
+                    ? $"rotate({Fmt(pointerRotation)}rad) translate3d(0px,-{FmtPx(ordinalTranslateVertialOffset)},0px)"
+                    : $"rotate({Fmt(pointerRotation)}rad) translate3d(0px,{FmtPx(ordinalTranslateVertialOffset)},0px)";
+
+                child.SetStyle("transform", transformStr);
+                child.SetStyle("opacity", Fmt(pointerOpacity));
             }
             else
             {
-                var leftVal = (driverLeftRight / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - width / 2;
-                var topVal = (driverFrontBack / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2;
-
-                transformStr = $"translate3d({FmtPx(leftVal)},{FmtPx(topVal)},0) rotate({Fmt(driverRotation)}rad)";
+                // full-car rendering on radar plane
+                var leftVal = (driverState.RelativePos.X / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - width / 2;
+                var topVal = (driverState.RelativePos.Z / Settings.RadarRange) * radarWidth / 2 + radarWidth / 2 - height / 2;
 
                 child.SetStyle("display", null);
-                child.SetStyle("background-color", ownPlace == driverState.DriverData.Place ? "white" : "red");
+                child.SetStyle("background-color", driverState.IsSelf ? "white" : "red");
                 child.SetStyle("border-radius", "6px");
 
-                if (!Settings.Use3DTranslate){
+                if (!Settings.Use3DTranslate)
+                {
                     child.SetStyle("left", FmtPx(leftVal));
                     child.SetStyle("top", FmtPx(topVal));
-                    child.SetStyle("transform", $"rotate({Fmt(driverRotation)}rad)");
+                    child.SetStyle("transform", $"rotate({Fmt(driverState.RotationYaw)}rad)");
                 }
 
                 child.SetStyle("width", FmtPx(width));
                 child.SetStyle("height", FmtPx(height));
-
                 child.SetStyle("translate", "none");
                 if (Settings.Use3DTranslate)
-                    child.SetStyle("transform", $"{transformStr}");
+                    child.SetStyle("transform", $"translate3d({FmtPx(leftVal)},{FmtPx(topVal)},0) rotate({Fmt(driverState.RotationYaw)}rad)");
                 child.SetStyle("opacity", "1");
+            }
 
-                driverStyling[childSlotId] = child;
-           }
-
-            if (ownDriver.DriverInfo.SlotId == driverState.DriverData.DriverInfo.SlotId)
+            if (driverState.Distance < Settings.RadarRange)
             {
+                if (radarModel.CloseLeft)
+                    RadarStyling.AppendStyleStringIfNotExist("background-image", $",url({driverCloseLeftImg})");
+                else
+                    RadarStyling.RemoveStyleString("background-image", $",url({driverCloseLeftImg})");
+
+                if (radarModel.CloseRight)
+                    RadarStyling.AppendStyleStringIfNotExist("background-image", $",url({driverCloseRightImg})");
+                else
+                    RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
+            }
+
+
+            if (driverState.IsSelf)
                 child.Classes.Add("radar-car-self");
-                driverStyling[childSlotId] = child;
-            }
-            else
-            {
-                if (closest == null || distance < closest)
-                    closest = distance;
 
-                child.Classes.Remove("radar-car-self");
-                driverStyling[childSlotId] = child;
-            }
+            driverStyling[slot] = child;
+
+
         }
 
-        const string driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
-        const string driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
 
-        if (closeLeft == 1)
-        {
-            RadarStyling.AppendStyleString("background-image", $",url({driverCloseLeftImg})");
-        }
-        else
-        {
-            RadarStyling.RemoveStyleString("background-image", $",url({driverCloseLeftImg})");
-        }
-        if (closeRight == 1)
-        {
-            RadarStyling.AppendStyleString("background-image", $",url({driverCloseRightImg})");
-        }
-        else
-        {
-            RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
-        }
 
-        if (Settings.RadarBeeping && (closeLeft == 1 || closeRight == 1) && speed >= Settings.MinBeepSpeed && closest.HasValue)
+
+
+        // Beeping: widget still controls audio playback using model summary
+        if (Settings.RadarBeeping && (radarModel.CloseLeft || radarModel.CloseRight) && closest.HasValue)
         {
-            if ((DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
+            var speed = RadarCalculator.MpsToKph(carSpeed);
+            if (speed >= Settings.MinBeepSpeed && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
             {
                 var proximity = 1 - closest.Value / Settings.RadarRange;
-                _ = PlayAlert(proximity, closeLeft * -1 + closeRight * 1);
+                _ = PlayAlert(proximity, radarModel.CloseLeft ? -1 : 1);
                 lastAlertUtc = DateTime.UtcNow;
             }
-
         }
 
-
+        // Auto-hide: driven by closest distance from model
         if (Settings.AutoHideRadar)
         {
             if (closest == null || closest > radarFadeRange)
@@ -361,18 +318,6 @@
 
             RadarStyling.SetStyle("opacity",Fmt(opacityValue));
         }
-    }
-
-    private static bool IsCarClose(double frontBack, double leftRight, double length)
-    {
-        var absFrontBack = Math.Abs(frontBack);
-        var absLeftRight = Math.Abs(leftRight);
-        return absFrontBack < absLeftRight || absFrontBack <= length;
-    }
-
-    public double DistanceFromZero(Vector3 v)
-    {
-        return Math.Sqrt(v.X * v.X + v.Z * v.Z);
     }
 
     private static string Fmt(double v) =>
