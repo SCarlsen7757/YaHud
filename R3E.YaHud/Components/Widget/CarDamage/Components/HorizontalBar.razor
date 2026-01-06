@@ -1,0 +1,25 @@
+﻿<div>
+    <div style="width: 95%; background-color: @BackgroundColor; border-radius: 4px; overflow: hidden;">
+        <div style="
+                    width:@Percent;
+                    background-color:@PrimaryColor;
+                    height:16px;">
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public double Min { get; set; } = 0;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string PrimaryColor { get; set; } = "white";
+    [Parameter] public string BackgroundColor { get; set; } = "darkgray";
+
+    string Percent =>
+        Max == Min
+            ? "0%"
+            : (Math.Clamp((Value - Min) / (Max - Min) * 100.0, 0.0, 100.0)
+                .ToString("0.##")
+                .Replace(",", ".") + "%");
+
+}
