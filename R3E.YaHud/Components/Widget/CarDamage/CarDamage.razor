@@ -13,7 +13,7 @@
         <div class="damage-item">
             <div class="damage-label" style="color: @AeroDamageColor">Aero</div>
             <div class="damage-bar"><HorizontalBar Value="@AeroDamage" Min="0" Max="1" PrimaryColor="@AeroDamageColor" BackgroundColor="#333333" /></div>
-        </div>  
+        </div>
         <div class="damage-item">
             <div class="damage-label" style="color: @TransmissionDamageColor">Transmission</div>
             <div class="damage-bar"><HorizontalBar Value="@TransmissionDamage" Min="0" Max="1" PrimaryColor="@TransmissionDamageColor" BackgroundColor="#333333" /></div>
@@ -52,11 +52,6 @@
         UpdateInterval = TimeSpan.FromMilliseconds(500);
     }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
     protected override void Update()
     {
         var carDamage = TelemetryService.Data.Raw.CarDamage;
@@ -75,10 +70,11 @@
 
     private string DamageColor(float damage)
     {
-        if(damage >= Settings!.WornThreshold)
+        if (damage >= Settings!.WornThreshold)
         {
             return Settings!.PristineColor;
-        }else if(damage >= Settings!.DamagedThreshold)
+        }
+        else if (damage >= Settings!.DamagedThreshold)
         {
             return Settings!.WornColor;
         }
@@ -99,11 +95,6 @@
         AeroDamageColor = DamageColor(AeroDamage);
         TransmissionDamageColor = DamageColor(TransmissionDamage);
         SuspensionDamageColor = DamageColor(SuspensionDamage);
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 
 }

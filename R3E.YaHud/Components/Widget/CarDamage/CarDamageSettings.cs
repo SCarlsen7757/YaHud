@@ -36,6 +36,6 @@ namespace R3E.YaHud.Components.Widget.CarDamage
             Description = "The color of the bar when the car is in damaged state.",
             ViewMode = SettingsViewMode.Expert)]
 
-        public string DamagedColor { get; set; } = "#ffff0000";
+        public string DamagedColor { get; set; } = "#ff0000";
     }
 }
