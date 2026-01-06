@@ -20,23 +20,16 @@
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 2px;
+    width: 95px; 
+    text-align: left;
 }
 
 .damage-item {
     margin: 2px 0;
-}
-
-.damage-item {
     display: flex;
     align-items: center; 
     gap: 0px 8px;
     margin: 0; 
-}
-
-.damage-label {
-    margin-bottom: 0; 
-    width: 95px; 
-    text-align: left;
 }
 
 .damage-bar {
