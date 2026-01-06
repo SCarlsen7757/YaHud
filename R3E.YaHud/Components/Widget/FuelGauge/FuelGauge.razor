@@ -1,0 +1,81 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.FuelGauge.Components
+@inherits HudWidgetBase<FuelGaugeSettings>
+@implements IDisposable
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="fuel-gauge-widget">
+        <div class="fuel-component">
+            <VerticalBar @key="FuelLevel"
+                         Min="0.0d"
+                         Max="@FuelCapacity"
+                         Value="@FuelLevel"
+                         PrimaryColor="@ValueColor"
+                         BackgroundColor="@BarBackgroundColor" />
+        </div>
+        <p class="fuel-level-text" style="color:@ValueColor">@FuelLevel</p>
+        <svg fill="@ValueColor">
+            <R3E.YaHud.Components.UI.Components.Icon Name="gas-pump" />
+        </svg>
+    </div>
+}
+
+@code {
+
+    public override string ElementId { get => "fuelGaugeWidget"; }
+    public override string Name => "Fuel Gauge";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 99;
+    public override double DefaultYPercent => 90;
+
+    public override bool Collidable => true;
+
+    public double FuelCapacity { get; set; } = 0.0;
+    public double FuelLevel { get; set; } = 0.0;
+
+    private string ValueColor { get; set; } = "#ffffff";
+    private string BarBackgroundColor => "#454545";
+
+    public FuelGauge()
+    {
+        UpdateInterval = TimeSpan.FromMilliseconds(500);
+    }
+
+    protected override void Update()
+    {
+        var data = TelemetryService.Data.Raw;
+        FuelCapacity = data.FuelCapacity;
+        var fuelLevel = data.FuelLeft;
+
+        FuelLevel = fuelLevel < 100 ? Math.Round(fuelLevel, 1) : fuelLevel;
+
+        var percent = CalculateFuelPercent(FuelLevel, FuelCapacity, 1);
+        ValueColor = percent < 10 ? Settings!.LowColor : Settings!.NormalColor;
+
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        FuelCapacity = 100.0;
+        FuelLevel = 75.5;
+
+        var percent = CalculateFuelPercent(FuelLevel, FuelCapacity, 1);
+        ValueColor = percent < 10 ? Settings!.LowColor : Settings!.NormalColor;
+    }
+
+    static double CalculateFuelPercent(double fuelLevel, double fuelCapacity, int decimals = 1)
+    {
+        if (fuelCapacity <= 0)
+        {
+            // No valid capacity; avoid division by zero.
+            return 0.0;
+        }
+
+        double percent = (fuelLevel / fuelCapacity) * 100.0;
+        // Clamp between 0 and 100
+        percent = Math.Max(0.0, Math.Min(100.0, percent));
+        return Math.Round(percent, decimals);
+    }
+}
