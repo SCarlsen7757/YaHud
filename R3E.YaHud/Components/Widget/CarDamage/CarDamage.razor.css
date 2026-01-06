@@ -2,7 +2,7 @@
     z-index: 5000;
     text-align: center;
     width: 300px;
-    height: 100px;
+    height: 110px;
     position: absolute;
     border-radius: 4px;
     background-color: rgba(2, 0, 0, 0.5);
@@ -13,7 +13,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-evenly; 
-    padding: 3px; 
+    padding: 3px 6px 3px 6px; 
 }
 
 .damage-label {
@@ -45,4 +45,9 @@
 
 .damage-bar > div {
     width: 100%;
+}
+
+/* Make inner bar slightly shorter in height for compactness */
+.damage-bar > div > div {
+    height: 18px;
 }
