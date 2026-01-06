@@ -14,14 +14,14 @@
     [Parameter] public required string Name { get; set; }
 
     private string? svgMarkup;
-    private static readonly Dictionary<string, string> _cache = new();
+    private static readonly Dictionary<string, string> cache = new();
 
     protected override async Task OnParametersSetAsync()
     {
         if (string.IsNullOrWhiteSpace(Name))
             return;
 
-        if (_cache.TryGetValue(Name, out var cached))
+        if (cache.TryGetValue(Name, out var cached))
         {
             svgMarkup = cached;
             return;
@@ -37,7 +37,7 @@
         var raw = await File.ReadAllTextAsync(file);
         // (optional) strip XML declaration and inject class like before
         raw = Regex.Replace(raw, "<\\?xml.*?\\?>", string.Empty, RegexOptions.Singleline);
-        _cache[Name] = raw;
+        cache[Name] = raw;
         svgMarkup = raw;
     }
 }
