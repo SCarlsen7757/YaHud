@@ -1,0 +1,110 @@
+# Reusable workflow: Builds all projects and uploads artifacts
+name: Build Artifacts
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version string for artifact naming"
+        required: true
+        type: string
+
+jobs:
+  build-relay:
+    name: Build R3E.Relay (Windows x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.x.x"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.Relay/R3E.Relay.csproj
+
+      - name: Publish R3E.Relay
+        run: |
+          dotnet publish ./R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.Relay-win-x64
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path ./publish/R3E.Relay-win-x64/* -DestinationPath ./R3E.Relay-win-x64-v${{ inputs.version }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: R3E.Relay-win-x64
+          path: ./R3E.Relay-win-x64-v${{ inputs.version }}.zip
+          retention-days: 7
+
+  build-yahud-windows:
+    name: Build R3E.YaHud (Windows x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.x.x"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.YaHud/R3E.YaHud.csproj
+
+      - name: Publish R3E.YaHud
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.YaHud-win-x64
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path ./publish/R3E.YaHud-win-x64/* -DestinationPath ./R3E.YaHud-win-x64-v${{ inputs.version }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: R3E.YaHud-win-x64
+          path: ./R3E.YaHud-win-x64-v${{ inputs.version }}.zip
+          retention-days: 7
+
+  build-yahud-linux:
+    name: Build R3E.YaHud (Linux x64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.x.x"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.YaHud/R3E.YaHud.csproj
+
+      - name: Publish R3E.YaHud
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/R3E.YaHud-linux-x64
+
+      - name: Create ZIP archive
+        run: |
+          cd ./publish && zip -r ../R3E.YaHud-linux-x64-v${{ inputs.version }}.zip R3E.YaHud-linux-x64/*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: R3E.YaHud-linux-x64
+          path: ./R3E.YaHud-linux-x64-v${{ inputs.version }}.zip
+          retention-days: 7
