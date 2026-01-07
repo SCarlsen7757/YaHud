@@ -91,21 +91,16 @@ namespace R3E.YaHud.Components.Widget.Radar
             var absFrontBack = Math.Abs(frontBack);
             var absLeftRight = Math.Abs(leftRight);
 
-            // Tunable thresholds:
-            // lateralDeadzone: if lateral offset is smaller than this, treat as "center" (not left/right).
-            // lateralThreshold: how far to the side we still consider "close" (use car width as proxy).
-            // longitudinalThreshold: how far forward/back we still consider "close" (allow a couple car widths).
-            double lateralDeadzone = Math.Max(width * 0.15, 0.3);       // avoid flagging tiny lateral jitter
-            double lateralThreshold = Math.Max(width * 0.6, 1.0);
-            double longitudinalThreshold = Math.Max(width * 2.0, 2.0);
 
-            // If car is effectively centered laterally, it's not left/right close.
-            if (absLeftRight < lateralDeadzone) return false;
+            double marginFactor = 0.20; // should possibly be adjusted.
 
-            // Require both lateral AND longitudinal proximity to consider it "close" on a side.
-            return absLeftRight <= lateralThreshold && absFrontBack <= longitudinalThreshold;
+
+            if (absFrontBack <= (length * marginFactor)) return false;
+
+
+            //return absLeftRight <= lateralThreshold && absFrontBack <= longitudinalThreshold;
             //return absFrontBack <= longitudinalThreshold || 
-            //return absFrontBack < absLeftRight || absFrontBack <= length;
+            return absFrontBack < absLeftRight || absFrontBack <= length;
         }
 
         public static double DistanceFromZero(Vector3 v)

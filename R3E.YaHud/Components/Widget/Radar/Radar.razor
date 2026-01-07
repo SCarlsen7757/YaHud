@@ -125,6 +125,9 @@
         var radarModel = TelemetryService.RadarData;
         if (radarModel is null) return;
 
+        bool closeLeft = false;
+        bool closeRight = false;
+
         const string driverCloseLeftImg = "assets/img/radar/radar-grid-warning-left.png";
         const string driverCloseRightImg = "assets/img/radar/radar-grid-warning-right.png";
 
@@ -196,7 +199,7 @@
 
 
             var driverState = kv.Value;
-           
+
             child.Classes.Add("radar-car");
 
             // compute scaled size
@@ -259,15 +262,27 @@
 
             if (driverState.Distance < Settings.RadarRange)
             {
-                if (radarModel.CloseLeft)
-                    RadarStyling.AppendStyleStringIfNotExist("background-image", $",url({driverCloseLeftImg})");
-                else
-                    RadarStyling.RemoveStyleString("background-image", $",url({driverCloseLeftImg})");
+                // if(!child.ToString().Contains("display: none"))
+                // {
+                //     if (driverState.CloseLeft/*  radarModel.CloseLeft */)
+                //     {
+                //         RadarStyling.AppendStyleString("background-image", $",url({driverCloseLeftImg})");
+                //         //var debug = snapshot.Where(kvp => kvp.Value.)
+                //         //Console.WriteLine($"");
+                //     }
+                //     else
+                //         RadarStyling.RemoveStyleString("background-image", $",url({driverCloseLeftImg})");
 
-                if (radarModel.CloseRight)
-                    RadarStyling.AppendStyleStringIfNotExist("background-image", $",url({driverCloseRightImg})");
-                else
-                    RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
+                //     if (driverState.CloseRight/* radarModel.CloseRight */)
+                //     {
+                //         RadarStyling.AppendStyleString("background-image", $",url({driverCloseRightImg})");
+                //         //Console.WriteLine($"");
+                //     }
+                //     else
+                //         RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
+                // }
+                closeLeft |= driverState.CloseLeft;
+                closeRight |= driverState.CloseRight;
             }
 
 
@@ -280,11 +295,20 @@
         }
 
 
+        if (closeLeft)
+            RadarStyling.AppendStyleString("background-image", $",url({driverCloseLeftImg})");
+        else
+            RadarStyling.RemoveStyleString("background-image", $",url({driverCloseLeftImg})");
+
+        if (closeRight)
+            RadarStyling.AppendStyleString("background-image", $",url({driverCloseRightImg})");
+        else
+            RadarStyling.RemoveStyleString("background-image", $",url({driverCloseRightImg})");
 
 
 
         // Beeping: widget still controls audio playback using model summary
-        if (Settings.RadarBeeping && (radarModel.CloseLeft || radarModel.CloseRight) && closest.HasValue)
+        if (Settings.RadarBeeping && (closeLeft || closeRight) && closest.HasValue)
         {
             var speed = RadarCalculator.MpsToKph(carSpeed);
             if (speed >= Settings.MinBeepSpeed && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
