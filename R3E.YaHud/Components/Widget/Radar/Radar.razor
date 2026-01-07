@@ -103,7 +103,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await base.OnAfterRenderAsync(firstRender);
         if (firstRender && radarElement.Context != null)
         {
             radarWidth = await JS.InvokeAsync<double>(
@@ -116,6 +115,7 @@
             _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
             StateHasChanged();
         }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     protected override void Update()
