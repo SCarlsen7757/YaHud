@@ -43,8 +43,7 @@ namespace R3E.API.Radar
                 logger.LogInformation("RadarService: session changed - clearing radar state.");
                 radarData.DriverStates = new Dictionary<int, RadarDriverSnapshot>();
                 radarData.ClosestDistance = null;
-                radarData.CloseLeft = false;
-                radarData.CloseRight = false;
+               
                 radarData.LastUpdatedUtc = DateTime.UtcNow;
 
                 if (data.Raw.LayoutLength > 0)
@@ -65,21 +64,15 @@ namespace R3E.API.Radar
             var snapshot = new Dictionary<int, RadarDriverSnapshot>(raw.NumCars);
 
             double? closest = null;
-            bool closeLeft = false;
-            bool closeRight = false;
 
-            // Find player driver entry
             var ownDriverCandidates = raw.DriverData.Where(d => d.DriverInfo.UserId == raw.Player.UserId).ToList();
             if (ownDriverCandidates.Count == 0)
             {
-                // No player; write raw and empty snapshot
                 lock (sync)
                 {
                     radarData.Raw = raw;
                     radarData.DriverStates = snapshot;
                     radarData.ClosestDistance = null;
-                    radarData.CloseLeft = false;
-                    radarData.CloseRight = false;
                     radarData.LastUpdatedUtc = DateTime.UtcNow;
                 }
                 return;
@@ -116,12 +109,10 @@ namespace R3E.API.Radar
 
                     if (relPos.X < 0 && RadarCalculator.IsCarClose(relPos.Z, relPos.X, d.DriverInfo.CarLength, d.DriverInfo.CarWidth))
                     {
-                        closeLeft = true;
                         driverCloseLeft = true;
                     }
                     if (relPos.X > 0 && RadarCalculator.IsCarClose(relPos.Z, relPos.X, d.DriverInfo.CarLength, d.DriverInfo.CarWidth))
                     {
-                        closeRight = true;
                         driverCloseRight = true; 
                     }
 
@@ -142,7 +133,6 @@ namespace R3E.API.Radar
                 }
                 else
                 {
-                    // self
                     snapshot[slot] = new RadarDriverSnapshot
                     {
                         SlotId = slot,
@@ -165,8 +155,6 @@ namespace R3E.API.Radar
                 radarData.Raw = raw;
                 radarData.DriverStates = snapshot;
                 radarData.ClosestDistance = closest;
-                radarData.CloseLeft = closeLeft;
-                radarData.CloseRight = closeRight;
                 radarData.LastUpdatedUtc = DateTime.UtcNow;
             }
         }

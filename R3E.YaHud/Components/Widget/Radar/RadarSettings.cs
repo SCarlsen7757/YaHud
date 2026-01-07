@@ -23,5 +23,8 @@ namespace R3E.YaHud.Components.Widget.Radar
         public bool RadarBeeping { get; set; } = false;
         [SettingType("Beeping interval", SettingsTypes.Number, 1, Description = "Interval of how fast the beeping runs", ViewMode = SettingsViewMode.Expert, Max = 5000, Min = 50)]
         public int BeepingInterval { get; set; } = 200;
+
+        [SettingType("Pointers outside range", SettingsTypes.Checkbox, 0, Description = "Option of showing cars as pointers if they are in the edge of the radar", ViewMode = SettingsViewMode.Intermediate)]
+        public bool RadarPointer { get; set; } = false;
     }
 }
