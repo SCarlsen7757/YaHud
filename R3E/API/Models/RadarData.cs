@@ -47,6 +47,8 @@ namespace R3E.API.Models
         public double CarWidth { get; init; }
         public double CarLength { get; init; }
         public bool IsSelf { get; init; }
+        public bool CloseLeft { get; init; }
+        public bool CloseRight { get; init; }
         public DriverData DriverData { get; init; } = default!;
     }
 }

@@ -94,6 +94,9 @@ namespace R3E.API.Radar
                 int slot = d.DriverInfo.SlotId;
                 if (slot < 0) continue;
 
+                bool driverCloseLeft = false;
+                bool driverCloseRight = false;  
+
                 if (ownPlace != d.Place)
                 {
                     // Compute vector from player to the other car (other.Position - own.Position),
@@ -112,9 +115,15 @@ namespace R3E.API.Radar
                         closest = distance;
 
                     if (relPos.X < 0 && RadarCalculator.IsCarClose(relPos.Z, relPos.X, d.DriverInfo.CarLength, d.DriverInfo.CarWidth))
+                    {
                         closeLeft = true;
+                        driverCloseLeft = true;
+                    }
                     if (relPos.X > 0 && RadarCalculator.IsCarClose(relPos.Z, relPos.X, d.DriverInfo.CarLength, d.DriverInfo.CarWidth))
+                    {
                         closeRight = true;
+                        driverCloseRight = true; 
+                    }
 
                     snapshot[slot] = new RadarDriverSnapshot
                     {
@@ -126,7 +135,9 @@ namespace R3E.API.Radar
                         CarWidth = d.DriverInfo.CarWidth,
                         CarLength = d.DriverInfo.CarLength,
                         IsSelf = false,
-                        DriverData = d
+                        DriverData = d,
+                        CloseLeft = driverCloseLeft,
+                        CloseRight = driverCloseRight
                     };
                 }
                 else
@@ -142,7 +153,9 @@ namespace R3E.API.Radar
                         CarWidth = d.DriverInfo.CarWidth,
                         CarLength = d.DriverInfo.CarLength,
                         IsSelf = true,
-                        DriverData = d
+                        DriverData = d,
+                        CloseRight = false,
+                        CloseLeft = false
                     };
                 }
             }
