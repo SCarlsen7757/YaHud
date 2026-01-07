@@ -62,6 +62,30 @@ The HUD will automatically connect to RaceRoom's shared memory.
 
 #### Linux (via Relay)
 
+
+To install Dotnet10 on Linux write the following commands in the terminal:
+
+ ```bash
+wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+sudo apt update
+ ```
+
+
+After you have done this, install the app by writing this command in the terminal:
+```bash
+sudo apt install dotnet-sdk-10.0`
+ ```
+
+Follow the instructions to install dotnet10 in the terminal. 
+When finished you can run this command to verify that you have installed Dotnet10 correct:
+```bash
+dotnet --version`
+
+It should show something like this: 
+`"10.0.100"
+ ```
+
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
 1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix
