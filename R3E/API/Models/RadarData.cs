@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using R3E.Data;
 
 namespace R3E.API.Models
 {
@@ -23,16 +22,6 @@ namespace R3E.API.Models
         /// Closest distance among drivers in the snapshot (meters), or null if none.
         /// </summary>
         public double? ClosestDistance { get; internal set; }
-
-        /// <summary>
-        /// True if at least one car is considered close on the left.
-        /// </summary>
-        public bool CloseLeft { get; internal set; }
-
-        /// <summary>
-        /// True if at least one car is considered close on the right.
-        /// </summary>
-        public bool CloseRight { get; internal set; }
 
         public DateTime LastUpdatedUtc { get; internal set; }
     }

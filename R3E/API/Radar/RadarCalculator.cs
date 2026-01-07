@@ -76,30 +76,12 @@ namespace R3E.YaHud.Components.Widget.Radar
             return mps * 3.6;
         }
 
-        // Heuristic to determine whether another car should be considered "close" on a side.
-        // Parameters:
-        //  - frontBack: longitudinal offset (positive in front of player)
-        //  - leftRight: lateral offset (positive = right, negative = left) after rotation into player-local coords
-        //  - length: the other car's length (meters) from telemetry
-        //
-        // We treat a car as "close" on a side only when:
-        //  - its lateral offset is within a tuned lateral threshold (based on car length),
-        //  - AND its longitudinal offset is within a tuned longitudinal window.
-        // The constants below are conservative defaults and can be tuned if needed.
+
         public static bool IsCarClose(double frontBack, double leftRight, double length, double width)
         {
             var absFrontBack = Math.Abs(frontBack);
             var absLeftRight = Math.Abs(leftRight);
 
-
-            double marginFactor = 0.20; // should possibly be adjusted.
-
-
-            if (absFrontBack <= (length * marginFactor)) return false;
-
-
-            //return absLeftRight <= lateralThreshold && absFrontBack <= longitudinalThreshold;
-            //return absFrontBack <= longitudinalThreshold || 
             return absFrontBack < absLeftRight || absFrontBack <= length;
         }
 
