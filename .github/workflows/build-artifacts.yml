@@ -23,7 +23,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.x.x"
+          dotnet-version: "10.x.x"
 
       - name: Restore dependencies
         run: dotnet restore R3E.Relay/R3E.Relay.csproj
@@ -56,7 +56,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.x.x"
+          dotnet-version: "10.x.x"
 
       - name: Restore dependencies
         run: dotnet restore R3E.YaHud/R3E.YaHud.csproj
@@ -89,7 +89,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.x.x"
+          dotnet-version: "10.x.x"
 
       - name: Restore dependencies
         run: dotnet restore R3E.YaHud/R3E.YaHud.csproj
