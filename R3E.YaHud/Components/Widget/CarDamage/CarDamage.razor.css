@@ -1,0 +1,46 @@
+﻿.car-damage-widget {
+    z-index: 5000;
+    text-align: center;
+    width: 300px;
+    height: 110px;
+    position: absolute;
+    border-radius: 4px;
+    background-color: rgba(2, 0, 0, 0.5);
+    white-space: nowrap; 
+    overflow: hidden;
+    box-sizing: border-box; 
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; 
+    padding: 3px 6px 3px 6px; 
+}
+
+.damage-label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    width: 95px; 
+    text-align: left;
+}
+
+.damage-item {
+    margin: 2px 0;
+    display: flex;
+    align-items: center; 
+    gap: 0px 8px;
+    margin: 0; 
+}
+
+.damage-bar {
+    flex: 1 1 auto; 
+}
+
+.damage-bar > div {
+    width: 100%;
+}
+
+/* Make inner bar slightly shorter in height for compactness */
+.damage-bar > div > div {
+    height: 18px;
+}
