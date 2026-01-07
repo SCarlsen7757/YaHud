@@ -21,5 +21,6 @@ namespace R3E.API
         TelemetryData Data { get; }
         SectorData SectorData { get; }
         FuelData FuelData { get; }
+        RadarData RadarData { get; }
     }
 }
