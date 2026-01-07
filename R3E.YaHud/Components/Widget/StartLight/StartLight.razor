@@ -4,7 +4,7 @@
 
 @if (Settings?.Visible ?? false)
 {
-    <div style="display: @(IsCountdownPhase || TestMode ? "block" : "none");">
+    <div style="visibility: @(IsCountdownPhase || TestMode ? "visible" : "hidden");">
         <div id=@ElementId class="start-light-widget text">
             <div class="lights-and-glows-container">
                 <div class="lights-container">

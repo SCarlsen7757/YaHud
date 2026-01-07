@@ -65,8 +65,11 @@ namespace R3E.YaHud.Components.Widget.Core
                 await InvokeAsync(StateHasChanged);
             }
 
-            if (Settings!.Visible && (firstRender || !visibleInitialized))
+            if (Settings?.Visible ?? false && (firstRender || !visibleInitialized))
             {
+                // Wait a bit for the DOM to be fully rendered and visible
+                await Task.Delay(100);
+
                 await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
 
                 visibleInitialized = true;
@@ -235,7 +238,7 @@ namespace R3E.YaHud.Components.Widget.Core
             }
             catch (ObjectDisposedException ex)
             {
-                Logger?.LogDebug(ex, "Component disposed during OnWindowResize for widget {ElementId}", ElementId);
+                Logger?.LogDebug(ex, "Component disposed during OnWindowResize for {ElementId}", ElementId);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
             {

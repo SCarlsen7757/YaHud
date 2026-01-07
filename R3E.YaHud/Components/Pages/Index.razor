@@ -12,12 +12,6 @@
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.UI.Components
 @using R3E.YaHud.Components.Widget
-@using R3E.YaHud.Components.Widget.Clock
-@using R3E.YaHud.Components.Widget.FuelCalc
-@using R3E.YaHud.Components.Widget.MoTec
-@using R3E.YaHud.Components.Widget.UserInputs
-@using R3E.YaHud.Components.Widget.StartLight
-@using R3E.YaHud.Components.Widget.Radar
 
 @if (!locked)
 {
@@ -59,17 +53,17 @@
 }
 
 <!-- Widgets are always in the DOM but hidden via CSS based on visibility state -->
-<div style="display: @(WidgetsVisible ? "block" : "none");">
-    <Clock />
-    <MoTec />
-    <UserInputs />
+<div style="visibility: @(WidgetsVisible ? "visible" : "hidden");">
+    <R3E.YaHud.Components.Widget.Clock.Clock />
+    <R3E.YaHud.Components.Widget.MoTec.MoTec />
+    <R3E.YaHud.Components.Widget.UserInputs.UserInputs />
     <R3E.YaHud.Components.Widget.CarDamage.CarDamage />
-    <FuelCalc />
+    <R3E.YaHud.Components.Widget.FuelCalc.FuelCalc />
     <R3E.YaHud.Components.Widget.FuelGauge.FuelGauge />
-    <StartLight />
-    <RelativeDriver />
-    <LapProgress />
-    <Radar/>
+    <R3E.YaHud.Components.Widget.StartLight.StartLight />
+    <R3E.YaHud.Components.Widget.RelativeDriver.RelativeDriver />
+    <R3E.YaHud.Components.Widget.LapProgress.LapProgress />
+    <R3E.YaHud.Components.Widget.Radar.Radar />
 </div>
 
 @code {
