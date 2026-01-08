@@ -134,8 +134,8 @@
         // set alert cooldown from settings
         alertCooldown = TimeSpan.FromMilliseconds(Settings.BeepingInterval);
 
-        // if radar hasn't been measured yet, skip visual layout
-        if (radarWidth <= 0) return;
+        // // if radar hasn't been measured yet, skip visual layout
+        // if (radarWidth <= 0) return;
 
         // snapshot for rendering
         var snapshot = radarModel.DriverStates ?? new Dictionary<int, RadarDriverSnapshot>();
