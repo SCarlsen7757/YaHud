@@ -137,6 +137,9 @@
         // // if radar hasn't been measured yet, skip visual layout
         // if (radarWidth <= 0) return;
 
+        if (radarWidth <= 0)
+            radarWidth = 200; // default size before first render measurement
+
         // snapshot for rendering
         var snapshot = radarModel.DriverStates ?? new Dictionary<int, RadarDriverSnapshot>();
 
