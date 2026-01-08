@@ -292,9 +292,6 @@ A: No. Versions are calculated by GitVersion based on Git history and tags. To s
 **Q: What happens if I name my branch incorrectly?**  
 A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `hotfix/`.
 
-**Q: How do I test the workflows without merging?**  
-A: Create a PR and the validation workflows will run automatically. The version preview will show you what version would be created.
-
 ---
 
 For questions or issues with this process, please open an issue or contact the maintainers.

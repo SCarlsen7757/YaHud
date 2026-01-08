@@ -17,16 +17,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/widget.css" />
-    <link rel="stylesheet" href="coloris.css" />
+    <link rel="stylesheet" href="css/hud-grid.css" />
+    <link rel="stylesheet" href="assets/coloris/css/coloris.css" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 </head>
 <body class="@CurrentFont no-select">
-    <Routes @rendermode="InteractiveServer" />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <script src="js/HudHelper.js"></script>
-    <script src="coloris.js"></script>
-    <script src="https://kit.fontawesome.com/0669c68f4a.js" crossorigin="anonymous"></script>
+    <script defer src="assets/coloris/js/coloris.js"></script>
+    <script defer src="assets/fontawesome/js/fontawesome.js"></script>
+    <script defer src="assets/fontawesome/js/solid.js"></script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>

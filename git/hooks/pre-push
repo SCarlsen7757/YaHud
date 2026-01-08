@@ -18,7 +18,7 @@ valid_patterns=(
     "^dev$"
     "^development$"
     "^features?/.+"
-    "^hotfixes?/.+"
+    "^(hotfix|hotfixes)/.+"
 )
 
 # Check if branch name matches any valid pattern

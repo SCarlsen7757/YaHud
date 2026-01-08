@@ -2,9 +2,11 @@
 @using R3E.YaHud.Components.UI.Components
 @using R3E.YaHud.Components.Widget
 @using R3E.YaHud.Components.Widget.Core
+@using System.ComponentModel
+@implements IDisposable
 
 <div class="overlay">
-    <div class="overlay-panel">
+    <div class="overlay-panel settings-panel">
         <!-- Header -->
         <div class="panel-header">
             <h3>Widget Settings</h3>
@@ -17,24 +19,21 @@
 
         <!-- Scrollable body -->
         <div class="panel-body">
-            <div class="settings-columns" style="display: flex; gap: 2rem;">
-                @foreach (var group in Widgets.GroupBy(w => w.Category))
+            <div class="groups-grid">
+                @foreach (var widget in Widgets)
                 {
-                    <div class="settings-column" style="min-width: 220px;">
-                        <h4>@group.Key</h4>
-                        <ul style="list-style: none; padding-left: 0;">
-                            @foreach (var widget in group)
-                            {
-                                <li style="margin-bottom: 1em;">
-                                    <strong>@widget.Name</strong>
-
-                                    <WidgetSettings Settings="widget.Settings" />
-
-                                    <div style="display: flex; align-items: center; gap: 0.5em; margin-top: 0.5em;">
-                                        <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
-                                    </div>
-                                </li>
-                            }
+                    <div class="group-column">
+                        <ul class="group-list">
+                            <li class="group-item">
+                                <div class="widget-header">
+                                    <strong class="widget-name">@widget.Name</strong>
+                                    <span class="widget-category">@widget.Category</span>
+                                </div>
+                                <WidgetSettings Settings="widget.Settings" />
+                                <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
+                                    <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 }
@@ -43,10 +42,10 @@
 
         <!-- Footer -->
         <div class="panel-footer button-group">
-            <button class="btn-primary" @onclick="OnClose">Close</button>
+            <button class="btn-primary" @onclick="OnClose" aria-label="Close settings panel">Close</button>
             @if (CurrentViewMode == SettingsViewMode.Expert)
             {
-                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()">Clear settings</button>
+                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()" aria-label="Clear all settings">Clear settings</button>
             }
         </div>
     </div>
@@ -66,7 +65,6 @@
             if (SettingsService.GlobalSettings.ViewMode != value)
             {
                 SettingsService.GlobalSettings.ViewMode = value;
-                // Trigger UI update
                 StateHasChanged();
             }
         }
@@ -76,5 +74,52 @@
     {
         CurrentViewMode = v;
         return Task.CompletedTask;
+    }
+
+    private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsPropertyChangedHandlers = new();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        var currentSettings = Widgets?
+            .Select(w => w.Settings)
+            .Where(s => s is not null)
+            .Cast<BasicSettings>()
+            .ToList() ?? new List<BasicSettings>();
+
+        var toRemove = settingsPropertyChangedHandlers.Keys.Except(currentSettings).ToList();
+        foreach (var s in toRemove)
+        {
+            s.PropertyChanged -= settingsPropertyChangedHandlers[s];
+            settingsPropertyChangedHandlers.Remove(s);
+        }
+
+        foreach (var s in currentSettings)
+        {
+            if (!settingsPropertyChangedHandlers.ContainsKey(s))
+            {
+                PropertyChangedEventHandler handler = (sender, args) =>
+                {
+                    if (string.IsNullOrEmpty(args?.PropertyName) || args.PropertyName == nameof(BasicSettings.Visible))
+                    {
+                        InvokeAsync(StateHasChanged);
+                    }
+                };
+
+                s.PropertyChanged += handler;
+                settingsPropertyChangedHandlers[s] = handler;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var kv in settingsPropertyChangedHandlers)
+        {
+            kv.Key.PropertyChanged -= kv.Value;
+        }
+
+        settingsPropertyChangedHandlers.Clear();
     }
 }

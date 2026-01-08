@@ -1,32 +1,177 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using R3E.API.Models;
+using R3E.API.Radar;
 using R3E.Data;
+using R3E.Extensions;
+using R3E.Models;
 
 namespace R3E.API
 {
-    public class TelemetryService : IDisposable, IAsyncDisposable
+    public class TelemetryService : ITelemetryService, IDisposable
     {
         private readonly ISharedSource sharedSource;
-        private readonly Microsoft.Extensions.Logging.ILogger<TelemetryService> logger;
+        private readonly ILogger<TelemetryService> logger;
         private bool disposed;
 
         public event Action<TelemetryData>? DataUpdated;
+        public event Action<int>? StartLightsChanged;
+        public event Action<TelemetryData>? NewLap;
+        public event Action<TelemetryData>? SessionTypeChanged;
+        public event Action<TelemetryData>? SessionPhaseChanged;
+        public event Action<TelemetryData>? CarPositionChanged;
+        public event Action<TelemetryData>? TrackChanged;
+        public event Action<TelemetryData>? CarChanged;
+        public event Action<TelemetryData, int>? SectorCompleted;
 
-        private readonly TelemetryData data = new();
-        public TelemetryData Data { get => data; }
+        public TelemetryData Data { get; init; }
+        public SectorData SectorData { get; init; }
+        public FuelData FuelData { get; init; }
 
-        public TelemetryService(ISharedSource sharedSource, Microsoft.Extensions.Logging.ILogger<TelemetryService>? logger = null)
+        public RadarData RadarData { get; init; }
+        private readonly RadarService? radarService;
+
+        private int lastTick = 0;
+        private int lastLapNumber = 0;
+        private Constant.Session lastSessionType = Constant.Session.Unavailable;
+        private Constant.SessionPhase sessionPhase = Constant.SessionPhase.Unavailable;
+        private int trackId = 0;
+        private int carId = 0;
+        private int playerPosition = 0;
+        private int lastSectorIndex = -1;
+
+
+        public TelemetryService(ILogger<TelemetryService> logger,
+                                IServiceProvider serviceProvider,
+                                ISharedSource sharedSource)
         {
-            this.sharedSource = sharedSource ?? throw new ArgumentNullException(nameof(sharedSource));
-            this.logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TelemetryService>.Instance;
-            Data.Raw = sharedSource.Data;
+            this.logger = logger;
+            this.sharedSource = sharedSource;
+            Data = new TelemetryData(serviceProvider);
+            FuelData = new FuelData(Data.Raw, this);
+            SectorData = new SectorData();
+            RadarData = new RadarData();
+
             sharedSource.DataUpdated += OnRawDataUpdated;
+            sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+
+            // Construct RadarService that updates RadarData. Prefer DI logger if available.
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            var radarLogger = loggerFactory != null
+                ? loggerFactory.CreateLogger<RadarService>()
+                : (ILogger<RadarService>)NullLogger<RadarService>.Instance;
+
+            radarService = new RadarService(radarLogger, this, RadarData);
+        }
+
+        private void SharedSource_StartLightsChanged(int startLights)
+        {
+            StartLightsChanged?.Invoke(startLights);
         }
 
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
+            FuelData.TelemetryData = raw;
+            SectorData.Raw = raw;
+
+            var tick = raw.Player.GameSimulationTicks;
+            var sessionType = (Constant.Session)raw.SessionType;
+            if (sessionType != lastSessionType || tick < lastTick)
+            {
+                lastSessionType = sessionType;
+                lastLapNumber = -1;
+                this.logger.LogInformation("Session changed: {SessionType}", lastSessionType);
+                SessionTypeChanged?.Invoke(Data);
+            }
+            lastTick = tick;
+
+            var sessionPhase = (Constant.SessionPhase)raw.SessionPhase;
+            if (sessionPhase != this.sessionPhase)
+            {
+                this.sessionPhase = sessionPhase;
+                if (sessionPhase == Constant.SessionPhase.Green)
+                {
+                    Data.PlayerStartPosition = raw.Position;
+                    logger.LogInformation("Player starting position: {StartPosition}", Data.PlayerStartPosition);
+                }
+                else
+                {
+                    Data.PlayerStartPosition = -1;
+                }
+                playerPosition = raw.Position;
+                this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
+
+                if (sessionPhase == Constant.SessionPhase.Formation)
+                {
+                    Data.RollingStart = true;
+                    logger.LogInformation("Rolling start detected.");
+                }
+                else if (sessionPhase == Constant.SessionPhase.Countdown)
+                {
+                    Data.RollingStart = false;
+                    logger.LogInformation("Standing start detected.");
+                }
+
+                SessionPhaseChanged?.Invoke(Data);
+            }
+
+            var completedLaps = raw.CompletedLaps;
+            if (completedLaps != lastLapNumber)
+            {
+                lastLapNumber = completedLaps;
+                if (lastLapNumber > 0)
+                {
+                    this.logger.LogInformation("Starting lap number: {LapNumber}", lastLapNumber + 1);
+                    NewLap?.Invoke(Data);
+                }
+            }
+
+            var position = raw.Position;
+            if (position != playerPosition)
+            {
+                playerPosition = position;
+                this.logger.LogInformation("Player position changed: {Position}", position);
+                CarPositionChanged?.Invoke(Data);
+            }
+
+            var trackId = raw.TrackId;
+            if (trackId != this.trackId && trackId > 0)
+            {
+                this.trackId = trackId;
+                this.logger.LogInformation("Track changed. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
+                TrackChanged?.Invoke(Data);
+            }
+
+            var carId = raw.VehicleInfo.CarNumber;
+            if (carId != this.carId && carId > 0)
+            {
+                this.carId = carId;
+                this.logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
+                CarChanged?.Invoke(Data);
+            }
+
+            if (lastSectorIndex != SectorData.CurrentSectorIndexSelf) {
+                switch (SectorData.CurrentSectorIndexSelf) {
+                    case 0:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 2");
+                        SectorCompleted?.Invoke(Data, 2);
+                        break;
+                    case 1:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 0");
+                        SectorCompleted?.Invoke(Data, 0);
+                        break;
+                    case 2:
+                        this.logger.LogInformation("Sector Completed. Sector Index: 1");
+                        SectorCompleted?.Invoke(Data, 1);
+                        break;
+                }
+
+                lastSectorIndex = SectorData.CurrentSectorIndexSelf;
+            }
+
             DataUpdated?.Invoke(Data);
-            logger.LogDebug("Telemetry data updated");
         }
+
 
         public void Dispose()
         {
@@ -36,14 +181,10 @@ namespace R3E.API
             }
 
             disposed = true;
+            FuelData.Dispose();
             sharedSource.DataUpdated -= OnRawDataUpdated;
+            sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }

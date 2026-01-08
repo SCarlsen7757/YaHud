@@ -1,0 +1,58 @@
+# Release workflow: builds artifacts and creates release on merge to main
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  # Step 1: Calculate version
+  version:
+    name: Calculate Version
+    uses: ./.github/workflows/calculate-version.yml
+
+  # Step 2: Build all artifacts (parallel builds)
+  build:
+    name: Build
+    needs: version
+    uses: ./.github/workflows/build-artifacts.yml
+    with:
+      version: ${{ needs.version.outputs.semVer }}
+
+  # Step 3: Create release with artifacts
+  release:
+    name: Release
+    needs: [version, build]
+    uses: ./.github/workflows/create-release.yml
+    with:
+      version: ${{ needs.version.outputs.semVer }}
+      draft: true
+      prerelease: false
+    permissions:
+      contents: write
+
+  # Summary
+  summary:
+    name: Release Summary
+    needs: [version, release]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Final Summary
+        run: |
+          echo "### Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ needs.version.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifacts Built:**" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.Relay (Windows x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Windows x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Linux x64)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](${{ needs.release.outputs.release_url }})" >> $GITHUB_STEP_SUMMARY

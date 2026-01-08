@@ -22,7 +22,7 @@ namespace R3E.YaHud.Services
 
             // Run hook safely
             _ = hook.RunAsync();
-            logger.LogDebug("ShortcutService initialized");
+            this.logger.LogDebug("ShortcutService initialized");
         }
 
         private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)

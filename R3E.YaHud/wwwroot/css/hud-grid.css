@@ -1,0 +1,31 @@
+/* Grid overlay shown while dragging widgets */
+.hud-grid-overlay {
+ position: fixed;
+ inset: 0;
+ pointer-events: none;
+ z-index: 9999;
+ 
+ /* Denser grid pattern with thicker, more visible lines */
+ background-image: 
+  linear-gradient(rgba(255, 255, 255, 0.22) 2px, transparent 2px),
+ linear-gradient(90deg, rgba(255, 255, 255, 0.22) 2px, transparent 2px);
+ /* smaller cell size (denser grid) */
+ background-size: 20px 20px, 20px 20px;
+}
+
+/* Stronger grid lines every 5 cells (100px) */
+.hud-grid-overlay::before {
+ content: '';
+ position: absolute;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background-image: 
+  linear-gradient(rgba(255, 255, 255, 0.36) 3px, transparent 3px),
+ linear-gradient(90deg, rgba(255, 255, 255, 0.36) 3px, transparent 3px);
+ /* match strong-line spacing to 5 * 20px = 100px */
+ background-size: 100px 100px, 100px 100px;
+ background-position: 0 0, 0 0;
+ pointer-events: none;
+}
