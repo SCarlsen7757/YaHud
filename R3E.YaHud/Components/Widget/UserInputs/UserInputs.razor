@@ -3,46 +3,85 @@
 @using R3E.API
 @inherits HudWidgetBase<UserInputsSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="user-inputs-widget text">
-    @if (Settings.ShowClutch)
-    {
-        <div class="clutch-component">
-            <VerticalBar  
-                @key="Clutch"
-                Min="0.0d" 
-                Max="1.0d"
-                Value="@Clutch"
-                PrimaryColor="@Settings.ClutchColor" 
-                BackgroundColor="@BarBackgroundColor" />
+        <div class="pedals-container">
+            @if (Settings.ShowClutch)
+            {
+                <div class="clutch-component">
+                    @if (Settings.ShowPedalValues)
+                    {
+                        <p class="value-label">@((int)(ClutchRaw * 100))</p>
+                    }
+                    <VerticalBar @key="Clutch"
+                                 Min="0.0d"
+                                 Max="1.0d"
+                                 Value="@Clutch"
+                                 ValueRaw="@ClutchRaw"
+                                 PrimaryColor="@Settings.ClutchColor"
+                                 DiffColor="@Settings.DiffColor"
+                                 BackgroundColor="@BarBackgroundColor" />
+                </div>
+            }
+            <div class="brake-component">
+                @if (Settings.ShowPedalValues)
+                {
+                    <p class="value-label">@((int)(BrakeRaw * 100))</p>
+                }
+                <VerticalBar @key="Brake"
+                             Min="0.0d"
+                             Max="1.0d"
+                             Value="@Brake"
+                             ValueRaw="@BrakeRaw"
+                             PrimaryColor="@Settings.BrakeColor"
+                             DiffColor="@Settings.DiffColor"
+                             BackgroundColor="@BarBackgroundColor" />
+            </div>
+            <div class="throttle-component">
+                @if (Settings.ShowPedalValues)
+                {
+                    <p class="value-label">@((int)(ThrottleRaw * 100))</p>
+                }
+                <VerticalBar @key="Throttle"
+                             Min="0.0d"
+                             Max="1.0d"
+                             Value="@Throttle"
+                             ValueRaw="@ThrottleRaw"
+                             PrimaryColor="@Settings.ThrottleColor"
+                             DiffColor="@Settings.DiffColor"
+                             BackgroundColor="@BarBackgroundColor" />
+            </div>
         </div>
-    }
-        <div class="throttle-component">
-            <VerticalBar 
-                @key="Throttle"
-                Min="0.0d"
-                Max="1.0d"
-                Value="@Throttle"
-                PrimaryColor="@Settings.ThrottleColor"
-                BackgroundColor="@BarBackgroundColor" />
-        </div>
-        <div class="brake-component">
-            <VerticalBar 
-                @key="Brake"
-                Min="0.0d"
-                Max="1.0d"
-                Value="@Brake"
-                PrimaryColor="@Settings.BrakeColor"
-                BackgroundColor="@BarBackgroundColor" />
-        </div>
+
+        @if (Settings.ShowSteeringWheel)
+        {
+            <div class="steering-wheel-component">
+                <div class="steering-wheel" style="background-color: @Settings.SteeringColor; -webkit-mask-image: url(@Settings.WheelSvgPath); mask-image: url(@Settings.WheelSvgPath); transform: rotate(@SteeringWheelDeg);"></div>
+            </div>
+        }
+
+        @if (Settings.ShowSteeringInput)
+        {
+            <div class="steering-input-component">
+                <HorizontalBar @key="SteeringInputRaw"
+                               Value="SteeringInputRaw"
+                               PrimaryColor="@Settings.SteeringInputColor"
+                               BackgroundColor="@BarBackgroundColor" />
+            </div>
+        }
     </div>
 }
 
 @code {
+    private double ClutchRaw { get; set; } = 0.0d;
     private double Clutch { get; set; } = 0.0d;
+    private double ThrottleRaw { get; set; } = 0.0d;
     private double Throttle { get; set; } = 0.0d;
+    private double BrakeRaw { get; set; } = 0.0d;
     private double Brake { get; set; } = 0.0d;
+    private string SteeringWheelDeg { get; set; } = "0deg";
+    private double SteeringInputRaw { get; set; } = 0.0d;
 
     private string BarBackgroundColor => "#454545";
 
@@ -53,6 +92,8 @@
     public override double DefaultXPercent => 80;
     public override double DefaultYPercent => 90;
 
+    public override bool Collidable => true;
+
     public UserInputs()
     {
         UseR3EData = true;
@@ -62,9 +103,48 @@
     protected override void Update()
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
-        
-        Clutch = (double)data.Clutch;
-        Throttle = (double)data.Throttle;
-        Brake = (double)data.Brake;
+
+        ClutchRaw = (double)data.ClutchRaw;
+        ThrottleRaw = (double)data.ThrottleRaw;
+        BrakeRaw = (double)data.BrakeRaw;
+
+        if (!Settings!.ShowPedalDiff)
+        {
+            Clutch = ClutchRaw;
+            Brake = BrakeRaw;
+            Throttle = ThrottleRaw;
+        }
+        else
+        {
+            Clutch = (double)data.Clutch;
+            Brake = (double)data.Brake;
+            Throttle = (double)data.Throttle;
+        }
+
+        SteeringInputRaw = data.SteerInputRaw;
+        SteeringWheelDeg = (data.SteerInputRaw * data.SteerWheelRangeDegrees / 2).ToString().Replace(",", ".") + "deg";
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        ClutchRaw = 0.35;
+        BrakeRaw = 0.15;
+        ThrottleRaw = 0.85;
+
+        if (!Settings!.ShowPedalDiff)
+        {
+            Clutch = ClutchRaw;
+            Brake = BrakeRaw;
+            Throttle = ThrottleRaw;
+        }
+        else
+        {
+            Clutch = ClutchRaw - 0.15;
+            Throttle = ThrottleRaw - 0.35;
+            Brake = BrakeRaw - 0.05;
+        }
+
+        SteeringWheelDeg = "45deg";
+        SteeringInputRaw = 0.5;
     }
 }

@@ -1,0 +1,168 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.API
+@inherits HudWidgetBase<StartLightSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div style="visibility: @(IsCountdownPhase || TestMode ? "visible" : "hidden");">
+        <div id=@ElementId class="start-light-widget text">
+            <div class="lights-and-glows-container">
+                <div class="lights-container">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="light">
+                            <R3E.YaHud.Components.Widget.StartLight.Components.RacingLight IsOn="@src.Item2" ColorHex="@src.Item1" />
+                        </div>
+                    }
+                </div>
+                <div class="glows-overlay">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var src = LightColor(i);
+                        <div class="glow-wrapper">
+                            <div class="glow-layer @(src.Item2 ? "on" : "off")" style="@(src.Item2 ? $"--active-color: {src.Item1};" : "")"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private string ImageAssetsBase => "/img/lights/countdown/";
+
+    private string Image(string name)
+    {
+        return $"{ImageAssetsBase}{name}";
+    }
+
+    private int StartLightPhase { get; set; } = 0;
+    private R3E.Constant.SessionPhase SessionPhase { get; set; } = R3E.Constant.SessionPhase.Unavailable;
+    private double GameSimulationTime { get; set; } = 0d;
+    private double? HideAgainAt { get; set; } = 0;
+    private R3E.Constant.Control PlayerControl = Constant.Control.Unavailable;
+
+    public override string ElementId { get => "startLightWidget"; }
+    public override string Name => "Start light";
+    public override string Category => "Telemetry";
+
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 25;
+
+    public override bool Collidable => false;
+
+    public StartLight()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+    override protected void OnInitialized()
+    {
+        base.OnInitialized();
+        TelemetryService.StartLightsChanged += StartLightsChanged;
+    }
+
+    private void StartLightsChanged(int startLights)
+    {
+        if (disposed) return;
+        StartLightPhase = startLights;
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override void Update()
+    {
+        if (Settings is null) return;
+        R3E.Data.Shared data = TelemetryService.Data.Raw;
+
+        GameSimulationTime = data.Player.GameSimulationTime;
+        StartLightPhase = data.StartLights;
+
+        SessionPhase = (R3E.Constant.SessionPhase)data.SessionPhase;
+        PlayerControl = (R3E.Constant.Control)data.ControlType;
+
+        if (StartLightPhase == 6 && PlayerControl == Constant.Control.Player && HideAgainAt is null)
+        {
+            HideAgainAt = data.Player.GameSimulationTime + (Settings.VisibleAfterStartDurationMs / 1000);
+        }
+        else if (StartLightPhase < 6)
+        {
+            HideAgainAt = null;
+        }
+
+        switch (SessionPhase)
+        {
+            case R3E.Constant.SessionPhase.Countdown:
+            case R3E.Constant.SessionPhase.Formation:
+                IsCountdownPhase = true;
+                break;
+            case R3E.Constant.SessionPhase.Green:
+                IsCountdownPhase = (PlayerControl != Constant.Control.Player && TelemetryService.Data.RollingStart)
+                    ? true
+                    : IsStartPeriodActive();
+                break;
+            default:
+                IsCountdownPhase = false;
+                break;
+        }
+
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        StartLightPhase = 3;
+    }
+
+    private bool IsCountdownPhase { get; set; }
+
+    private bool IsStartPeriodActive()
+    {
+        var rolling = TelemetryService.Data.RollingStart;
+
+        if (StartLightPhase < 6) return false;
+        if (PlayerControl != Constant.Control.Player)
+        {
+            return rolling && StartLightPhase == 6;
+        }
+
+        if (Settings!.VisibleAfterStartDurationMs > 0 && HideAgainAt != null)
+        {
+            return GameSimulationTime < HideAgainAt;
+        }
+        return HideAgainAt != null;
+    }
+
+    private Tuple<string, bool> LightColor(int pos)
+    {
+        if (IsStartPeriodActive())
+        {
+            return !TelemetryService.Data.RollingStart
+                ? new("#000000", false)
+                : new(Settings!.StartColor, true);
+        }
+        if (SessionPhase == Constant.SessionPhase.Formation)
+        {
+            var blinkOn = (GameSimulationTime % 1) < 0.5;
+            var positionEven = pos % 2 == 0;
+
+            return blinkOn ^ positionEven
+                ? new(Settings!.FormationLapColor, true)
+                : new("#000000", false);
+        }
+        if (StartLightPhase >= 1 && StartLightPhase <= 5 && pos <= StartLightPhase)
+        {
+            return new(Settings!.ReadyColor, true);
+        }
+        return new("#000000", false);
+    }
+
+    public override void Dispose()
+    {
+        if (disposed) return;
+        TelemetryService.StartLightsChanged -= StartLightsChanged;
+        base.Dispose();
+    }
+}

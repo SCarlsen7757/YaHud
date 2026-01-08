@@ -3,29 +3,38 @@
 @using R3E.API
 @inherits HudWidgetBase<MoTecSettings>
 
-@if (Settings.Visible)
+@if (Settings?.Visible ?? false)
 {
     <div id=@ElementId class="motec-widget text">
-        <p class="gear-text">@Gear</p>
-        <p class="speed-text">@Speed.ToString("0")</p>
-        <div class="rpm-component"><HorizontalBar  
-                @key="Rps"
-            Min="0.0d" 
-            Max="@MaxRps"
-                Value="@Rps"
-            PrimaryColor="@RpsCurrentColor" 
-            BackgroundColor="@RpsBarBackgroundColor" /></div>
+        <p class="gear-text" style="color:@RpsCurrentColor">@Gear</p>
+        <p class="speed-text" style="color:@RpsCurrentColor">@Speed.ToString("0")</p>
+        <div class="rpm-component">
+            <HorizontalBar @key="Rps"
+                           Min="0.0d"
+                           Max="@MaxRps"
+                           Value="@Rps"
+                           PrimaryColor="@RpsCurrentColor"
+                           BackgroundColor="@RpsBarBackgroundColor" />
+        </div>
     </div>
 }
 
 @code {
     private string Gear { get; set; } = "N";
     private double Speed { get; set; } = 0.0f;
-    private double Rps { get;  set; } = 3000.0f;
+    private double Rps { get; set; } = 3000.0f;
     private double MaxRps { get; set; } = 9000.0f;
 
     private string RpsBarBackgroundColor => "#454545";
     private string RpsCurrentColor { get; set; } = "#ffffff";
+
+    private bool blinkModeOn = false;
+    private string blinkColor = "#ff0000";
+
+    private const double MaxRpsOffset = 20.0; //Radians per Second 20 rad/s = 190.985932 RPM
+    private const double UpshiftRpsOffset = 70.0; //Radians per Second 70 rad/s = 668.450761 RPM
+    private const double BlinkCycleDuration = 0.3;
+    private const double BlinkOnDuration = 0.15;
 
     public override string ElementId { get => "motecWidget"; }
     public override string Name => "MoTec";
@@ -33,6 +42,8 @@
 
     public override double DefaultXPercent => 90;
     public override double DefaultYPercent => 90;
+
+    public override bool Collidable => true;
 
     public MoTec()
     {
@@ -55,11 +66,38 @@
                 Gear = data.Gear.ToString();
                 break;
         }
-        Speed = UnitConverter.Convert(data.CarSpeed, SpeedUnit.MilesPerHour, SettingsService.GlobalSettings.SpeedUnit);
+        Speed = UnitConverter.Convert(data.CarSpeed, SpeedUnit.MetersPerSecond, SettingsService.GlobalSettings.SpeedUnit);
         Rps = (double)data.EngineRps;
-        MaxRps = (double)data.MaxEngineRps;
-        var upshiftRps = (double)data.UpshiftRps;
+        MaxRps = (double)data.MaxEngineRps - MaxRpsOffset; // Slightly lower to give a better visual cue
+        var upshiftRps = (double)data.UpshiftRps - UpshiftRpsOffset; // Slightly lower to give a better visual cue
 
-        RpsCurrentColor = Rps >= upshiftRps ? Settings.RpmUpshiftColor : Settings.RpmColor;
+        if (Rps >= MaxRps)
+        {
+            blinkColor = Settings!.RpmMaxColor;
+            blinkModeOn = true;
+        }
+        else if (Rps >= upshiftRps)
+        {
+            blinkColor = Settings!.RpmUpshiftColor;
+            blinkModeOn = true;
+        }
+        else
+        {
+            blinkModeOn = false;
+        }
+
+        RpsCurrentColor = blinkModeOn
+            ? ((data.Player.GameSimulationTime % BlinkCycleDuration) < BlinkOnDuration ? blinkColor : Settings!.SecondaryBlinkColor)
+            : Settings!.PrimaryColor;
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        Gear = "4";
+        Speed = UnitConverter.Convert(125.5f, SpeedUnit.KilometersPerHour, SettingsService.GlobalSettings.SpeedUnit);
+        Rps = 7500.0;
+        MaxRps = 9000.0;
+
+        RpsCurrentColor = Settings!.RpmUpshiftColor;
     }
 }

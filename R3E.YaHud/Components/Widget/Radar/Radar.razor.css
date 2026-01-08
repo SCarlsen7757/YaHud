@@ -1,0 +1,35 @@
+﻿.radar-widget {
+    display: flex;
+    flex-direction: column; /* stack children vertically */
+    align-items: center; /* center horizontally */
+    text-align: center;
+    border-radius: 4px;
+    width: 200px; /* fixed width */
+    height: 300px; /* fixed height */
+    /*background-color: rgba(2, 0, 0, 0.5);*/
+    position: absolute; /* can still be placed absolutely */
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 5px;
+}
+
+#radar {
+    border-radius: 50%;
+    width: 200px;
+    height: 200px;
+    position: absolute !important;
+    /*top: calc(100vh - 300px - 15px);*/
+    /*left: calc(50% - 150px);*/
+    overflow: hidden;
+    background-size: contain;
+}
+
+#radar .radar-car {
+    position: absolute;
+    border-radius: 6px;
+    background-color: red;
+}
+
+#radar .radar-car-self {
+    background-color: white;
+}

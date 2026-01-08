@@ -8,7 +8,7 @@ namespace R3E.YaHud
         public static string GetDisplayName(this Enum enumValue)
         {
             var members = enumValue.GetType().GetMember(enumValue.ToString());
-            
+
             if (members.Length == 0)
             {
                 return enumValue.ToString();

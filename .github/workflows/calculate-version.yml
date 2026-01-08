@@ -1,0 +1,58 @@
+# Reusable workflow: Calculates version using GitVersion
+name: Calculate Version
+
+on:
+  workflow_call:
+    outputs:
+      semVer:
+        description: "Semantic version (e.g., 1.2.3)"
+        value: ${{ jobs.version.outputs.semVer }}
+      fullSemVer:
+        description: "Full semantic version (e.g., 1.2.3-beta.1)"
+        value: ${{ jobs.version.outputs.fullSemVer }}
+      majorMinorPatch:
+        description: "Major.Minor.Patch version"
+        value: ${{ jobs.version.outputs.majorMinorPatch }}
+      branchName:
+        description: "Current branch name"
+        value: ${{ jobs.version.outputs.branchName }}
+      preReleaseTag:
+        description: "Pre-release tag if any"
+        value: ${{ jobs.version.outputs.preReleaseTag }}
+
+jobs:
+  version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+      fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
+      majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      branchName: ${{ steps.gitversion.outputs.branchName }}
+      preReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: "6.4"
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v4
+        id: gitversion
+
+      - name: Version Summary
+        run: |
+          echo "### Version: v${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SemVer | \`${{ steps.gitversion.outputs.semVer }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Full SemVer | \`${{ steps.gitversion.outputs.fullSemVer }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ steps.gitversion.outputs.branchName }}\` |" >> $GITHUB_STEP_SUMMARY

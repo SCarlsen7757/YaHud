@@ -1,0 +1,277 @@
+﻿@using R3E.Data
+@using R3E.YaHud.Components.Widget.Core
+@using R3E.Models
+@inherits HudWidgetBase<FuelSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div id=@ElementId class="Fuel-widget">
+        <div class="data-grid">
+            <div class="data-box large-box">
+                <p class="value" style="color: @FuelRemainingColor">@(FuelRemaining.ToString("F1"))</p>
+                <div class="label">Fuel<br />Remaining</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value" style="color: @TimeEstimatedLeftColor">@TimeEstimatedLeftFormatted</p>
+                <div class="label">Time Est</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value" style="color: @Settings.LastLapFuelUsageColor">@(LastLapFuelUsage.ToString("F1"))</p>
+                <div class="label">Last Lap</div>
+            </div>
+            
+            <div class="data-box large-box">
+                <p class="value" style="color: @FuelToEndColor">@(FuelToEnd.ToString("F1"))</p>
+                <div class="label">Fuel<br />to End</div>
+            </div>
+
+            <div class="data-box large-box">
+                <p class="value" style="color: @Settings.FuelToAddColor">@(FuelToAdd)</p>
+                <div class="label">Fuel<br />to Add</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value" style="color: @Settings.LapsEstimatedLeftColor">@(LapsEstimatedLeft.ToString("F1"))</p>
+                <div class="label">Laps Est</div>
+            </div>
+
+            <div class="data-box">
+                <p class="value" style="color: @Settings.FuelPerLapColor">@(FuelPerLap.ToString("F1"))</p>
+                <div class="label">Fuel per Lap</div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Current fuel remaining in liters.
+    /// </summary>
+    private double FuelRemaining { get; set; } 
+
+    /// <summary>
+    /// Color of the fuel remaining text.
+    /// </summary>
+    private string FuelRemainingColor { get; set; } = "#008000";
+
+    /// <summary>
+    /// Formatted estimated time left (hh:mm, mm:ss, or ss).
+    /// </summary>
+    private string TimeEstimatedLeftFormatted { get; set; } = "0";
+
+    /// <summary>
+    /// Color for the estimated time left display.
+    /// </summary>
+    private string TimeEstimatedLeftColor { get; set; } = "#008000";
+
+    /// <summary>
+    /// Estimated laps remaining based on fuel per lap.
+    /// </summary>
+    private double LapsEstimatedLeft { get; set; } 
+
+    /// <summary>
+    /// Fuel used in the last lap (liters).
+    /// </summary>
+    private double LastLapFuelUsage { get; set; } 
+
+    /// <summary>
+    /// Fuel consumption per lap (liters/lap).
+    /// </summary>
+    private double FuelPerLap { get; set; } 
+
+    /// <summary>
+    /// Estimated fuel to finish the session (liters).
+    /// </summary>
+    private double FuelToEnd { get; set; } 
+
+    /// <summary>
+    /// Estimated fuel to add before finishing the session (liters).
+    /// </summary>
+    private string FuelToAdd { get; set; } = "0.0";
+    
+    /// <summary>
+    /// Color for the FuelToEnd display.
+    /// </summary>
+    private string FuelToEndColor { get; set; } = "#008000";
+    
+    public override string ElementId => "FuelWidget";
+    public override string Name => "Fuel Calc";
+    public override string Category => "Telemetry";
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 50;
+    public override bool Collidable => true;
+    private int testScenarioIndex;
+    private const int TestScenarioCount = 6;
+    private int testTick;
+    
+    public FuelCalc()
+    {
+        UseR3EData = true;
+        UpdateInterval = TimeSpan.FromMilliseconds(30);
+    }
+
+
+    /// <summary>
+    /// Format a TimeSpan for display in the widget.
+    /// </summary>
+    /// <param name="time">Time remaining.</param>
+    /// <returns>Formatted string (hh:mm, mm:ss, or ss).</returns>
+    private static string FormatTimeLeft(TimeSpan time) => time.TotalHours >= 1 ? time.ToString(@"hh\:mm") : time.ToString(time.TotalMinutes >= 1 ? @"mm\:ss" : @"ss");
+
+    /// <summary>
+    /// Determines the color of the time left text based on thresholds.
+    /// </summary>
+    /// <param name="time">Time remaining.</param>
+    /// <returns>Color as a CSS string.</returns>
+    private string GetTimeLeftColor(TimeSpan time) => time.TotalHours >= 1 ? Settings!.ColorHigh : time.TotalMinutes >= 1 ? Settings!.ColorMidLow : Settings!.ColorLow;
+    
+    /// <summary>
+    /// Updates the widget's values based on telemetry data.
+    /// </summary>
+    protected override void Update()
+    {
+        FuelData data = TelemetryService.FuelData;
+
+        //Start mapping of variables  
+        FuelRemaining = data.FuelLeft;
+        LastLapFuelUsage = data.LastLapFuelUsage;
+        FuelPerLap = data.FuelPerLap;
+        LapsEstimatedLeft  = data.LapsEstimatedLeft;
+        FuelToEnd = data.FuelToEnd;
+        var fuelToAdd = data.FuelToAdd;
+        
+        if (FuelToEnd > data.TelemetryData.FuelCapacity)
+            FuelToAdd = "MAX";
+        else if (fuelToAdd >= data.TelemetryData.FuelLeft)
+            FuelToAdd = (fuelToAdd.ToString("F1"));
+        else
+            FuelToAdd = "0.0";
+        
+
+        FuelRemainingColor = data.FuelRemainingPercentage switch
+        {
+            //Color numbers for widget
+            >= 50.0 => Settings!.ColorHigh,
+            < 50.0 and >= 35.0 => Settings!.ColorMidHigh,
+            < 35.0 and >= 15.0 => Settings!.ColorMidLow,
+            < 15.0 and >= 0.0 => Settings!.ColorLow,
+            _ => FuelRemainingColor
+        };
+        
+        FuelToEndColor = data.FuelToEnd < data.FuelLeft ? Settings!.ColorHigh : Settings!.ColorLow;
+        
+        //ready variables for text to round or change format so it can be shown correctly
+        
+        var time = TimeSpan.FromSeconds(data.TimeEstimatedLeft);
+
+        TimeEstimatedLeftFormatted = FormatTimeLeft(time);
+        TimeEstimatedLeftColor = GetTimeLeftColor(time);
+    }
+    
+
+    /// <summary>
+    /// Updates widget using predefined test scenarios.
+    /// Cycles through several test scenarios to validate display and color logic.
+    /// </summary>
+    protected override void UpdateWithTestData()
+    {
+        testTick++;
+
+        if (testTick % 60 == 0) // change scenario roughly every ~2 seconds
+        {
+            testScenarioIndex = (testScenarioIndex + 1) % TestScenarioCount;
+        }
+
+        ApplyTestScenario(testScenarioIndex);
+    }
+    
+    /// <summary>
+    /// Applies a test scenario to the widget for validation.
+    /// </summary>
+    /// <param name="scenario">Scenario index (0–5).</param>
+    private void ApplyTestScenario(int scenario)
+    {
+        switch (scenario)
+        {
+            case 0: // Plenty of fuel – long race
+                FuelRemaining = 80.0;
+                FuelRemainingColor = Settings!.ColorHigh;
+                FuelPerLap = 2.5;
+                LapsEstimatedLeft = 30;
+                TimeEstimatedLeftFormatted = "45:00";
+                TimeEstimatedLeftColor = Settings!.ColorHigh;
+                FuelToEnd = 60;
+                FuelToEndColor = Settings!.ColorHigh;
+                FuelToAdd = "0.0";
+                LastLapFuelUsage = 2.4;
+                break;
+
+            case 1: // Mid fuel – caution zone
+                FuelRemaining = 40.0;
+                FuelRemainingColor = Settings!.ColorMidHigh;
+                FuelPerLap = 5.0;
+                LapsEstimatedLeft = 35;
+                TimeEstimatedLeftFormatted = "18:30";
+                TimeEstimatedLeftColor = Settings!.ColorMidLow;
+                FuelToEnd = 135;
+                FuelToEndColor = Settings!.ColorHigh;
+                FuelToAdd = "MAX";
+                LastLapFuelUsage = 3.1;
+                break;
+
+            case 2: // Low fuel – critical
+                FuelRemaining = 12.0;
+                FuelRemainingColor = Settings!.ColorLow;
+                FuelPerLap = 3.2;
+                LapsEstimatedLeft = 3.7;
+                TimeEstimatedLeftFormatted = "02:45";
+                TimeEstimatedLeftColor = Settings!.ColorLow;
+                FuelToEnd = 20;
+                FuelToEndColor = Settings!.ColorLow;
+                FuelToAdd = "8.0";
+                LastLapFuelUsage = 3.3;
+                break;
+
+            case 3: // Seconds remaining (time formatting test)
+                FuelRemaining = 5.0;
+                FuelRemainingColor = Settings!.ColorLow;
+                FuelPerLap = 4.0;
+                LapsEstimatedLeft = 1.2;
+                TimeEstimatedLeftFormatted = "35";
+                TimeEstimatedLeftColor = Settings!.ColorLow;
+                FuelToEnd = 6;
+                FuelToEndColor = Settings!.ColorLow;
+                FuelToAdd = "1.0";
+                LastLapFuelUsage = 4.1;
+                break;
+
+            case 4: // Exact pit window
+                FuelRemaining = 25.0;
+                FuelRemainingColor = Settings!.ColorMidLow;
+                FuelPerLap = 2.5;
+                LapsEstimatedLeft = 10;
+                TimeEstimatedLeftFormatted = "15:00";
+                TimeEstimatedLeftColor = Settings!.ColorMidLow;
+                FuelToEnd = 25;
+                FuelToEndColor = Settings!.ColorHigh;
+                FuelToAdd = "0.0";
+                LastLapFuelUsage = 2.6;
+                break;
+
+            case 5: // Overfilled / edge case
+                FuelRemaining = 95.0;
+                FuelRemainingColor = Settings!.ColorHigh;
+                FuelPerLap = 1.8;
+                LapsEstimatedLeft = 52;
+                TimeEstimatedLeftFormatted = "1:20";
+                TimeEstimatedLeftColor = Settings!.ColorHigh;
+                FuelToEnd = 70;
+                FuelToEndColor = Settings!.ColorHigh;
+                FuelToAdd = "0.0";
+                LastLapFuelUsage = 1.9;
+                break;
+        }
+    }
+}

@@ -1,0 +1,60 @@
+﻿.Fuel-widget {
+    display: flex;
+    align-items: center;
+    position: absolute;
+
+    height: auto;        /* <-- key change */
+    min-height: 10vmin;  /* keeps it visually consistent */
+    max-width: fit-content;
+
+    box-sizing: border-box;
+    border-radius: 0.4vmin;
+    overflow: visible;   /* important */
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5vmin;
+}
+
+.data-box {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 0.1vmin solid #111;
+    border-radius: 0.5vmin;
+    text-align: center;
+    box-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%; /* Ensure it fills the grid cell height */
+    min-width: 45px; /* Optional: A slightly larger pixel minimum for safety */
+}
+
+.data-box.large-box {
+    grid-row: span 2;
+}
+
+.value {
+    font-size: clamp(0.7rem, 1.0vw, 1.4rem);
+    font-weight: 700;
+    line-height: 1.0;
+    text-shadow: 0 0 0.3vmin rgba(0, 0, 0, 0.5);
+    margin-bottom: 0.4vmin;
+}
+
+.data-box.large-box .value {
+    font-size: clamp(1.0rem, 1.2vw, 1.8rem);
+    font-weight: bold;
+    margin-top: 0.2vmin;
+    margin-bottom: 0.4vmin;
+}
+
+.label {
+    font-size: clamp(0.45rem, 0.5vw, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #b5b5b5;
+    margin-top: -0.4vmin;
+    text-transform: uppercase;
+}
