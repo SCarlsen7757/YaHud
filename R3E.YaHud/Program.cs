@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Components.Server;
 using R3E.Core.Interfaces;
 using R3E.Core.Services;
 using R3E.Core.SharedMemory;
+using R3E.Features.Driver;
+using R3E.Features.Fuel;
 using R3E.Features.Image;
+using R3E.Features.Sector;
 using R3E.Features.TimeGap;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
@@ -61,8 +64,15 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
-builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+// Core services
+builder.Services.AddSingleton<ITelemetryEventBus, TelemetryEventBus>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
+
+// Feature services - register independently
+builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+builder.Services.AddSingleton<FuelService>();
+builder.Services.AddSingleton<DriverService>();
+builder.Services.AddSingleton<SectorService>();
 
 
 var app = builder.Build();
