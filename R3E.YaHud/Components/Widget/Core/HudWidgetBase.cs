@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using R3E.API;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 

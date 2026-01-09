@@ -1,11 +1,9 @@
-﻿@using R3E.YaHud.Components.UI.Helpers
+﻿@using System.Globalization
+@using System.Numerics
+@using R3E.Features.Radar
+@using R3E.YaHud.Components.UI.Helpers
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
-@using R3E.API
-@using R3E.API.Models
-@using R3E.API.Radar
-@using System.Numerics
-@using System.Globalization
 @inherits HudWidgetBase<RadarSettings>
 
 @if (Settings?.Visible ?? false)

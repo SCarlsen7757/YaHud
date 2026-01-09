@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Components.Server;
-using R3E.API;
-using R3E.API.Image;
-using R3E.API.TimeGap;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
+using R3E.Core.SharedMemory;
+using R3E.Features.Image;
+using R3E.Features.TimeGap;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
