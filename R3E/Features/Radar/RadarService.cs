@@ -1,34 +1,30 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Microsoft.Extensions.Logging;
-using R3E.Core.Interfaces;
+﻿using R3E.Core.Interfaces;
 using R3E.Core.Services;
-using R3E.Data;
-using R3E.Extensions;
+using System.Numerics;
 
 namespace R3E.Features.Radar
 {
     /// <summary>
-    /// Processes telemetry updates and writes a simple snapshot into <see cref="RadarData"/>.
-    /// Widgets should only read <see cref="RadarData"/>; no further processing should occur in UI.
+    /// Processes telemetry updates and writes a simple snapshot into <see cref="Radar.RadarData"/>.
+    /// Widgets should only read <see cref="Radar.RadarData"/>; no further processing should occur in UI.
     /// </summary>
     public class RadarService : IDisposable
     {
         private readonly ILogger<RadarService> logger;
         private readonly ITelemetryService telemetryService;
-        private readonly RadarData radarData;
-        private readonly object sync = new();
+        private RadarData RadarData { get; init; }
+        private readonly Lock sync = new();
 
         private float trackLength = 0f;
 
-        public RadarService(ILogger<RadarService> logger, ITelemetryService telemetryService, RadarData radarData)
+        public RadarService(
+            ILogger<RadarService> logger,
+            ITelemetryService telemetryService)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
-            this.radarData = radarData ?? throw new ArgumentNullException(nameof(radarData));
+
+            RadarData = new RadarData(telemetryService.Data);
 
             telemetryService.DataUpdated += OnDataUpdated;
             telemetryService.SessionTypeChanged += OnSessionTypeChanged;
@@ -41,10 +37,10 @@ namespace R3E.Features.Radar
             lock (sync)
             {
                 logger.LogInformation("RadarService: session changed - clearing radar state.");
-                radarData.DriverStates = new Dictionary<int, RadarDriverSnapshot>();
-                radarData.ClosestDistance = null;
-               
-                radarData.LastUpdatedUtc = DateTime.UtcNow;
+                RadarData.DriverStates = new Dictionary<int, RadarDriverSnapshot>();
+                RadarData.ClosestDistance = null;
+
+                RadarData.LastUpdatedUtc = DateTime.UtcNow;
 
                 if (data.Raw.LayoutLength > 0)
                 {
@@ -70,10 +66,9 @@ namespace R3E.Features.Radar
             {
                 lock (sync)
                 {
-                    radarData.Raw = raw;
-                    radarData.DriverStates = snapshot;
-                    radarData.ClosestDistance = null;
-                    radarData.LastUpdatedUtc = DateTime.UtcNow;
+                    RadarData.DriverStates = snapshot;
+                    RadarData.ClosestDistance = null;
+                    RadarData.LastUpdatedUtc = DateTime.UtcNow;
                 }
                 return;
             }
@@ -88,7 +83,7 @@ namespace R3E.Features.Radar
                 if (slot < 0) continue;
 
                 bool driverCloseLeft = false;
-                bool driverCloseRight = false;  
+                bool driverCloseRight = false;
 
                 if (ownPlace != d.Place)
                 {
@@ -113,7 +108,7 @@ namespace R3E.Features.Radar
                     }
                     if (relPos.X > 0 && RadarCalculator.IsCarClose(relPos.Z, relPos.X, d.DriverInfo.CarLength, d.DriverInfo.CarWidth))
                     {
-                        driverCloseRight = true; 
+                        driverCloseRight = true;
                     }
 
                     snapshot[slot] = new RadarDriverSnapshot
@@ -152,10 +147,9 @@ namespace R3E.Features.Radar
 
             lock (sync)
             {
-                radarData.Raw = raw;
-                radarData.DriverStates = snapshot;
-                radarData.ClosestDistance = closest;
-                radarData.LastUpdatedUtc = DateTime.UtcNow;
+                RadarData.DriverStates = snapshot;
+                RadarData.ClosestDistance = closest;
+                RadarData.LastUpdatedUtc = DateTime.UtcNow;
             }
         }
 

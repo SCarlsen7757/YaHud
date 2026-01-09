@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using System.Net.Sockets;
 
-namespace R3E.UdpRelay
+namespace R3E.Relay.Service
 {
     internal class UdpRelayService(int sourcePort, string targetAddress, int targetPort, ILogger<UdpRelayService>? logger = null) : IDisposable
     {

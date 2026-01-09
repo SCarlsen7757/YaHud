@@ -1,6 +1,5 @@
-﻿using R3E.Data;
-using System;
-using System.Collections.Generic;
+﻿using R3E.Core.Services;
+using R3E.Data;
 using System.Numerics;
 
 namespace R3E.Features.Radar
@@ -11,7 +10,14 @@ namespace R3E.Features.Radar
     /// </summary>
     public class RadarData
     {
-        public Shared Raw { get; internal set; } = new Shared();
+        private readonly TelemetryData telemetryData;
+
+        private Shared Raw => telemetryData.Raw;
+
+        public RadarData(TelemetryData telemetryData)
+        {
+            this.telemetryData = telemetryData;
+        }
 
         /// <summary>
         /// Snapshot of processed per-slot radar values (keyed by slot id).

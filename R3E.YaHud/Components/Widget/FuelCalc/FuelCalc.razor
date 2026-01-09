@@ -141,9 +141,9 @@
         FuelToEnd = data.FuelToEnd;
         var fuelToAdd = data.FuelToAdd;
         
-        if (FuelToEnd > data.TelemetryData.FuelCapacity)
+        if (FuelToEnd > data.Raw.FuelCapacity)
             FuelToAdd = "MAX";
-        else if (fuelToAdd >= data.TelemetryData.FuelLeft)
+        else if (fuelToAdd >= data.Raw.FuelLeft)
             FuelToAdd = (fuelToAdd.ToString("F1"));
         else
             FuelToAdd = "0.0";

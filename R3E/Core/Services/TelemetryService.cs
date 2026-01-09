@@ -1,10 +1,6 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using R3E.Core.Interfaces;
 using R3E.Data;
 using R3E.Extensions;
-using R3E.Features.Fuel;
-using R3E.Features.Radar;
-using R3E.Features.Sector;
 
 namespace R3E.Core.Services
 {
@@ -22,14 +18,8 @@ namespace R3E.Core.Services
         public event Action<TelemetryData>? CarPositionChanged;
         public event Action<TelemetryData>? TrackChanged;
         public event Action<TelemetryData>? CarChanged;
-        public event Action<TelemetryData, int>? SectorCompleted;
 
-        public TelemetryData Data { get; init; }
-        public SectorData SectorData { get; init; }
-        public FuelData FuelData { get; init; }
-
-        public RadarData RadarData { get; init; }
-        private readonly RadarService? radarService;
+        public TelemetryData Data { get; init; } = new();
 
         private int lastTick = 0;
         private int lastLapNumber = 0;
@@ -38,30 +28,15 @@ namespace R3E.Core.Services
         private int trackId = 0;
         private int carId = 0;
         private int playerPosition = 0;
-        private int lastSectorIndex = -1;
-
 
         public TelemetryService(ILogger<TelemetryService> logger,
-                                IServiceProvider serviceProvider,
                                 ISharedSource sharedSource)
         {
             this.logger = logger;
             this.sharedSource = sharedSource;
-            Data = new TelemetryData(serviceProvider);
-            FuelData = new FuelData(Data.Raw, this);
-            SectorData = new SectorData();
-            RadarData = new RadarData();
 
             sharedSource.DataUpdated += OnRawDataUpdated;
             sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
-
-            // Construct RadarService that updates RadarData. Prefer DI logger if available.
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            var radarLogger = loggerFactory != null
-                ? loggerFactory.CreateLogger<RadarService>()
-                : (ILogger<RadarService>)NullLogger<RadarService>.Instance;
-
-            radarService = new RadarService(radarLogger, this, RadarData);
         }
 
         private void SharedSource_StartLightsChanged(int startLights)
@@ -72,8 +47,6 @@ namespace R3E.Core.Services
         private void OnRawDataUpdated(Shared raw)
         {
             Data.Raw = raw;
-            FuelData.TelemetryData = raw;
-            SectorData.Raw = raw;
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;
@@ -81,7 +54,7 @@ namespace R3E.Core.Services
             {
                 lastSessionType = sessionType;
                 lastLapNumber = -1;
-                this.logger.LogInformation("Session changed: {SessionType}", lastSessionType);
+                logger.LogInformation("Session changed: {SessionType}", lastSessionType);
                 SessionTypeChanged?.Invoke(Data);
             }
             lastTick = tick;
@@ -100,7 +73,7 @@ namespace R3E.Core.Services
                     Data.PlayerStartPosition = -1;
                 }
                 playerPosition = raw.Position;
-                this.logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
+                logger.LogInformation("Session phase changed: {SessionPhase}", this.sessionPhase);
 
                 if (sessionPhase == Constant.SessionPhase.Formation)
                 {
@@ -122,7 +95,7 @@ namespace R3E.Core.Services
                 lastLapNumber = completedLaps;
                 if (lastLapNumber > 0)
                 {
-                    this.logger.LogInformation("Starting lap number: {LapNumber}", lastLapNumber + 1);
+                    logger.LogInformation("Starting lap number: {LapNumber}", lastLapNumber + 1);
                     NewLap?.Invoke(Data);
                 }
             }
@@ -131,7 +104,7 @@ namespace R3E.Core.Services
             if (position != playerPosition)
             {
                 playerPosition = position;
-                this.logger.LogInformation("Player position changed: {Position}", position);
+                logger.LogInformation("Player position changed: {Position}", position);
                 CarPositionChanged?.Invoke(Data);
             }
 
@@ -139,7 +112,7 @@ namespace R3E.Core.Services
             if (trackId != this.trackId && trackId > 0)
             {
                 this.trackId = trackId;
-                this.logger.LogInformation("Track changed. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
+                logger.LogInformation("Track changed. ID: {TrackId}, Name: {TrackName}", trackId, raw.TrackName.ToNullTerminatedString());
                 TrackChanged?.Invoke(Data);
             }
 
@@ -147,27 +120,8 @@ namespace R3E.Core.Services
             if (carId != this.carId && carId > 0)
             {
                 this.carId = carId;
-                this.logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
+                logger.LogInformation("Car changed. ID: {CarId}, Name: {CarName}", carId, raw.VehicleInfo.Name.ToNullTerminatedString());
                 CarChanged?.Invoke(Data);
-            }
-
-            if (lastSectorIndex != SectorData.CurrentSectorIndexSelf) {
-                switch (SectorData.CurrentSectorIndexSelf) {
-                    case 0:
-                        this.logger.LogInformation("Sector Completed. Sector Index: 2");
-                        SectorCompleted?.Invoke(Data, 2);
-                        break;
-                    case 1:
-                        this.logger.LogInformation("Sector Completed. Sector Index: 0");
-                        SectorCompleted?.Invoke(Data, 0);
-                        break;
-                    case 2:
-                        this.logger.LogInformation("Sector Completed. Sector Index: 1");
-                        SectorCompleted?.Invoke(Data, 1);
-                        break;
-                }
-
-                lastSectorIndex = SectorData.CurrentSectorIndexSelf;
             }
 
             DataUpdated?.Invoke(Data);
@@ -182,7 +136,6 @@ namespace R3E.Core.Services
             }
 
             disposed = true;
-            FuelData.Dispose();
             sharedSource.DataUpdated -= OnRawDataUpdated;
             sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
             GC.SuppressFinalize(this);
