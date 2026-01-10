@@ -12,7 +12,7 @@ namespace R3E.Features.Radar
     {
         private readonly TelemetryData telemetryData;
 
-        private Shared Raw => telemetryData.Raw;
+        public Shared Raw => telemetryData.Raw;
 
         public RadarData(TelemetryData telemetryData)
         {

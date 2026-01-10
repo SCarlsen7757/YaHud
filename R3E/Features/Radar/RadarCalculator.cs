@@ -70,12 +70,6 @@ namespace R3E.Features.Radar
             }
         }
 
-        public static double MpsToKph(float mps)
-        {
-            return mps * 3.6;
-        }
-
-
         public static bool IsCarClose(double frontBack, double leftRight, double length, double width)
         {
             var absFrontBack = Math.Abs(frontBack);

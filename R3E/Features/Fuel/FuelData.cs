@@ -18,6 +18,11 @@ public class FuelData
     }
 
     /// <summary>
+    /// Total fuel capacity of the vehicle (liters).
+    /// </summary>
+    public double FuelCapacity => Raw.FuelCapacity;
+
+    /// <summary>
     /// Fuel used in the last completed lap (liters).
     /// Updated by FuelService when a lap completes.
     /// </summary>
@@ -26,13 +31,13 @@ public class FuelData
     /// <summary>
     /// Current fuel left in the tank (liters). Returns 0 if negative.
     /// </summary>
-    public double FuelLeft => Raw.FuelLeft <= 0 ? 0.0 : Raw.FuelLeft;
+    public double FuelLeft => Raw.FuelLeft <= 0.0 ? 0.0 : Raw.FuelLeft;
 
     /// <summary>
     /// Estimated time left in the session based on fuel and lap time (seconds).
     /// Returns 0 if lap time or fuel per lap is unavailable.
     /// </summary>
-    public double TimeEstimatedLeft => Raw.LapTimeBestSelf <= 0 || Raw.FuelPerLap <= 0
+    public double TimeEstimatedLeft => Raw.LapTimeBestSelf <= 0.0 || Raw.FuelPerLap <= 0.0
         ? 0.0
         : (Raw.FuelLeft / Raw.FuelPerLap) * Raw.LapTimeBestSelf;
 
@@ -40,21 +45,21 @@ public class FuelData
     /// Fuel remaining as a percentage of total capacity.
     /// Returns 0 if capacity is zero.
     /// </summary>
-    public double FuelRemainingPercentage => Raw.FuelCapacity <= 0
+    public double FuelRemainingPercentage => Raw.FuelCapacity <= 0.0
         ? 0.0
         : (Raw.FuelLeft / Raw.FuelCapacity) * 100.0;
 
     /// <summary>
     /// Estimated laps remaining with current fuel.
     /// </summary>
-    public double LapsEstimatedLeft => Raw.FuelPerLap <= 0
+    public double LapsEstimatedLeft => Raw.FuelPerLap <= 0.0
         ? 0.0
         : Raw.FuelLeft / Raw.FuelPerLap;
 
     /// <summary>
     /// Fuel consumption per lap (liters).
     /// </summary>
-    public double FuelPerLap => Raw.FuelPerLap <= 0 ? 0.0 : Raw.FuelPerLap;
+    public double FuelPerLap => Raw.FuelPerLap <= 0.0 ? 0.0 : Raw.FuelPerLap;
 
     /// <summary>
     /// Fuel required to reach session end based on session type.
@@ -68,7 +73,7 @@ public class FuelData
             {
                 Constant.SessionLengthFormat.Unavailable => double.NaN,
 
-                Constant.SessionLengthFormat.TimeBased => Raw.LapTimeBestSelf <= 0
+                Constant.SessionLengthFormat.TimeBased => Raw.LapTimeBestSelf <= 0.0
                     ? 0.0
                     : (Raw.SessionTimeRemaining / Raw.LapTimeBestSelf) * Raw.FuelPerLap,
 

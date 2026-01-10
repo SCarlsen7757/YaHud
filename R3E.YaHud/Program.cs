@@ -5,6 +5,7 @@ using R3E.Core.SharedMemory;
 using R3E.Features.Driver;
 using R3E.Features.Fuel;
 using R3E.Features.Image;
+using R3E.Features.Radar;
 using R3E.Features.Sector;
 using R3E.Features.TimeGap;
 using R3E.YaHud.Services;
@@ -73,7 +74,7 @@ builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
 builder.Services.AddSingleton<FuelService>();
 builder.Services.AddSingleton<DriverService>();
 builder.Services.AddSingleton<SectorService>();
-
+builder.Services.AddSingleton<RadarService>();
 
 var app = builder.Build();
 
