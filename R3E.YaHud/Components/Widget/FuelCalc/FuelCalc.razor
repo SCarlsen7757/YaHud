@@ -1,6 +1,7 @@
 ﻿@using R3E.Features.Fuel
 @using R3E.YaHud.Components.Widget.Core
 @inherits HudWidgetBase<FuelSettings>
+@inject FuelService FuelService
 
 @if (Settings?.Visible ?? false)
 {
@@ -131,7 +132,7 @@
     /// </summary>
     protected override void Update()
     {
-        FuelData data = TelemetryService.FuelData;
+        FuelData data = FuelService.Data;
 
         //Start mapping of variables  
         FuelRemaining = data.FuelLeft;
@@ -141,9 +142,9 @@
         FuelToEnd = data.FuelToEnd;
         var fuelToAdd = data.FuelToAdd;
         
-        if (FuelToEnd > data.Raw.FuelCapacity)
+        if (FuelToEnd > data.FuelCapacity)
             FuelToAdd = "MAX";
-        else if (fuelToAdd >= data.Raw.FuelLeft)
+        else if (fuelToAdd >= data.FuelLeft)
             FuelToAdd = (fuelToAdd.ToString("F1"));
         else
             FuelToAdd = "0.0";

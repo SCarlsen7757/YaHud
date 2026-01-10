@@ -43,15 +43,15 @@ namespace R3E.Features.Sector
                 {
                     case 0:
                         this.logger.LogInformation("Sector Completed. Sector Index: 2");
-                        PublishSectorCompleted(SectorData, 2);
+                        InvokeSectorCompleted(SectorData, 2);
                         break;
                     case 1:
                         this.logger.LogInformation("Sector Completed. Sector Index: 0");
-                        PublishSectorCompleted(SectorData, 0);
+                        InvokeSectorCompleted(SectorData, 0);
                         break;
                     case 2:
                         this.logger.LogInformation("Sector Completed. Sector Index: 1");
-                        PublishSectorCompleted(SectorData, 1);
+                        InvokeSectorCompleted(SectorData, 1);
                         break;
                 }
 
@@ -59,10 +59,10 @@ namespace R3E.Features.Sector
             }
         }
 
-        public void PublishSectorCompleted(SectorData sectorData, int sectorIndex)
+        public void InvokeSectorCompleted(SectorData sectorData, int sectorIndex)
         {
             SectorCompleted?.Invoke(sectorData, sectorIndex);
-            eventBus.PublishSectorCompleted(sectorData, sectorIndex);
+            eventBus.InvokeSectorCompleted(sectorData, sectorIndex);
         }
 
         public void Dispose()

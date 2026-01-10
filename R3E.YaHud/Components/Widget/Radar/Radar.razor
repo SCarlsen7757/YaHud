@@ -5,6 +5,7 @@
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
 @inherits HudWidgetBase<RadarSettings>
+@inject RadarService RadarService
 
 @if (Settings?.Visible ?? false)
 {
@@ -92,7 +93,7 @@
         se3.SetStyle("opacity", "1");
         driverStyling[2] = se3;
 
-        if (Settings.RadarBeeping && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
+        if (Settings!.RadarBeeping && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
         {
             _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
             lastAlertUtc = DateTime.UtcNow;
@@ -120,7 +121,7 @@
     {
         if (Settings is null) return;
 
-        var radarModel = TelemetryService.RadarData;
+        var radarModel = RadarService.RadarData;
         if (radarModel is null) return;
 
         bool closeLeft = false;
@@ -292,7 +293,8 @@
 
         if (Settings.RadarBeeping && (closeLeft || closeRight) && closest.HasValue)
         {
-            var speed = RadarCalculator.MpsToKph(carSpeed);
+
+            var speed = R3E.Converters.UnitConverter.Convert(carSpeed, R3E.Converters.SpeedUnit.MetersPerSecond, R3E.Converters.SpeedUnit.KilometersPerHour);
             if (speed >= Settings.MinBeepSpeed && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
             {
                 var proximity = 1 - closest.Value / Settings.RadarRange;

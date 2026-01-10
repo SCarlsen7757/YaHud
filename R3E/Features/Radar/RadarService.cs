@@ -12,7 +12,7 @@ namespace R3E.Features.Radar
     {
         private readonly ILogger<RadarService> logger;
         private readonly ITelemetryService telemetryService;
-        private RadarData RadarData { get; init; }
+        public RadarData RadarData { get; private init; }
         private readonly Lock sync = new();
 
         private float trackLength = 0f;
