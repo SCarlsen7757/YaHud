@@ -3,7 +3,7 @@ using R3E.Core.Services;
 
 namespace R3E.Features.Sector
 {
-    public class SectorService : IDisposable, ISectorServiceEvents
+    public class SectorService : IDisposable
     {
         private readonly ITelemetryService telemetry;
         private readonly ITelemetryEventBus eventBus;
