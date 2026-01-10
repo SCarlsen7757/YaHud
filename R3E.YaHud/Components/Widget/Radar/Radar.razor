@@ -1,6 +1,7 @@
 ﻿@using System.Globalization
 @using System.Numerics
 @using R3E.Features.Radar
+@using R3E.Converters
 @using R3E.YaHud.Components.UI.Helpers
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
@@ -294,7 +295,7 @@
         if (Settings.RadarBeeping && (closeLeft || closeRight) && closest.HasValue)
         {
 
-            var speed = R3E.Converters.UnitConverter.Convert(carSpeed, R3E.Converters.SpeedUnit.MetersPerSecond, R3E.Converters.SpeedUnit.KilometersPerHour);
+            var speed = UnitConverter.Convert(carSpeed, SpeedUnit.MetersPerSecond, SpeedUnit.KilometersPerHour);
             if (speed >= Settings.MinBeepSpeed && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
             {
                 var proximity = 1 - closest.Value / Settings.RadarRange;
