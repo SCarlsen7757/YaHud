@@ -103,17 +103,22 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && radarElement.Context != null)
+        // if (firstRender && radarElement.Context != null)
+        // {
+        //     radarWidth = await JS.InvokeAsync<int>(
+        //         "radarInterop.getOffsetWidth",
+        //         radarElement
+        //     );
+            
+        //     StateHasChanged();
+        // }
+
+        if (firstRender)
         {
-            radarWidth = await JS.InvokeAsync<double>(
-                "radarInterop.getOffsetWidth",
-                radarElement
-            );
             // preload beep
             _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
             _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
             _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
-            StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -335,8 +340,21 @@
         Fmt(v) + "px";
     
     
-    private Task PlayAlert(double amount, double pan)
+    private async Task PlayAlert(double amount, double pan)
     {
-        return JS.InvokeVoidAsync("audioControllerManager.play", "alert", amount, pan).AsTask();
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "audioControllerManager.play",
+                "alert",
+                amount,
+                pan
+            );
+        }
+        catch (JSException ex)
+        {
+            Logger.LogError("PlayAlert failed: {Message}", ex.Message);
+            //LastAudioError = ex.Message;
+        }
     }
 }
