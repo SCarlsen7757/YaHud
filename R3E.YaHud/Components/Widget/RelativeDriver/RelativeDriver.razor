@@ -1,12 +1,14 @@
-﻿@using R3E.API
-@using R3E.API.Image
-@using R3E.API.TimeGap
+﻿@using R3E.Features.Image
+@using R3E.Features.TimeGap
+@using R3E.Core.Services
+@using R3E.Features.Driver
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
 @using R3E.YaHud.Components.Widget.RelativeDriver.Models
 @inherits HudWidgetBase<RelativeDriverSettings>
 @inject IImageService ImageService
 @inject ITimeGapService TimeGapService
+@inject DriverService DriverService
 
 @if (Settings?.Visible ?? false)
 {
@@ -92,7 +94,7 @@
             return;
         }
 
-        var relativeDrivers = TelemetryService.Data.GetRelativeDrivers(7);
+        var relativeDrivers = DriverService.GetRelativeDrivers(7);
 
         List<DisplayDriver> newDisplayDrivers = [];
 

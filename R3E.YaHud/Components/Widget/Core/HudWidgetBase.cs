@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using R3E.API;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -62,20 +63,37 @@ namespace R3E.YaHud.Components.Widget.Core
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
                 await OnSettingsLoadedAsync();
-                await InvokeAsync(StateHasChanged);
+
+                StateHasChanged();
+                return;
             }
 
-            if (Settings?.Visible ?? false && (firstRender || !visibleInitialized))
+            if (!(Settings?.Visible ?? false))
+                return;
+
+            try
             {
-                // Wait a bit for the DOM to be fully rendered and visible
-                await Task.Delay(100);
+                await JS.InvokeVoidAsync(
+                    "HudHelper.setPosition",
+                    ElementId,
+                    Settings.XPercent,
+                    Settings.YPercent
+                );
 
-                await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
-
-                visibleInitialized = true;
                 objRef ??= DotNetObjectReference.Create(this);
-                // Register draggable and pass current lock state to decide if handlers are attached
-                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked, Collidable);
+
+                await JS.InvokeVoidAsync(
+                    "HudHelper.registerDraggable",
+                    ElementId,
+                    objRef,
+                    Locked,
+                    Collidable
+                );
+
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected if component is disposed mid-render
             }
         }
 
