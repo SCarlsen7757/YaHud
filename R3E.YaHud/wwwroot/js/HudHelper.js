@@ -1,7 +1,10 @@
 ﻿window.radarInterop = {
     getOffsetWidth: function (element) {
-        if (!element) return 0;   // Returns 0 if element is null or undefined, otherwise returns the element's offsetWidth.
-        return element.offsetWidth;
+        return new Promise(resolve => {
+            requestAnimationFrame(() => {
+                resolve(element ? element.offsetWidth : 0);
+            });
+        });
     }
 };
 
@@ -331,37 +334,43 @@ window.HudHelper = (function () {
         },
 
         setPosition: function (elementId, xPercent, yPercent) {
-            const el = document.getElementById(elementId);
-            if (!el) {
-                console.warn('HudHelper.setPosition: element not found', elementId);
-                return;
-            }
-            const widgetWidth = el.offsetWidth;
-            const widgetHeight = el.offsetHeight;
-            el.style.position = "absolute";
-            el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-            el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+            requestAnimationFrame(() => {
+                const el = document.getElementById(elementId);
+                if (!el) {
+                    console.warn('HudHelper.setPosition: element not found', elementId);
+                    return;
+                }
+                const widgetWidth = el.offsetWidth;
+                const widgetHeight = el.offsetHeight;
+                el.style.position = "absolute";
+                el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
+                el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+            });
+
         },
 
         resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
-            const el = document.getElementById(elementId);
-            if (!el) {
-                console.warn('HudHelper.resetPosition: element not found', elementId);
-                return;
-            }
+            requestAnimationFrame(() => {
+                const el = document.getElementById(elementId);
+                if (!el) {
+                    console.warn('HudHelper.resetPosition: element not found', elementId);
+                    return;
+                }
 
-            // Clear any saved settings
-            try {
-                localStorage.removeItem(elementId);
-            } catch (e) {
-                console.warn('HudHelper.resetPosition: localStorage error', e);
-            }
+                // Clear any saved settings
+                try {
+                    localStorage.removeItem(elementId);
+                } catch (e) {
+                    console.warn('HudHelper.resetPosition: localStorage error', e);
+                }
 
-            const widgetWidth = el.offsetWidth;
-            const widgetHeight = el.offsetHeight;
-            el.style.position = "absolute";
-            el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-            el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+                const widgetWidth = el.offsetWidth;
+                const widgetHeight = el.offsetHeight;
+                el.style.position = "absolute";
+                el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
+                el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+            });
+
         },
 
         setWidgetSettings: function (elementId, value) {

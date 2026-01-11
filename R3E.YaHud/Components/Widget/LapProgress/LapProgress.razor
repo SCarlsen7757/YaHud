@@ -1,9 +1,11 @@
-﻿@using R3E.API
+﻿@using System.Globalization
+@using R3E.Core.Services
 @using R3E.YaHud.Components.Widget.Core
+@using R3E.Features.Sector
 @using R3E.YaHud.Components.Widget.LapProgress.Components
-@using System.Globalization
 @inherits HudWidgetBase<LapProgressSettings>
 @implements IDisposable
+@inject SectorService SectorService
 
 @if (Settings?.Visible ?? false)
 {
@@ -92,9 +94,10 @@
         SectorColors = Enumerable.Repeat(Settings!.NeutralSectorTimeColor, 3).ToArray();
 
         TelemetryService.NewLap += TelemetryService_NewLap;
-        TelemetryService.SectorCompleted += TelemetryService_SectorCompleted;
+        SectorService.SectorCompleted += TelemetryService_SectorCompleted;
 
-        if (TelemetryService.SectorData.CurrentSectorIndexSelf == 0) {
+        if (SectorService.SectorData.CurrentSectorIndexSelf == 0)
+        {
             // When HUD is reloaded while in sector 1
             HideSectorTimes();
         }
@@ -115,7 +118,7 @@
         hideSectorTimesTime = DateTime.Now + TimeSpan.FromSeconds(delaySeconds);
     }
 
-    private void TelemetryService_SectorCompleted(TelemetryData data, int sectorIndex)
+    private void TelemetryService_SectorCompleted(SectorData data, int sectorIndex)
     {
         if (sectorIndex == 0 || sectorIndex == 1)
         {
@@ -260,6 +263,6 @@
         base.Dispose();
 
         TelemetryService.NewLap -= TelemetryService_NewLap;
-        TelemetryService.SectorCompleted -= TelemetryService_SectorCompleted;
+        SectorService.SectorCompleted -= TelemetryService_SectorCompleted;
     }
 }

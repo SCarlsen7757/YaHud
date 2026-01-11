@@ -15,7 +15,7 @@
         /// Dictionary of CSS property -> value pairs. Values should be preformatted (use invariant
         /// culture for numbers) when possible so <see cref="ToString"/> can emit them directly.
         /// </summary>
-        public Dictionary<string, string> Styles { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string?> Styles { get; set; } = [];
 
         /// <summary>
         /// Helper to maintain a deduplicated set of CSS classes for the element.
@@ -27,7 +27,7 @@
         /// </summary>
         public void Clear()
         {
-            Styles = new Dictionary<string, string>();
+            Styles = [];
             Classes = new ClassList();
         }
 
@@ -36,7 +36,7 @@
         /// </summary>
         /// <param name="key">CSS property name (e.g. "width", "transform").</param>
         /// <param name="value">Property value (e.g. "10px", "translate3d(10px,0,0)"). Use invariant formatting for numbers.</param>
-        public void SetStyle(string key, string value)
+        public void SetStyle(string key, string? value)
         {
             Styles[key] = value;
         }
@@ -48,7 +48,7 @@
         /// <returns>The value for the property or <c>""</c>.</returns>
         public string GetStyle(string key)
         {
-            return Styles.TryGetValue(key, out var v) ? v : "";
+            return Styles.TryGetValue(key, out var v) ? v ?? "" : "";
         }
 
         /// <summary>

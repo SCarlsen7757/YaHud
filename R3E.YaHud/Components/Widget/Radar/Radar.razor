@@ -1,12 +1,12 @@
-﻿@using R3E.YaHud.Components.UI.Helpers
+﻿@using System.Globalization
+@using System.Numerics
+@using R3E.Features.Radar
+@using R3E.Converters
+@using R3E.YaHud.Components.UI.Helpers
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
-@using R3E.API
-@using R3E.API.Models
-@using R3E.API.Radar
-@using System.Numerics
-@using System.Globalization
 @inherits HudWidgetBase<RadarSettings>
+@inject RadarService RadarService
 
 @if (Settings?.Visible ?? false)
 {
@@ -94,7 +94,7 @@
         se3.SetStyle("opacity", "1");
         driverStyling[2] = se3;
 
-        if (Settings.RadarBeeping && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
+        if (Settings!.RadarBeeping && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
         {
             _ = PlayAlert(1 - 4 / Settings.RadarRange, 0 * -1 + 1 * 1);
             lastAlertUtc = DateTime.UtcNow;
@@ -103,17 +103,22 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && radarElement.Context != null)
+        // if (firstRender && radarElement.Context != null)
+        // {
+        //     radarWidth = await JS.InvokeAsync<int>(
+        //         "radarInterop.getOffsetWidth",
+        //         radarElement
+        //     );
+            
+        //     StateHasChanged();
+        // }
+
+        if (firstRender)
         {
-            radarWidth = await JS.InvokeAsync<double>(
-                "radarInterop.getOffsetWidth",
-                radarElement
-            );
             // preload beep
             _ = JS.InvokeVoidAsync("audioControllerManager.create", "alert", new { soundFile = "assets/sounds/radar/beep.wav" });
             _ = JS.InvokeVoidAsync("audioControllerManager.preload", "alert", "assets/sounds/radar/beep.wav");
             _ = JS.InvokeVoidAsync("audioControllerManager.unlockAudioOnGestureOnce");
-            StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -122,7 +127,7 @@
     {
         if (Settings is null) return;
 
-        var radarModel = TelemetryService.RadarData;
+        var radarModel = RadarService.RadarData;
         if (radarModel is null) return;
 
         bool closeLeft = false;
@@ -294,7 +299,8 @@
 
         if (Settings.RadarBeeping && (closeLeft || closeRight) && closest.HasValue)
         {
-            var speed = RadarCalculator.MpsToKph(carSpeed);
+
+            var speed = UnitConverter.Convert(carSpeed, SpeedUnit.MetersPerSecond, SpeedUnit.KilometersPerHour);
             if (speed >= Settings.MinBeepSpeed && (DateTime.UtcNow - lastAlertUtc) >= alertCooldown)
             {
                 var proximity = 1 - closest.Value / Settings.RadarRange;
@@ -334,8 +340,21 @@
         Fmt(v) + "px";
     
     
-    private Task PlayAlert(double amount, double pan)
+    private async Task PlayAlert(double amount, double pan)
     {
-        return JS.InvokeVoidAsync("audioControllerManager.play", "alert", amount, pan).AsTask();
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "audioControllerManager.play",
+                "alert",
+                amount,
+                pan
+            );
+        }
+        catch (JSException ex)
+        {
+            Logger.LogError("PlayAlert failed: {Message}", ex.Message);
+            //LastAudioError = ex.Message;
+        }
     }
 }

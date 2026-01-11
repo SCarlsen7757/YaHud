@@ -8,7 +8,8 @@ namespace R3E.YaHud.Components.UI.Helpers
     /// The widget updates instances of this class each frame; it is intended as a short-lived, mutable holder
     /// for display calculations only.
     /// </summary>
-    public class DriverState {
+    public class DriverState
+    {
         /// <summary>
         /// Position of the other driver relative to the player, in the radar coordinate frame.
         /// Units: meters. This value is typically produced by rotating world positions by the player's orientation.
@@ -26,7 +27,7 @@ namespace R3E.YaHud.Components.UI.Helpers
         /// Original telemetry payload for this driver (may be null if not yet populated).
         /// The widget reads properties such as <c>DriverInfo</c>, <c>CarWidth</c>, <c>CarLength</c>, and <c>CarSpeed</c>.
         /// </summary>
-        public R3E.Data.DriverData DriverData { get; set; } 
-    } 
+        public R3E.Data.DriverData DriverData { get; set; }
+    }
 
 }
