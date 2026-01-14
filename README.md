@@ -1,10 +1,12 @@
+![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-orange.svg)
+
 # YaHud - Yet Another HUD for RaceRoom Racing Experience
 
 A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experience, built with Blazor and .NET 10.
 
-![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)
+![YaHud Logo](./images/logo512x512.png)
 
 ## 🎮 Features
 
