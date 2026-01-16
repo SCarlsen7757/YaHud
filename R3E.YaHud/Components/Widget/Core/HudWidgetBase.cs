@@ -25,7 +25,6 @@ namespace R3E.YaHud.Components.Widget.Core
         public abstract string Name { get; }
         public abstract string Category { get; }
 
-        private bool visibleInitialized = false;
 
         public abstract double DefaultXPercent { get; }
         public abstract double DefaultYPercent { get; }
@@ -99,13 +98,6 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private void Settings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(BasicSettings.Visible))
-            {
-                if (Settings?.Visible ?? false)
-                {
-                    visibleInitialized = false;
-                }
-            }
             InvokeAsync(StateHasChanged);
         }
 
@@ -185,7 +177,6 @@ namespace R3E.YaHud.Components.Widget.Core
 
             Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
             Settings.PropertyChanged += Settings_PropertyChanged;
-            visibleInitialized = false;
 
             await SettingsService.Clear(this);
             await InvokeAsync(StateHasChanged);

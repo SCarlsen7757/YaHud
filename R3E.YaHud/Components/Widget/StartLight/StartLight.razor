@@ -1,10 +1,9 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @inherits HudWidgetBase<StartLightSettings>
 
-@if (Settings?.Visible ?? false)
-{
+<WidgetHost Owner="this">
     <div style="visibility: @(IsCountdownPhase || TestMode ? "visible" : "hidden");">
-        <div id=@ElementId class="start-light-widget text">
+        <div class="start-light-widget text">
             <div class="lights-and-glows-container">
                 <div class="lights-container">
                     @for (int i = 1; i <= 5; i++)
@@ -27,7 +26,7 @@
             </div>
         </div>
     </div>
-}
+</WidgetHost>
 
 @code {
 
