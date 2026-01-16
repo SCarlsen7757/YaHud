@@ -7,9 +7,8 @@
 @implements IDisposable
 @inject SectorService SectorService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId>
+<WidgetHost Owner="this">
+    <div id="layout">
         <span id="time-delta-best-lap" style="color: @TimeDeltaBestLapSelfColor;">@GetTimeFormatted(TimeDeltaBestLapSelf, -1000)</span>
     
         <div id="box-container">
@@ -35,7 +34,7 @@
             <span id="estimate-position" style="color: @Settings.SectorTimeAndInfoTextColor; display: @(IsQualifying ? "block" : "none");">Est. Pos: @(EstimatedPosition != -1 ? EstimatedPosition : "-")</span>
         </div>
     </div>
-}
+</WidgetHost>
 
 
 @code {

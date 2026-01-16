@@ -8,9 +8,8 @@
 @inherits HudWidgetBase<RadarSettings>
 @inject RadarService RadarService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="radar-widget">
+<WidgetHost Owner="this">
+    <div class="radar-widget">
         <div id="radar" @ref="radarElement" style="@RadarStyling.ToString()">
             @foreach (var child in activeDriverSlots)
             {
@@ -20,8 +19,7 @@
             }
         </div>
     </div>
-}
-
+</WidgetHost>
 
 @code {
 

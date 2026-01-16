@@ -10,9 +10,8 @@
 @inject ITimeGapService TimeGapService
 @inject DriverService DriverService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="relative-driver-widget">
+<WidgetHost Owner="this">
+    <div class="relative-driver-widget">
         @if (displayDrivers.Count > 0)
         {
             <div class="driver-table">
@@ -61,7 +60,7 @@
             </div>
         }
     </div>
-}
+</WidgetHost>
 
 @code {
     public override string ElementId { get => "relativeDriverWidget"; }
