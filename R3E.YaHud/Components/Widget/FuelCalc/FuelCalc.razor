@@ -3,9 +3,8 @@
 @inherits HudWidgetBase<FuelSettings>
 @inject FuelService FuelService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="Fuel-widget">
+<WidgetHost Owner="this">
+    <div class="Fuel-widget">
         <div class="data-grid">
             <div class="data-box large-box">
                 <p class="value" style="color: @FuelRemainingColor">@(FuelRemaining.ToString("F1"))</p>
@@ -43,7 +42,7 @@
             </div>
         </div>
     </div>
-}
+</WidgetHost>
 
 @code {
     /// <summary>

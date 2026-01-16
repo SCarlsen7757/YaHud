@@ -44,7 +44,10 @@ window.HudHelper = (function () {
 
     function getEntryRectAt(entry, left, top) {
         const el = entry.el;
-        return { left: left, top: top, width: el.offsetWidth, height: el.offsetHeight };
+        const rect = el.getBoundingClientRect();
+        const widgetWidth = rect.width;
+        const widgetHeight = rect.height;
+        return { left: left, top: top, width: widgetWidth, height: widgetHeight };
     }
 
     function getEntryRect(entry) {
@@ -185,8 +188,11 @@ window.HudHelper = (function () {
             const proposedY = e.clientY - entry.offsetY;
 
             // clamp to window boundaries
-            const maxX = window.innerWidth - el.offsetWidth;
-            const maxY = window.innerHeight - el.offsetHeight;
+            const rect = el.getBoundingClientRect();
+            const widgetWidth = rect.width;
+            const widgetHeight = rect.height;
+            const maxX = window.innerWidth - widgetWidth;
+            const maxY = window.innerHeight - widgetHeight;
             const clampedX = Math.max(0, Math.min(maxX, proposedX));
             const clampedY = Math.max(0, Math.min(maxY, proposedY));
 
@@ -239,8 +245,11 @@ window.HudHelper = (function () {
             // apply target position
             if (entry.isDragging) {
                 el.style.position = 'absolute';
-                el.style.left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, entry.targetX)) + 'px';
-                el.style.top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, entry.targetY)) + 'px';
+                const rect = el.getBoundingClientRect();
+                const widgetWidth = rect.width;
+                const widgetHeight = rect.height;
+                el.style.left = Math.max(0, Math.min(window.innerWidth - widgetWidth, entry.targetX)) + 'px';
+                el.style.top = Math.max(0, Math.min(window.innerHeight - widgetHeight, entry.targetY)) + 'px';
                 entry.raf = requestAnimationFrame(step);
             } else {
                 if (entry.raf) {
@@ -340,8 +349,9 @@ window.HudHelper = (function () {
                     console.warn('HudHelper.setPosition: element not found', elementId);
                     return;
                 }
-                const widgetWidth = el.offsetWidth;
-                const widgetHeight = el.offsetHeight;
+                const rect = el.getBoundingClientRect();
+                const widgetWidth = rect.width;
+                const widgetHeight = rect.height;
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
@@ -364,8 +374,9 @@ window.HudHelper = (function () {
                     console.warn('HudHelper.resetPosition: localStorage error', e);
                 }
 
-                const widgetWidth = el.offsetWidth;
-                const widgetHeight = el.offsetHeight;
+                const rect = el.getBoundingClientRect();
+                const widgetWidth = rect.width;
+                const widgetHeight = rect.height;
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";

@@ -2,12 +2,11 @@
 @inherits HudWidgetBase<ClockSettings>
 @implements IDisposable
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="clock-widget">
+<WidgetHost Owner="this">
+    <div class="clock-widget">
         <span class="text" style="color: @Settings.TextColor">@currentTime.ToString("HH:mm:ss")</span>
     </div>
-}
+</WidgetHost>
 
 @code {
     private DateTime currentTime = DateTime.Now;
@@ -22,11 +21,8 @@
     public override double DefaultYPercent => 20;
 
     public override bool Collidable => false;
+    protected override bool UseR3EData => false;
 
-    public Clock()
-    {
-        UseR3EData = false;
-    }
 
     protected override void OnInitialized()
     {

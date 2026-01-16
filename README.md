@@ -230,16 +230,53 @@ Widgets inherit from `HudWidgetBase<TSettings>` and implement:
 Example:
 
 ```csharp
-public class MyWidget : HudWidgetBase<MyWidgetSettings>
-{
-    public override string ElementId => "myWidget";
-    public override string Name => "My Widget";
-    public override string Category => "Custom";
-    
+@using R3E.YaHud.Components.Widget.Core
+@inherits HudWidgetBase<ExampleSettings>
+@implements IDisposable
+
+<WidgetHost Owner="this">
+    <div class="example-widget">
+        <p>Widget Content</p>
+    </div>
+</WidgetHost>
+
+@code {
+    public override string ElementId { get => "exampleWidget"; }
+    public override string Name => "Example";
+    public override string Category => "ExampleCategory";
+
+    // Default placement on screen in %
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 20;
+
+    //Optional
+    public override bool Collidable => false;
+    protected override bool UseR3EData => false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        // OBS. Can't use settings here
+    }
+
+    protected override Task OnSettingsLoadedAsync()
+    {
+        // Read default settings here into widget
+    }
+
     protected override void Update()
     {
-        // Access telemetry data via TelemetryService.Data.Raw
-        // Update widget state
+        // Access data using injected services
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        // Update with test values to display state of widget
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
     }
 }
 ```
