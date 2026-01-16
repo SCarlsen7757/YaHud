@@ -1,0 +1,48 @@
+﻿@inject R3E.YaHud.Services.VisibilityService VisibilityService
+@implements IDisposable
+
+@if (IsVisible)
+{
+    @if (Owner == null)
+    {
+        <div class="widget-host" style="display:none">
+            @ChildContent
+        </div>
+    }
+    else
+    {
+        <div id="@OwnerElementId"
+             class="widget-host @CssClass"
+             style="transform: scale(1); transform-origin: center center;">
+            @ChildContent
+        </div>
+    }
+}
+
+
+@code {
+    [Parameter] public IWidget? Owner { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+
+    private string OwnerElementId => Owner switch
+    {
+        null => string.Empty,
+        _ => Owner.ElementId // IWidget should expose ElementId; use direct interface property if available
+    };
+
+    private bool IsVisible => Owner?.Settings?.Visible ?? false;
+
+
+    protected override void OnInitialized()
+    {
+        VisibilityService.OnVisibilityChanged += OnGlobalVisibilityChanged;
+    }
+
+    private void OnGlobalVisibilityChanged(bool _) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        VisibilityService.OnVisibilityChanged -= OnGlobalVisibilityChanged;
+    }
+}

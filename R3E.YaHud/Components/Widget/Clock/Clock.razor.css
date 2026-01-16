@@ -2,7 +2,6 @@
     z-index: 5000;
     text-align: center;
     width: 300px;
-    position: absolute;
     white-space: nowrap; /* Prevent text wrapping */
     overflow: hidden; /* Prevent scrollbars inside the widget */
     box-sizing: border-box; /* Include padding/border in width */
