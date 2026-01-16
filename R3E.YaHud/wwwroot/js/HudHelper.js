@@ -69,7 +69,6 @@ window.HudHelper = (function () {
             // skip non-collidable others
             if (!other.collidable) continue;
             const otherRectDom = getEntryRect(other);
-            console.log(proposedRect, otherRectDom);
             // skip if not visible or zero-sized
             if (otherRectDom.width === 0 || otherRectDom.height === 0) continue;
             if (rectsIntersect(proposedRect, otherRectDom)) return true;
