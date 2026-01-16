@@ -36,7 +36,7 @@ namespace R3E.YaHud.Components.Widget.Core
         public TSettings? Settings { get; set; }
         public Type GetSettingsType() => typeof(TSettings);
 
-        protected bool UseR3EData { get; set; } = true;
+        protected virtual bool UseR3EData { get; set; } = true;
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
