@@ -21,11 +21,8 @@
     public override double DefaultYPercent => 20;
 
     public override bool Collidable => false;
+    protected override bool UseR3EData => false;
 
-    public Clock()
-    {
-        UseR3EData = false;
-    }
 
     protected override void OnInitialized()
     {
