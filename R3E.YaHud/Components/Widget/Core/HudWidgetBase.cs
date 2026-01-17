@@ -173,7 +173,12 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ResetPosition()
         {
-            await JS.InvokeVoidAsync("HudHelper.resetElement", ElementId, DefaultXPercent, DefaultYPercent);
+            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
+        }
+
+        public async Task ResetScale()
+        {
+            await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId);
         }
 
         public async Task ClearSettings()
