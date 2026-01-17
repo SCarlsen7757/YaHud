@@ -156,20 +156,29 @@ window.HudHelper = (function () {
 
         function onMouseDown(e) {
             // only left button
-            if (e.button !== 0) return;
-            entry.isDragging = true;
-            entry.startX = e.clientX;
-            entry.startY = e.clientY;
-            const rect = el.getBoundingClientRect();
-            entry.offsetX = e.clientX - rect.left;
-            entry.offsetY = e.clientY - rect.top;
-            entry.targetX = rect.left;
-            entry.targetY = rect.top;
-            // store last valid position for sliding
-            entry.prevValidX = entry.targetX;
-            entry.prevValidY = entry.targetY;
+            if (!entry.isScaling && e.button == 0) {
+                entry.isDragging = true;
+                entry.startX = e.clientX;
+                entry.startY = e.clientY;
+                const rect = el.getBoundingClientRect();
+                entry.offsetX = e.clientX - rect.left;
+                entry.offsetY = e.clientY - rect.top;
+                entry.targetX = rect.left;
+                entry.targetY = rect.top;
+                // store last valid position for sliding
+                entry.prevValidX = entry.targetX;
+                entry.prevValidY = entry.targetY;
 
-            // show grid overlay while dragging
+                // show grid overlay while dragging
+            }
+            else if (!entry.isDragging && e.button == 2) {
+                e.preventDefault();
+
+                entry.isScaling = true;
+
+                entry.prevY = e.clientY;
+            }
+
             try { showGrid(); } catch (ex) { console.warn('HudHelper: showGrid failed', ex); }
 
             // capture mousemove on window
@@ -181,64 +190,87 @@ window.HudHelper = (function () {
         }
 
         function onMouseMove(e) {
-            if (!entry.isDragging) return;
+            if (entry.isDragging) {
+                // compute proposed target positions based on mouse
+                const proposedX = e.clientX - entry.offsetX;
+                const proposedY = e.clientY - entry.offsetY;
 
-            // compute proposed target positions based on mouse
-            const proposedX = e.clientX - entry.offsetX;
-            const proposedY = e.clientY - entry.offsetY;
+                // clamp to window boundaries
+                const rect = el.getBoundingClientRect();
+                const widgetWidth = rect.width;
+                const widgetHeight = rect.height;
+                const maxX = window.innerWidth - widgetWidth;
+                const maxY = window.innerHeight - widgetHeight;
+                const clampedX = Math.max(0, Math.min(maxX, proposedX));
+                const clampedY = Math.max(0, Math.min(maxY, proposedY));
 
-            // clamp to window boundaries
-            const rect = el.getBoundingClientRect();
-            const widgetWidth = rect.width;
-            const widgetHeight = rect.height;
-            const maxX = window.innerWidth - widgetWidth;
-            const maxY = window.innerHeight - widgetHeight;
-            const clampedX = Math.max(0, Math.min(maxX, proposedX));
-            const clampedY = Math.max(0, Math.min(maxY, proposedY));
+                // non-collidable widgets can move freely
+                if (!entry.collidable) {
+                    entry.targetX = clampedX;
+                    entry.targetY = clampedY;
+                    entry.prevValidX = clampedX;
+                    entry.prevValidY = clampedY;
+                    return;
+                }
 
-            // non-collidable widgets can move freely
-            if (!entry.collidable) {
-                entry.targetX = clampedX;
-                entry.targetY = clampedY;
-                entry.prevValidX = clampedX;
-                entry.prevValidY = clampedY;
-                return;
+                // For collidable widgets: find the furthest valid position and try to slide along collision boundaries
+                const result = trySlideMovement(entry, entry.prevValidX, entry.prevValidY, clampedX, clampedY);
+
+                entry.targetX = result.x;
+                entry.targetY = result.y;
+                entry.prevValidX = result.x;
+                entry.prevValidY = result.y;
             }
+            else if (entry.isScaling) {
+                const diffY = e.clientY - entry.prevY;
+                entry.prevY = e.clientY;
 
-            // For collidable widgets: find the furthest valid position and try to slide along collision boundaries
-            const result = trySlideMovement(entry, entry.prevValidX, entry.prevValidY, clampedX, clampedY);
-
-            entry.targetX = result.x;
-            entry.targetY = result.y;
-            entry.prevValidX = result.x;
-            entry.prevValidY = result.y;
+                el.scale =  Math.max(0.5, Math.min(3, el.scale + diffY * 0.005));
+            }
         }
 
         function onMouseUp(e) {
-            if (!entry.isDragging) return;
-            entry.isDragging = false;
+            if (entry.isDragging) {
+                entry.isDragging = false;
+
+                // finalize position based on center
+                const rect = el.getBoundingClientRect();
+                const leftPx = rect.left + rect.width / 2;
+                const topPx = rect.top + rect.height / 2;
+                const leftPercent = (leftPx / window.innerWidth) * 100;
+                const topPercent = (topPx / window.innerHeight) * 100;
+
+                console.log('HudHelper.onMouseUp: calling UpdateWidgetPosition for', entry.id, 'with x=', leftPercent, 'y=', topPercent);
+                try {
+                    dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent)
+                        .catch(err => {
+                            console.error('HudHelper: Failed to update widget position (async)', err);
+                        });
+                } catch (ex) {
+                    console.error('HudHelper: Failed to update widget position (sync)', ex);
+                }
+            }
+            else if (entry.isScaling) {
+                e.preventDefault();
+                entry.isScaling = false;
+
+                console.log('HudHelper.onMouseUp: calling UpdateWidgetScale for', entry.id, 'with scale=', el.scale);
+                try {
+                    dotnetHelper.invokeMethodAsync('UpdateWidgetScale', el.scale)
+                        .catch(err => {
+                            console.error('HudHelper: Failed to update widget scale (async)', err);
+                        });
+                } catch (ex) {
+                    console.error('HudHelper: Failed to update widget scale (sync)', ex);
+                }
+            }
+
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
-
-            // finalize position based on center
-            const rect = el.getBoundingClientRect();
-            const leftPx = rect.left + rect.width / 2;
-            const topPx = rect.top + rect.height / 2;
-            const leftPercent = (leftPx / window.innerWidth) * 100;
-            const topPercent = (topPx / window.innerHeight) * 100;
 
             // hide grid overlay
             try { hideGrid(); } catch (ex) { console.warn('HudHelper: hideGrid failed', ex); }
 
-            console.log('HudHelper.onMouseUp: calling UpdateWidgetPosition for', entry.id, 'with x=', leftPercent, 'y=', topPercent);
-            try {
-                dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', leftPercent, topPercent)
-                    .catch(err => {
-                        console.error('HudHelper: Failed to update widget position (async)', err);
-                    });
-            } catch (ex) {
-                console.error('HudHelper: Failed to update widget position (sync)', ex);
-            }
         }
 
         function step() {
@@ -251,7 +283,12 @@ window.HudHelper = (function () {
                 el.style.left = Math.max(0, Math.min(window.innerWidth - widgetWidth, entry.targetX)) + 'px';
                 el.style.top = Math.max(0, Math.min(window.innerHeight - widgetHeight, entry.targetY)) + 'px';
                 entry.raf = requestAnimationFrame(step);
-            } else {
+            } 
+            else if (entry.isScaling) {
+                el.style.transform = `scale(${el.scale})`;
+                entry.raf = requestAnimationFrame(step);
+            }
+            else {
                 if (entry.raf) {
                     cancelAnimationFrame(entry.raf);
                     entry.raf = null;
@@ -292,10 +329,10 @@ window.HudHelper = (function () {
     }
 
     return {
-        registerDraggable: function (elementId, dotnetHelper, locked, collidable) {
+        registerTransformable: function (elementId, dotnetHelper, locked, collidable) {
             const el = document.getElementById(elementId);
             if (!el) {
-                console.warn('HudHelper.registerDraggable: element not found', elementId);
+                console.warn('HudHelper.registerTransformable: element not found', elementId);
                 return;
             }
             // if already registered, update dotnetRef and locked state
@@ -312,32 +349,32 @@ window.HudHelper = (function () {
             else detachHandlers(entry);
         },
 
-        enableDragging: function (elementId) {
+        enableTransformation: function (elementId) {
             const entry = registry[elementId];
             if (!entry) {
-                console.warn('HudHelper.enableDragging: element not registered', elementId);
+                console.warn('HudHelper.enableTransformation: element not registered', elementId);
                 return;
             }
             attachHandlers(entry);
         },
 
-        disableDragging: function (elementId) {
+        disableTransformation: function (elementId) {
             const entry = registry[elementId];
             if (!entry) {
-                console.warn('HudHelper.disableDragging: element not registered', elementId);
+                console.warn('HudHelper.disableTransformation: element not registered', elementId);
                 return;
             }
             detachHandlers(entry);
         },
 
-        unregisterDraggable: function (elementId) {
+        unregisterTransformable: function (elementId) {
             const entry = registry[elementId];
             if (!entry) return;
             detachHandlers(entry);
             try {
                 entry.dotNetRef?.dispose();
             } catch (e) {
-                console.warn('HudHelper.unregisterDraggable: Error disposing dotNetRef', e);
+                console.warn('HudHelper.unregisterTransformable: Error disposing dotNetRef', e);
             }
             delete registry[elementId];
         },
@@ -359,7 +396,20 @@ window.HudHelper = (function () {
 
         },
 
-        resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
+        setScale: function (elementId, scale) {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(elementId);
+                if (!el) {
+                    console.warn('HudHelper.setScale: element not found', elementId);
+                    return;
+                }
+                el.scale = scale;
+                console.log('HudHelper.setScale: setting scale for', elementId, 'to', scale);
+                el.style.transform = `scale(${scale})`;
+            });
+        },
+
+        resetElement: function (elementId, xPercent = 50, yPercent = 50) {
             requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
@@ -380,6 +430,9 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+
+                el.scale = 1;
+                el.style.transform = `scale(1)`;
             });
 
         },
