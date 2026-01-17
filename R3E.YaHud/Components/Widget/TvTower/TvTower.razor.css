@@ -1,11 +1,10 @@
 ﻿.tv-tower-widget {
     z-index: 5000;
     text-align: left;
-    width: 300px;
+    width: 380px;
     height: 500px;
     background: rgba(0, 0, 0, 0.25);
     border-radius: 4px;
-    position: absolute;
     white-space: nowrap;
     overflow: hidden;
     box-sizing: border-box;
@@ -54,11 +53,11 @@
     text-align: right;
 }
 
-.tv-table th.col-gap,
-.tv-table td.col-gap {
-    text-align: right;
-    width: 60px;
-}
+    .tv-table th.col-best,
+    .tv-table td.col-best {
+        width: 70px;
+        text-align: center;
+    }
 
 .tv-table th.col-tyre,
 .tv-table td.col-tyre {

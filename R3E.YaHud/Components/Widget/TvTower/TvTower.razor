@@ -2,8 +2,8 @@
 @inherits HudWidgetBase<TvTowerSettings>
 @implements IDisposable
 
-@if (Settings?.Visible ?? false)
-{
+
+<WidgetHost Owner="this">
     <div id="@ElementId" class="tv-tower-widget">
         <table class="tv-table">
             <thead>
@@ -45,7 +45,7 @@
             </tbody>
         </table>
     </div>
-}
+</WidgetHost>
 
 @code {
 
@@ -80,14 +80,19 @@
 
         drivers = new()
         {
-            new() { Name = "Kevin Magnussen", Position = 1, CarNumber = 15,  BestLap = TimeSpan.FromSeconds(122), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
+            new() { Name = "Kevin Magnussen", Position = 1, CarNumber = 15,  BestLap = TimeSpan.FromSeconds(122, 532), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
             new() { Name = "Mirko Bortolotti", Position = 2, CarNumber = 63, TireCompoundRear = TireCompound.Medium,  IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp" },
-            new() { Name = "Kévin Estre", Position = 3, CarNumber = 6, BestLap = TimeSpan.FromSeconds(120),  PitStopServed = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
-            new() { Name = "You", Position = 4, CarNumber = 7, TireCompoundFront = TireCompound.Medium, TireCompoundRear = TireCompound.Soft , BestLap = TimeSpan.FromSeconds(115),  IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
-            new() { Name = "Maro Engel", Position = 5, CarNumber = 5, TireCompoundFront = TireCompound.Soft, TireCompoundRear = TireCompound.Soft, BestLap = TimeSpan.FromSeconds(118), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
-            new() { Name = "Oliver Jarvis", Position = 6, CarNumber = 77, BestLap = TimeSpan.FromSeconds(125), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
-            new() { Name = "Nick Cassidy", Position = 7, CarNumber = 37, BestLap = TimeSpan.FromSeconds(122), IsInPitLane = true, PitStopServed = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
+            new() { Name = "Kévin Estre", Position = 3, CarNumber = 6, BestLap = TimeSpan.FromSeconds(120, 713),  PitStopServed = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
+            new() { Name = "You", Position = 4, CarNumber = 7, TireCompoundFront = TireCompound.Medium, TireCompoundRear = TireCompound.Soft , BestLap = TimeSpan.FromSeconds(515, 790),  IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
+            new() { Name = "Maro Engel", Position = 5, CarNumber = 5, TireCompoundFront = TireCompound.Soft, TireCompoundRear = TireCompound.Soft, BestLap = TimeSpan.FromSeconds(518, 715), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
+            new() { Name = "Oliver Jarvis", Position = 6, CarNumber = 77, BestLap = TimeSpan.FromSeconds(525, 391), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
+            new() { Name = "Nick Cassidy", Position = 7, CarNumber = 37, BestLap = new TimeSpan(0,0,14,29, 191), IsInPitLane = true, PitStopServed = false, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
         };
+
+        foreach(var driver in drivers)
+        {
+            driver.Name = NameShortener.ShortenName(driver.Name);
+        }
     }
 
     private static string FormatLap(TimeSpan? time)
