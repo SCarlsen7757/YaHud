@@ -73,17 +73,19 @@ namespace R3E.YaHud.Components.Widget.Core
             try
             {
                 await JS.InvokeVoidAsync(
+                    "HudHelper.setScale",
+                    ElementId,
+                    Settings.Scale
+                );
+
+                await JS.InvokeVoidAsync(
                     "HudHelper.setPosition",
                     ElementId,
                     Settings.XPercent,
                     Settings.YPercent
                 );
 
-                await JS.InvokeVoidAsync(
-                    "HudHelper.setScale",
-                    ElementId,
-                    Settings.Scale
-                );
+                
 
                 objRef ??= DotNetObjectReference.Create(this);
 
