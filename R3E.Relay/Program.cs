@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using R3E.API;
+using R3E.Core.SharedMemory;
 using R3E.Data;
-using R3E.UdpRelay;
+using R3E.Relay.Service;
 using System.Net;
 using System.Runtime.InteropServices;
 

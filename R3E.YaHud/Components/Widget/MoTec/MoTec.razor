@@ -1,11 +1,10 @@
-﻿@using R3E.YaHud.Components.Widget.Core
+﻿@using R3E.Converters
+@using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.MoTec.Components
-@using R3E.API
 @inherits HudWidgetBase<MoTecSettings>
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="motec-widget text">
+<WidgetHost Owner="this">
+    <div class="motec-widget text">
         <p class="gear-text" style="color:@RpsCurrentColor">@Gear</p>
         <p class="speed-text" style="color:@RpsCurrentColor">@Speed.ToString("0")</p>
         <div class="rpm-component">
@@ -17,7 +16,7 @@
                            BackgroundColor="@RpsBarBackgroundColor" />
         </div>
     </div>
-}
+</WidgetHost>
 
 @code {
     private string Gear { get; set; } = "N";

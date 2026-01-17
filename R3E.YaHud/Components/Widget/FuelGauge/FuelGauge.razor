@@ -3,9 +3,8 @@
 @inherits HudWidgetBase<FuelGaugeSettings>
 @implements IDisposable
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="fuel-gauge-widget">
+<WidgetHost Owner="this">
+    <div class="fuel-gauge-widget">
         <div class="fuel-component">
             <VerticalBar @key="FuelLevel"
                          Min="0.0d"
@@ -19,7 +18,7 @@
             <R3E.YaHud.Components.UI.Components.Icon Name="gas-pump" />
         </svg>
     </div>
-}
+</WidgetHost>
 
 @code {
 

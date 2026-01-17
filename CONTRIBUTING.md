@@ -41,6 +41,406 @@ public class TelemetryService
 }
 ```
 
+## 🏗️ Architecture Patterns
+
+### Feature Service Architecture
+
+YaHud uses a **layered architecture** with clear separation between data, services, and presentation:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              Core Layer (R3E/Core)                      │
+│  • ITelemetryService - Core telemetry events            │
+│  • ITelemetryEventBus - Cross-feature mediator          │
+│  • TelemetryData - Raw data wrapper                     │
+└─────────────────────────────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────┐
+        ▼                                 ▼
+┌─────────────────────┐         ┌─────────────────────┐
+│  Feature Services   │         │   Data Classes      │
+│  (R3E/Features/*)   │         │   (R3E/Features/*)  │
+│                     │         │                     │
+│  • FuelService      │────────▶│  • FuelData         │
+│  • SectorService    │────────▶│  • SectorData       │
+│  • RadarService     │────────▶│  • RadarData        │
+│                     │         │                     │
+│  [Business Logic]   │         │  [Computed Props]   │
+└─────────────────────┘         └─────────────────────┘
+        │                                 ▲
+        │                                 │
+        └─────────────────┬───────────────┘
+                          │
+                          ▼
+                ┌─────────────────────┐
+                │   Widgets/UI        │
+                │   (R3E.YaHud/       │
+                │    Components)      │
+                └─────────────────────┘
+```
+
+### Mediator Pattern (Event Bus)
+
+To prevent circular dependencies between feature services, we use the **Mediator Pattern** via `ITelemetryEventBus`.
+
+#### Architecture Diagram
+
+```
+                    ISharedSource
+              (Memory-mapped file / UDP)
+                         │
+                         ▼
+                  ITelemetryService
+            (Detects & raises core events)
+                    │         │
+        ┌───────────┘         └───────────────┐
+        ▼                                     ▼
+  ITelemetryEventBus                  Core Events:
+  (Cross-feature mediator)            - DataUpdated
+        │                             - NewLap
+        │                             - SessionTypeChanged
+        │                             - SessionPhaseChanged
+        │                             - CarPositionChanged
+        │                             - TrackChanged
+        │                             - CarChanged
+        │                                     │
+        ├──────────┬──────────┬───────────────┤
+        ▼          ▼          ▼               ▼
+   FuelService  SectorSvc  RadarSvc      FutureSvc
+        │          │          │           (future)
+        │          │          │               │
+        │          │          │               │
+    Publishes: Publishes: Subscribes:    Publishes:
+        │    - Sector         │               │
+        │      Completed      │               │
+        │          │          │               │
+        └──────────┴──────────┴───────────────┘
+                         │
+                         ▼
+              Cross-Feature Events
+            (via ITelemetryEventBus)
+```
+
+#### Why Use the Mediator Pattern?
+
+**Problem Without Mediator:**
+
+```csharp
+// ❌ BAD: Circular dependency risk
+public class FuelService
+{
+    public FuelService(SectorService sectorService)  // Depends on SectorService
+    {
+        sectorService.SectorCompleted += OnSectorCompleted;
+    }
+}
+
+public class SectorService
+{
+    public SectorService(FuelService fuelService)  // Depends on FuelService
+    {
+        // Circular dependency! Won't compile!
+    }
+}
+```
+
+**Solution With Mediator:**
+
+```csharp
+// ✅ GOOD: No circular dependencies
+public class FuelService
+{
+    public FuelService(ITelemetryEventBus eventBus)  // Only depends on interface
+    {
+        eventBus.SectorCompleted += OnSectorCompleted;  // Subscribe
+    }
+    
+    private void OnNewLap()
+    {
+        eventBus.PublishFuelLevelCritical(percentage);  // Publish
+    }
+}
+
+public class SectorService
+{
+    public SectorService(ITelemetryEventBus eventBus)  // Only depends on interface
+    {
+        // No dependency on FuelService!
+    }
+    
+    private void OnDataUpdated()
+    {
+        eventBus.PublishSectorCompleted(sectorIndex);  // Publish
+    }
+}
+```
+
+### Feature Service Pattern
+
+When creating a new feature, follow this structure:
+
+```
+R3E/Features/YourFeature/
+├── YourFeatureData.cs          # Data class (computed properties only)
+└── YourFeatureService.cs       # Service class (business logic)
+```
+
+#### 1. Data Class Pattern
+
+**Purpose:** Hold data and provide computed properties. No business logic or service dependencies.
+
+```csharp
+// ✅ GOOD: Pure data class
+public class FuelData
+{
+    private readonly TelemetryData telemetryData;
+    private Shared Raw => telemetryData.Raw;
+
+    internal FuelData(TelemetryData telemetryData)
+    {
+        this.telemetryData = telemetryData;
+    }
+
+    // Simple computed property - reads from Raw
+    public double FuelLeft => Raw.FuelLeft <= 0 ? 0.0 : Raw.FuelLeft;
+    
+    // Mutable property updated by service
+    public double LastLapFuelUsage { get; internal set; }
+    
+    // More computed properties...
+}
+```
+
+**Data Class Rules:**
+- ✅ Store reference to `TelemetryData` (not copies)
+- ✅ Provide computed properties that read from `Raw`
+- ✅ Allow service to update mutable fields (`internal set`)
+- ❌ NO event subscriptions
+- ❌ NO dependencies on other services
+- ❌ NO complex business logic (>20 lines)
+- ❌ NO `IDisposable` implementation
+
+#### 2. Service Class Pattern
+
+**Purpose:** Handle business logic, event subscriptions, and state management.
+
+```csharp
+// ✅ GOOD: Service with business logic
+public class FuelService : IFuelService, IDisposable
+{
+    private readonly ITelemetryService telemetry;
+    private readonly ITelemetryEventBus eventBus;
+    private readonly ILogger<FuelService> logger;
+    private readonly TelemetryData telemetryData;
+    
+    // State management
+    private double oldFuelRemaining;
+    
+    // Single data instance - never recreated
+    public FuelData Data { get; }
+    
+    public FuelService(
+        ITelemetryService telemetry,
+        ITelemetryEventBus eventBus,
+        ILogger<FuelService> logger)
+    {
+        this.telemetry = telemetry;
+        this.eventBus = eventBus;
+        this.logger = logger;
+        
+        // Store reference once
+        telemetryData = telemetry.Data;
+        Data = new FuelData(telemetryData);
+        
+        // Subscribe to events
+        telemetry.NewLap += OnNewLap;
+        telemetry.SessionPhaseChanged += OnSessionPhaseChanged;
+    }
+    
+    private void OnNewLap(TelemetryData data)
+    {
+        var currentFuel = telemetryData.Raw.FuelLeft;
+        var fuelUsed = oldFuelRemaining - currentFuel;
+        
+        // Update mutable data field
+        Data.LastLapFuelUsage = fuelUsed;
+        
+        oldFuelRemaining = currentFuel;
+        
+        // Publish cross-feature event
+        eventBus.PublishLapFuelUsageCalculated(fuelUsed);
+        
+        // Check for critical condition
+        if (Data.FuelRemainingPercentage < 10.0)
+        {
+            eventBus.PublishFuelLevelCritical(Data.FuelRemainingPercentage);
+        }
+    }
+    
+    public void Dispose()
+    {
+        telemetry.NewLap -= OnNewLap;
+        telemetry.SessionPhaseChanged -= OnSessionPhaseChanged;
+        GC.SuppressFinalize(this);
+    }
+}
+```
+
+**Service Class Rules:**
+- ✅ Depend on `ITelemetryService` and `ITelemetryEventBus`
+- ✅ Subscribe to events in constructor
+- ✅ Create data class instance **once** (store reference)
+- ✅ Update only mutable data fields (not entire object)
+- ✅ Publish cross-feature events via `ITelemetryEventBus`
+- ✅ Implement `IDisposable` to unsubscribe from events
+- ❌ NO recreating data instances on every update (@60Hz!)
+- ❌ NO direct dependencies on other feature services
+
+### When to Move Logic from Data to Service
+
+| Move to Service When: | Keep in Data When: |
+|------------------------|-------------------|
+| Method > 20 lines | Simple property getter |
+| Depends on other services | Only uses raw telemetry |
+| Performs filtering/sorting | Basic arithmetic |
+| Has business rules | Direct field access |
+| Maintains state history | No dependencies |
+
+### Cross-Feature Communication
+
+#### Core Events (from ITelemetryService)
+
+Use for session lifecycle events:
+- `DataUpdated` - Telemetry data refreshed (@60Hz)
+- `NewLap` - Lap completed
+- `SessionTypeChanged` - Session type changed
+- `SessionPhaseChanged` - Session phase changed (Countdown, Formation, Green, etc.)
+- `CarPositionChanged` - Player position changed
+- `TrackChanged` - Track changed
+- `CarChanged` - Car changed
+
+#### Cross-Feature Events (via ITelemetryEventBus)
+
+Use for domain-specific communication between features:
+
+**Current Events:**
+
+- `SectorCompleted(int sectorIndex)` - Sector completed
+
+**Adding New Cross-Feature Events:**
+
+1. **Add to `ITelemetryEventBus.cs`:**
+
+```csharp
+public interface ITelemetryEventBus
+{
+    // Your new event
+    event Action<int, TimeSpan>? LapTimeImproved;
+    void InvokeLapTimeImproved(int lapNumber, TimeSpan lapTime);
+}
+```
+
+2. **Implement in `TelemetryEventBus.cs`:**
+
+```csharp
+public class TelemetryEventBus : ITelemetryEventBus
+{
+    public event Action<int, TimeSpan>? LapTimeImproved;
+    
+    public void InvokeLapTimeImproved(int lapNumber, TimeSpan lapTime)
+        => LapTimeImproved?.Invoke(lapNumber, lapTime);
+}
+```
+
+3. **Publish from any service:**
+
+```csharp
+public class LapTimeService
+{
+    private void OnNewLap()
+    {
+        if (currentLapTime < bestLapTime)
+        {
+            eventBus.InvokeLapTimeImproved(lapNumber, currentLapTime);
+        }
+    }
+}
+```
+
+4. **Subscribe from any service:**
+
+```csharp
+public class NotificationService
+{
+    public NotificationService(ITelemetryEventBus eventBus)
+    {
+        eventBus.LapTimeImproved += OnLapTimeImproved;
+    }
+    
+    private void OnLapTimeImproved(int lapNumber, TimeSpan lapTime)
+    {
+        ShowNotification($"Lap {lapNumber}: {lapTime:mm\\:ss\\.fff}");
+    }
+}
+```
+
+### Dependency Injection Registration
+
+Register services in `Program.cs`:
+
+```csharp
+// Core services
+builder.Services.AddSingleton<ITelemetryEventBus, TelemetryEventBus>();
+builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
+
+// Feature services - order doesn't matter!
+builder.Services.AddSingleton<FuelService>();
+builder.Services.AddSingleton<SectorService>();
+builder.Services.AddSingleton<DriverService>();
+builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+```
+
+**Notes:**
+- Use `AddSingleton` for services (shared across application lifetime)
+- Order of feature service registration doesn't matter (no dependencies!)
+- Always register via interface when available
+
+### Performance Considerations
+
+#### DO NOT Recreate Data Instances
+
+```csharp
+// ❌ BAD: Creates new object every 16ms (@60Hz)
+private void OnDataUpdated(TelemetryData data)
+{
+    Data = new FuelData(telemetryData);  // Wasteful allocation!
+}
+
+// ✅ GOOD: Reuse same instance, update only what changed
+private void OnNewLap(TelemetryData data)
+{
+    Data.LastLapFuelUsage = fuelUsed;  // Update single field
+}
+```
+
+#### Computed Properties Read Directly from Raw
+
+```csharp
+public class FuelData
+{
+    private Shared Raw => telemetryData.Raw;
+    
+    // ✅ Computed on-demand from current Raw data
+    public double FuelLeft => Raw.FuelLeft <= 0 ? 0.0 : Raw.FuelLeft;
+}
+```
+
+**Benefits:**
+- ✅ No allocations @ 60Hz
+- ✅ Minimal GC pressure
+- ✅ Cache-friendly (same instance)
+- ✅ Always reflects current data
+
 ## 🌳 Branching Strategy
 
 We use **GitFlow** with automated versioning via GitVersion. All version numbers are calculated automatically based on branch names and Git history.
@@ -292,9 +692,15 @@ A: No. Versions are calculated by GitVersion based on Git history and tags. To s
 **Q: What happens if I name my branch incorrectly?**  
 A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `hotfix/`.
 
-**Q: How do I test the workflows without merging?**  
-A: Create a PR and the validation workflows will run automatically. The version preview will show you what version would be created.
+**Q: Should I create a new data instance on every telemetry update?**  
+A: No! Create data instances **once** and reuse them. Only update mutable fields as needed. Recreating objects @ 60Hz causes excessive GC pressure.
+
+**Q: When should I add a new event to ITelemetryEventBus?**  
+A: When you need cross-feature communication. If it's core telemetry lifecycle (lap, session), use `ITelemetryService` events instead.
+
+**Q: Can a feature service depend on another feature service?**  
+A: No. Use `ITelemetryEventBus` for cross-feature communication to avoid circular dependencies.
 
 ---
 
-For questions or issues with this process, please open an issue or contact the maintainers.
+For questions or issues with this process, please open an issue, start a discussion or contact the maintainers.

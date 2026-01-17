@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using R3E.API;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -24,7 +25,6 @@ namespace R3E.YaHud.Components.Widget.Core
         public abstract string Name { get; }
         public abstract string Category { get; }
 
-        private bool visibleInitialized = false;
 
         public abstract double DefaultXPercent { get; }
         public abstract double DefaultYPercent { get; }
@@ -36,7 +36,7 @@ namespace R3E.YaHud.Components.Widget.Core
         public TSettings? Settings { get; set; }
         public Type GetSettingsType() => typeof(TSettings);
 
-        protected bool UseR3EData { get; set; } = true;
+        protected virtual bool UseR3EData { get; set; } = true;
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
@@ -62,29 +62,42 @@ namespace R3E.YaHud.Components.Widget.Core
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
                 await OnSettingsLoadedAsync();
-                await InvokeAsync(StateHasChanged);
+
+                StateHasChanged();
+                return;
             }
 
-            if (Settings!.Visible && (firstRender || !visibleInitialized))
-            {
-                await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
+            if (!(Settings?.Visible ?? false))
+                return;
 
-                visibleInitialized = true;
+            try
+            {
+                await JS.InvokeVoidAsync(
+                    "HudHelper.setPosition",
+                    ElementId,
+                    Settings.XPercent,
+                    Settings.YPercent
+                );
+
                 objRef ??= DotNetObjectReference.Create(this);
-                // Register draggable and pass current lock state to decide if handlers are attached
-                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked, Collidable);
+
+                await JS.InvokeVoidAsync(
+                    "HudHelper.registerDraggable",
+                    ElementId,
+                    objRef,
+                    Locked,
+                    Collidable
+                );
+
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected if component is disposed mid-render
             }
         }
 
         private void Settings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(BasicSettings.Visible))
-            {
-                if (Settings?.Visible ?? false)
-                {
-                    visibleInitialized = false;
-                }
-            }
             InvokeAsync(StateHasChanged);
         }
 
@@ -164,7 +177,6 @@ namespace R3E.YaHud.Components.Widget.Core
 
             Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
             Settings.PropertyChanged += Settings_PropertyChanged;
-            visibleInitialized = false;
 
             await SettingsService.Clear(this);
             await InvokeAsync(StateHasChanged);
@@ -235,7 +247,7 @@ namespace R3E.YaHud.Components.Widget.Core
             }
             catch (ObjectDisposedException ex)
             {
-                Logger?.LogDebug(ex, "Component disposed during OnWindowResize for widget {ElementId}", ElementId);
+                Logger?.LogDebug(ex, "Component disposed during OnWindowResize for {ElementId}", ElementId);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
             {

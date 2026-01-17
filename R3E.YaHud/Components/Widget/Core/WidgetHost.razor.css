@@ -1,0 +1,7 @@
+﻿.widget-host {
+    position: absolute;
+    display: block;
+    transform-origin: center center;
+    pointer-events: auto;
+    box-sizing: border-box;
+}

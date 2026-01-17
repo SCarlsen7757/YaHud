@@ -3,9 +3,8 @@
 @inherits HudWidgetBase<CarDamageSettings>
 @implements IDisposable
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="car-damage-widget">
+<WidgetHost Owner="this">
+    <div class="car-damage-widget">
         <div class="damage-item">
             <div class="damage-label" style="color: @EngineDamageColor">Engine</div>
             <div class="damage-bar"><HorizontalBar Value="@EngineDamage" Min="0" Max="1" PrimaryColor="@EngineDamageColor" BackgroundColor="#333333" /></div>
@@ -23,7 +22,7 @@
             <div class="damage-bar"><HorizontalBar Value="@SuspensionDamage" Min="0" Max="1" PrimaryColor="@SuspensionDamageColor" BackgroundColor="#333333" /></div>
         </div>
     </div>
-}
+</WidgetHost>
 
 @code {
 
