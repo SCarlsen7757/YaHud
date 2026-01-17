@@ -225,7 +225,7 @@ window.HudHelper = (function () {
                 const diffY = e.clientY - entry.prevY;
                 entry.prevY = e.clientY;
 
-                el.scale =  Math.max(0.5, Math.min(3, el.scale + diffY * 0.005));
+                el.scale =  Math.max(0.5, Math.min(2, el.scale + diffY * 0.005));
             }
         }
 
@@ -345,6 +345,9 @@ window.HudHelper = (function () {
                 entry.collidable = !!collidable;
             }
 
+            // ensure consistent transform origin so scaling doesn't shift element unexpectedly
+            if (!el.scale) el.scale = 1;
+
             if (!locked) attachHandlers(entry);
             else detachHandlers(entry);
         },
@@ -409,7 +412,7 @@ window.HudHelper = (function () {
             });
         },
 
-        resetElement: function (elementId, xPercent = 50, yPercent = 50) {
+        resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
             requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
@@ -417,11 +420,13 @@ window.HudHelper = (function () {
                     return;
                 }
 
-                // Clear any saved settings
                 try {
-                    localStorage.removeItem(elementId);
-                } catch (e) {
-                    console.warn('HudHelper.resetPosition: localStorage error', e);
+                    dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', xPercent / 100 * window.innerWidth, yPercent / 100 * window.innerHeight)
+                        .catch(err => {
+                            console.error('HudHelper: Failed to update widget position (async)', err);
+                        });
+                } catch (ex) {
+                    console.error('HudHelper: Failed to update widget position (sync)', ex);
                 }
 
                 const rect = el.getBoundingClientRect();
@@ -430,11 +435,30 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+            });
+
+        },
+
+        resetScale: function (elementId) {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(elementId);
+                if (!el) {
+                    console.warn('HudHelper.resetPosition: element not found', elementId);
+                    return;
+                }
 
                 el.scale = 1;
                 el.style.transform = `scale(1)`;
-            });
 
+                try {
+                    dotnetHelper.invokeMethodAsync('UpdateWidgetScale', 1)
+                        .catch(err => {
+                            console.error('HudHelper: Failed to update widget position (async)', err);
+                        });
+                } catch (ex) {
+                    console.error('HudHelper: Failed to update widget position (sync)', ex);
+                }
+            });
         },
 
         setWidgetSettings: function (elementId, value) {
