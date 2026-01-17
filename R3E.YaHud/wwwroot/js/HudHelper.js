@@ -157,6 +157,7 @@ window.HudHelper = (function () {
         function onMouseDown(e) {
             // only left button
             if (!entry.isScaling && e.button == 0) {
+                el.style.transformOrigin = "top left";
                 entry.isDragging = true;
                 entry.startX = e.clientX;
                 entry.startY = e.clientY;
@@ -192,20 +193,21 @@ window.HudHelper = (function () {
         function onMouseMove(e) {
             if (entry.isDragging) {
                 // compute proposed target positions based on mouse
+                const rect = el.getBoundingClientRect();
+
                 const proposedX = e.clientX - entry.offsetX;
                 const proposedY = e.clientY - entry.offsetY;
 
                 // clamp to window boundaries
-                const rect = el.getBoundingClientRect();
-                const widgetWidth = rect.width;
-                const widgetHeight = rect.height;
-                const maxX = window.innerWidth - widgetWidth;
-                const maxY = window.innerHeight - widgetHeight;
+                const maxX = window.innerWidth - rect.width;
+                const maxY = window.innerHeight - rect.height;
+                console.log(maxY, proposedY)
                 const clampedX = Math.max(0, Math.min(maxX, proposedX));
                 const clampedY = Math.max(0, Math.min(maxY, proposedY));
 
                 // non-collidable widgets can move freely
                 if (!entry.collidable) {
+                    console.log("REsult", maxY, proposedY)
                     entry.targetX = clampedX;
                     entry.targetY = clampedY;
                     entry.prevValidX = clampedX;
@@ -235,8 +237,8 @@ window.HudHelper = (function () {
 
                 // finalize position based on center
                 const rect = el.getBoundingClientRect();
-                const leftPx = rect.left + rect.width / 2;
-                const topPx = rect.top + rect.height / 2;
+                const leftPx = rect.left + el.offsetWidth / 2;
+                const topPx = rect.top + el.offsetHeight / 2;
                 const leftPercent = (leftPx / window.innerWidth) * 100;
                 const topPercent = (topPx / window.innerHeight) * 100;
 
@@ -278,10 +280,8 @@ window.HudHelper = (function () {
             if (entry.isDragging) {
                 el.style.position = 'absolute';
                 const rect = el.getBoundingClientRect();
-                const widgetWidth = rect.width;
-                const widgetHeight = rect.height;
-                el.style.left = Math.max(0, Math.min(window.innerWidth - widgetWidth, entry.targetX)) + 'px';
-                el.style.top = Math.max(0, Math.min(window.innerHeight - widgetHeight, entry.targetY)) + 'px';
+                el.style.left = Math.max(0, Math.min(window.innerWidth - rect.width, entry.targetX)) + 'px';
+                el.style.top = Math.max(0, Math.min(window.innerHeight - rect.height, entry.targetY)) + 'px';
                 entry.raf = requestAnimationFrame(step);
             } 
             else if (entry.isScaling) {
@@ -346,6 +346,7 @@ window.HudHelper = (function () {
             }
 
             // ensure consistent transform origin so scaling doesn't shift element unexpectedly
+            el.style.transformOrigin = "top left";
             if (!el.scale) el.scale = 1;
 
             if (!locked) attachHandlers(entry);
@@ -389,6 +390,7 @@ window.HudHelper = (function () {
                     console.warn('HudHelper.setPosition: element not found', elementId);
                     return;
                 }
+                el.style.transformOrigin = "top left";
                 const rect = el.getBoundingClientRect();
                 const widgetWidth = rect.width;
                 const widgetHeight = rect.height;

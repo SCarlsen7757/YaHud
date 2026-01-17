@@ -32,6 +32,7 @@
                                 <WidgetSettings Settings="widget.Settings" />
                                 <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
                                     <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
+                                    <button class="btn-primary" @onclick="() => widget.ResetScale()">Reset scale</button>
                                 </div>
                             </li>
                         </ul>
