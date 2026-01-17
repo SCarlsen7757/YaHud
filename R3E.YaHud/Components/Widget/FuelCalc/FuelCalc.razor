@@ -1,11 +1,10 @@
-﻿@using R3E.Data
+﻿@using R3E.Features.Fuel
 @using R3E.YaHud.Components.Widget.Core
-@using R3E.Models
 @inherits HudWidgetBase<FuelSettings>
+@inject FuelService FuelService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="Fuel-widget">
+<WidgetHost Owner="this">
+    <div class="Fuel-widget">
         <div class="data-grid">
             <div class="data-box large-box">
                 <p class="value" style="color: @FuelRemainingColor">@(FuelRemaining.ToString("F1"))</p>
@@ -43,7 +42,7 @@
             </div>
         </div>
     </div>
-}
+</WidgetHost>
 
 @code {
     /// <summary>
@@ -132,7 +131,7 @@
     /// </summary>
     protected override void Update()
     {
-        FuelData data = TelemetryService.FuelData;
+        FuelData data = FuelService.Data;
 
         //Start mapping of variables  
         FuelRemaining = data.FuelLeft;
@@ -142,9 +141,9 @@
         FuelToEnd = data.FuelToEnd;
         var fuelToAdd = data.FuelToAdd;
         
-        if (FuelToEnd > data.TelemetryData.FuelCapacity)
+        if (FuelToEnd > data.FuelCapacity)
             FuelToAdd = "MAX";
-        else if (fuelToAdd >= data.TelemetryData.FuelLeft)
+        else if (fuelToAdd >= data.FuelLeft)
             FuelToAdd = (fuelToAdd.ToString("F1"));
         else
             FuelToAdd = "0.0";

@@ -1,16 +1,17 @@
-﻿@using R3E.API
-@using R3E.API.Image
-@using R3E.API.TimeGap
+﻿@using R3E.Features.Image
+@using R3E.Features.TimeGap
+@using R3E.Core.Services
+@using R3E.Features.Driver
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
 @using R3E.YaHud.Components.Widget.RelativeDriver.Models
 @inherits HudWidgetBase<RelativeDriverSettings>
 @inject IImageService ImageService
 @inject ITimeGapService TimeGapService
+@inject DriverService DriverService
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="relative-driver-widget">
+<WidgetHost Owner="this">
+    <div class="relative-driver-widget">
         @if (displayDrivers.Count > 0)
         {
             <div class="driver-table">
@@ -59,7 +60,7 @@
             </div>
         }
     </div>
-}
+</WidgetHost>
 
 @code {
     public override string ElementId { get => "relativeDriverWidget"; }
@@ -92,7 +93,7 @@
             return;
         }
 
-        var relativeDrivers = TelemetryService.Data.GetRelativeDrivers(7);
+        var relativeDrivers = DriverService.GetRelativeDrivers(7);
 
         List<DisplayDriver> newDisplayDrivers = [];
 

@@ -16,6 +16,7 @@ branches:
     label: alpha
     increment: Minor
     track-merge-target: true
+    source-branches: ["main", "develop"]
   bugfix:
     regex: ^bugfix(es)?[/-]
     label: ""

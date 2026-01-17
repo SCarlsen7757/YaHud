@@ -1,11 +1,9 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.UserInputs.Components
-@using R3E.API
 @inherits HudWidgetBase<UserInputsSettings>
 
-@if (Settings?.Visible ?? false)
-{
-    <div id=@ElementId class="user-inputs-widget text">
+<WidgetHost Owner="this">
+    <div class="user-inputs-widget text">
         <div class="pedals-container">
             @if (Settings.ShowClutch)
             {
@@ -71,7 +69,7 @@
             </div>
         }
     </div>
-}
+</WidgetHost>
 
 @code {
     private double ClutchRaw { get; set; } = 0.0d;

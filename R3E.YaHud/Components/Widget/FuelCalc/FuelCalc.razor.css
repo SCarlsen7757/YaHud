@@ -1,7 +1,6 @@
 ﻿.Fuel-widget {
     display: flex;
     align-items: center;
-    position: absolute;
 
     height: auto;        /* <-- key change */
     min-height: 10vmin;  /* keeps it visually consistent */

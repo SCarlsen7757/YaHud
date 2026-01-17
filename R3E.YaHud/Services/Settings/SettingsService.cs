@@ -59,6 +59,16 @@ namespace R3E.YaHud.Services.Settings
             {
                 // Ignore during server-side prerendering
             }
+            catch (TaskCanceledException)
+            {
+                // Ignore when JavaScript runtime is no longer available (e.g., during shutdown or navigation)
+                logger.LogDebug("JS interop cancelled for {Id} - likely during shutdown in {Location}", id, nameof(Save));
+            }
+            catch (JSDisconnectedException)
+            {
+                // Ignore when JavaScript connection has been disconnected
+                logger.LogDebug("JS disconnected for {Id} in {Location}", id, nameof(Save));
+            }
         }
 
         public async Task SaveAll()
@@ -85,6 +95,18 @@ namespace R3E.YaHud.Services.Settings
                     when (ex.Message.Contains("server-side static rendering"))
             {
                 // Ignore during server-side prerendering
+                return null;
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignore when JavaScript runtime is no longer available
+                logger.LogDebug("JS interop cancelled for {Id} - likely during shutdown in {Location}", id, nameof(Load));
+                return null;
+            }
+            catch (JSDisconnectedException)
+            {
+                // Ignore when JavaScript connection has been disconnected
+                logger.LogDebug("JS disconnected for {Id} in {Location}", id, nameof(Load));
                 return null;
             }
         }
@@ -122,6 +144,16 @@ namespace R3E.YaHud.Services.Settings
                     when (ex.Message.Contains("server-side static rendering"))
             {
                 // Ignore during server-side prerendering
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignore when JavaScript runtime is no longer available
+                logger.LogDebug("JS interop cancelled for {Id} - likely during shutdown in {Location}", id, nameof(Clear));
+            }
+            catch (JSDisconnectedException)
+            {
+                // Ignore when JavaScript connection has been disconnected
+                logger.LogDebug("JS disconnected for {Id} in {Location}", id, nameof(Clear));
             }
         }
     }
