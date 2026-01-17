@@ -173,8 +173,6 @@ window.HudHelper = (function () {
                 // show grid overlay while dragging
             }
             else if (!entry.isDragging && e.button == 2) {
-                e.preventDefault();
-
                 entry.isScaling = true;
 
                 entry.prevY = e.clientY;
@@ -253,7 +251,6 @@ window.HudHelper = (function () {
                 }
             }
             else if (entry.isScaling) {
-                e.preventDefault();
                 entry.isScaling = false;
 
                 console.log('HudHelper.onMouseUp: calling UpdateWidgetScale for', entry.id, 'with scale=', el.scale);
@@ -307,9 +304,15 @@ window.HudHelper = (function () {
             }
         }
 
+        function onContextMenu(e) {
+            e.preventDefault()
+        }
+
         el.addEventListener('mousedown', onMouseDown);
         window.addEventListener('resize', onResize);
+        window.addEventListener('contextmenu', onContextMenu);
 
+        
         entry.handlers = { onMouseDown, onResize };
         entry.handlersAttached = true;
     }
@@ -321,6 +324,7 @@ window.HudHelper = (function () {
         try {
             el.removeEventListener('mousedown', h.onMouseDown);
             window.removeEventListener('resize', h.onResize);
+            el.removeEventListener('contextmenu', h.onContextMenu);
         } catch (e) {
             console.warn('HudHelper: Error detaching handlers', e);
         }
@@ -347,7 +351,6 @@ window.HudHelper = (function () {
 
             // ensure consistent transform origin so scaling doesn't shift element unexpectedly
             el.style.transformOrigin = "top left";
-            if (!el.scale) el.scale = 1;
 
             if (!locked) attachHandlers(entry);
             else detachHandlers(entry);
@@ -395,8 +398,8 @@ window.HudHelper = (function () {
                 const widgetWidth = rect.width;
                 const widgetHeight = rect.height;
                 el.style.position = "absolute";
-                el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
-                el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
+                el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
+                el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
             });
 
         },
@@ -409,7 +412,6 @@ window.HudHelper = (function () {
                     return;
                 }
                 el.scale = scale;
-                console.log('HudHelper.setScale: setting scale for', elementId, 'to', scale);
                 el.style.transform = `scale(${scale})`;
             });
         },
