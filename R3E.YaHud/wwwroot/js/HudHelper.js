@@ -199,13 +199,11 @@ window.HudHelper = (function () {
                 // clamp to window boundaries
                 const maxX = window.innerWidth - rect.width;
                 const maxY = window.innerHeight - rect.height;
-                console.log(maxY, proposedY)
                 const clampedX = Math.max(0, Math.min(maxX, proposedX));
                 const clampedY = Math.max(0, Math.min(maxY, proposedY));
 
                 // non-collidable widgets can move freely
                 if (!entry.collidable) {
-                    console.log("REsult", maxY, proposedY)
                     entry.targetX = clampedX;
                     entry.targetY = clampedY;
                     entry.prevValidX = clampedX;
@@ -416,7 +414,7 @@ window.HudHelper = (function () {
             });
         },
 
-        resetPosition: function (elementId, xPercent = 50, yPercent = 50) {
+        resetPosition: function (elementId, dotnetHelper, xPercent = 50, yPercent = 50) {
             requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
@@ -443,11 +441,11 @@ window.HudHelper = (function () {
 
         },
 
-        resetScale: function (elementId) {
+        resetScale: function (elementId, dotnetHelper) {
             requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
-                    console.warn('HudHelper.resetPosition: element not found', elementId);
+                    console.warn('HudHelper.resetScale: element not found', elementId);
                     return;
                 }
 
@@ -457,10 +455,10 @@ window.HudHelper = (function () {
                 try {
                     dotnetHelper.invokeMethodAsync('UpdateWidgetScale', 1)
                         .catch(err => {
-                            console.error('HudHelper: Failed to update widget position (async)', err);
+                            console.error('HudHelper: Failed to update widget scale (async)', err);
                         });
                 } catch (ex) {
-                    console.error('HudHelper: Failed to update widget position (sync)', ex);
+                    console.error('HudHelper: Failed to update widget scale (sync)', ex);
                 }
             });
         },
@@ -489,6 +487,47 @@ window.HudHelper = (function () {
             } catch (e) {
                 console.warn('HudHelper.clearWidgetSettings: localStorage error', e);
             }
+        },
+
+        clearWidgetSettingsExceptPositionAndScale: function (elementId, dotnetHelper, xPercent = 50, yPercent = 50, scale = 1) {
+            const el = document.getElementById(elementId);
+            if (!el) {
+                console.warn('HudHelper.resetPosition: element not found', elementId);
+                return;
+            }
+
+            this.clearWidgetSettings(elementId);
+
+            // Keep scale
+            /*try {
+                dotnetHelper.invokeMethodAsync('UpdateWidgetScale', scale)
+                    .catch(err => {
+                        console.error('HudHelper: Failed to update widget scale (async)', err);
+                    });
+            } catch (ex) {
+                console.error('HudHelper: Failed to update widget scale (sync)', ex);
+            }*/
+
+            el.scale = scale;
+            el.style.transform = `scale(${scale})`;
+
+            // Keep position
+            /*try {
+                dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', xPercent / 100 * window.innerWidth, yPercent / 100 * window.innerHeight)
+                    .catch(err => {
+                        console.error('HudHelper: Failed to update widget position (async)', err);
+                    });
+            } catch (ex) {
+                console.error('HudHelper: Failed to update widget position (sync)', ex);
+            }*/
+
+            const rect = el.getBoundingClientRect();
+            const widgetWidth = rect.width;
+            const widgetHeight = rect.height;
+            el.style.position = "absolute";
+            el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
+            el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
+
         }
     };
 })();

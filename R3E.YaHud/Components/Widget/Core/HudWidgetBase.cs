@@ -175,12 +175,20 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ResetPosition()
         {
-            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, objRef, DefaultXPercent, DefaultYPercent);
         }
 
         public async Task ResetScale()
         {
-            await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId);
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId, objRef);
+        }
+
+        public async Task ResetSettingsExceptPositionAndScale()
+        {
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.clearWidgetSettingsExceptPositionAndScale", ElementId, objRef, Settings.XPercent, Settings.YPercent, Settings.Scale);
         }
 
         public async Task ClearSettings()
