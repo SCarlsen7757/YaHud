@@ -308,7 +308,7 @@ window.HudHelper = (function () {
 
         el.addEventListener('mousedown', onMouseDown);
         window.addEventListener('resize', onResize);
-        window.addEventListener('contextmenu', onContextMenu);
+        el.addEventListener('contextmenu', onContextMenu);
 
         
         entry.handlers = { onMouseDown, onResize };
@@ -392,9 +392,6 @@ window.HudHelper = (function () {
                     return;
                 }
                 el.style.transformOrigin = "top left";
-                const rect = el.getBoundingClientRect();
-                const widgetWidth = rect.width;
-                const widgetHeight = rect.height;
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
@@ -487,47 +484,6 @@ window.HudHelper = (function () {
             } catch (e) {
                 console.warn('HudHelper.clearWidgetSettings: localStorage error', e);
             }
-        },
-
-        clearWidgetSettingsExceptPositionAndScale: function (elementId, dotnetHelper, xPercent = 50, yPercent = 50, scale = 1) {
-            const el = document.getElementById(elementId);
-            if (!el) {
-                console.warn('HudHelper.resetPosition: element not found', elementId);
-                return;
-            }
-
-            this.clearWidgetSettings(elementId);
-
-            // Keep scale
-            /*try {
-                dotnetHelper.invokeMethodAsync('UpdateWidgetScale', scale)
-                    .catch(err => {
-                        console.error('HudHelper: Failed to update widget scale (async)', err);
-                    });
-            } catch (ex) {
-                console.error('HudHelper: Failed to update widget scale (sync)', ex);
-            }*/
-
-            el.scale = scale;
-            el.style.transform = `scale(${scale})`;
-
-            // Keep position
-            /*try {
-                dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', xPercent / 100 * window.innerWidth, yPercent / 100 * window.innerHeight)
-                    .catch(err => {
-                        console.error('HudHelper: Failed to update widget position (async)', err);
-                    });
-            } catch (ex) {
-                console.error('HudHelper: Failed to update widget position (sync)', ex);
-            }*/
-
-            const rect = el.getBoundingClientRect();
-            const widgetWidth = rect.width;
-            const widgetHeight = rect.height;
-            el.style.position = "absolute";
-            el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
-            el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
-
         }
     };
 })();

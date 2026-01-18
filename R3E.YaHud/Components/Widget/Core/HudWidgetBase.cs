@@ -187,8 +187,14 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ResetSettingsExceptPositionAndScale()
         {
-            objRef ??= DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("HudHelper.clearWidgetSettingsExceptPositionAndScale", ElementId, objRef, Settings.XPercent, Settings.YPercent, Settings.Scale);
+            if (Settings != null)
+                Settings.PropertyChanged -= Settings_PropertyChanged;
+
+            Settings = new TSettings() { XPercent = Settings.XPercent, YPercent = Settings.YPercent, Scale = Settings.Scale };
+            Settings.PropertyChanged += Settings_PropertyChanged;
+
+            await SettingsService.Clear(this);
+            await InvokeAsync(StateHasChanged);
         }
 
         public async Task ClearSettings()
