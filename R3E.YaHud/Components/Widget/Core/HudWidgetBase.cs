@@ -85,8 +85,6 @@ namespace R3E.YaHud.Components.Widget.Core
                     Settings.YPercent
                 );
 
-                
-
                 objRef ??= DotNetObjectReference.Create(this);
 
                 await JS.InvokeVoidAsync(
@@ -185,12 +183,12 @@ namespace R3E.YaHud.Components.Widget.Core
             await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId, objRef);
         }
 
-        public async Task ResetSettingsExceptPositionAndScale()
+        public async Task ResetProperties()
         {
             if (Settings != null)
                 Settings.PropertyChanged -= Settings_PropertyChanged;
 
-            Settings = new TSettings() { XPercent = Settings.XPercent, YPercent = Settings.YPercent, Scale = Settings.Scale };
+            Settings = new TSettings() { XPercent = Settings!.XPercent, YPercent = Settings!.YPercent, Scale = Settings!.Scale };
             Settings.PropertyChanged += Settings_PropertyChanged;
 
             await SettingsService.Clear(this);
