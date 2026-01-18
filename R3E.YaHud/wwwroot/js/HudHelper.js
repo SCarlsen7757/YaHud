@@ -223,7 +223,7 @@ window.HudHelper = (function () {
                 const diffY = e.clientY - entry.prevY;
                 entry.prevY = e.clientY;
 
-                el.scale =  Math.max(0.5, Math.min(2, el.scale + diffY * 0.005));
+                el.scale = Math.max(0.5, Math.min(2, el.scale + diffY * 0.005));
             }
         }
 
@@ -303,15 +303,14 @@ window.HudHelper = (function () {
         }
 
         function onContextMenu(e) {
-            e.preventDefault()
+            e.preventDefault();
         }
 
         el.addEventListener('mousedown', onMouseDown);
         window.addEventListener('resize', onResize);
         el.addEventListener('contextmenu', onContextMenu);
 
-        
-        entry.handlers = { onMouseDown, onResize };
+        entry.handlers = { onMouseDown, onResize, onContextMenu };
         entry.handlersAttached = true;
     }
 
@@ -340,7 +339,7 @@ window.HudHelper = (function () {
             // if already registered, update dotnetRef and locked state
             let entry = registry[elementId];
             if (!entry) {
-                entry = { el: el, dotNetRef: dotnetHelper, isDragging: false, handlersAttached: false, raf: null, id: elementId, collidable: !!collidable };
+                entry = { el: el, dotNetRef: dotnetHelper, isDragging: false, isScaling: false, handlersAttached: false, raf: null, id: elementId, collidable: !!collidable };
                 registry[elementId] = entry;
             } else {
                 entry.dotNetRef = dotnetHelper;
@@ -420,7 +419,7 @@ window.HudHelper = (function () {
                 }
 
                 try {
-                    dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', xPercent / 100 * window.innerWidth, yPercent / 100 * window.innerHeight)
+                    dotnetHelper.invokeMethodAsync('UpdateWidgetPosition', xPercent, yPercent)
                         .catch(err => {
                             console.error('HudHelper: Failed to update widget position (async)', err);
                         });

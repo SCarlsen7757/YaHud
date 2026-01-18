@@ -31,9 +31,9 @@
                                 </div>
                                 <WidgetSettings Settings="widget.Settings" />
                                 <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
-                                    <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset position</button>
-                                    <button class="btn-primary" @onclick="() => widget.ResetScale()">Reset scale</button>
-                                    <button class="btn-primary" @onclick="() => widget.ResetSettingsExceptPositionAndScale()">Reset Properties</button>
+                                    <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset Position</button>
+                                    <button class="btn-primary" @onclick="() => widget.ResetScale()">Reset Scale</button>
+                                    <button class="btn-primary" @onclick="() => widget.ResetProperties()">Reset Properties</button>
                                 </div>
                             </li>
                         </ul>

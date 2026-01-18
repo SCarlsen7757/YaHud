@@ -13,7 +13,7 @@
 
         public Task ResetPosition();
         public Task ResetScale();
-        public Task ResetSettingsExceptPositionAndScale();
+        public Task ResetProperties();
 
         public Task ClearSettings();
     }
