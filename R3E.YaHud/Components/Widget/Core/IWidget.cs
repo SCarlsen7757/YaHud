@@ -12,6 +12,8 @@
         public void InvokeUpdate();
 
         public Task ResetPosition();
+        public Task ResetScale();
+        public Task ResetProperties();
 
         public Task ClearSettings();
     }
