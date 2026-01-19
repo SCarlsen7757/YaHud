@@ -5,8 +5,8 @@
 @using System.ComponentModel
 @implements IDisposable
 
-<div class="overlay">
-    <div class="overlay-panel settings-panel">
+<div class="overlay" @onclick="OnClose">
+    <div class="overlay-panel settings-panel" @onclick:stopPropagation>
         <!-- Header -->
         <div class="panel-header">
             <h3>Widget Settings</h3>
