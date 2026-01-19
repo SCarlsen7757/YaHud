@@ -38,11 +38,6 @@
     </div>
 }
 
-@if (showSettings)
-{
-    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings" />
-}
-
 @if (showAbout)
 {
     <About OnClose="HideAbout" />
@@ -61,6 +56,11 @@
     <R3E.YaHud.Components.Widget.LapProgress.LapProgress />
     <R3E.YaHud.Components.Widget.Radar.Radar />
 </div>
+
+@if (showSettings)
+{
+    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings" />
+}
 
 @code {
     private bool showSettings = false;
