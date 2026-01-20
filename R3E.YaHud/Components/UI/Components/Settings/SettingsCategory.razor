@@ -1,0 +1,24 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+<div class="category-container">
+    <h3 class="category-title">@Name</h3>
+    <ul class="category-widgets">
+        @foreach (var widget in AlphabeticallySortedWidgets)
+        {
+            <li class="widget-item">
+                <h4 class="widget-name">@widget.Name</h4>
+                <div class="widget-actions">
+                    <button class="btn dark"  aria-label="Toggle visibility">
+                        <Icon Name="eye" />
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter] public required string Name { get; set; }
+    [Parameter] public required IEnumerable<IWidget> Widgets { get; set; }
+
+    private IEnumerable<IWidget> AlphabeticallySortedWidgets => Widgets.OrderBy(w => w.Name);
+}

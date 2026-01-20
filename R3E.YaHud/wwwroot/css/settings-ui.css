@@ -1,0 +1,81 @@
+﻿.settings-panel {
+    display: flex;
+    flex-direction: column;
+    background: #57606f;
+    border-radius: 0.5rem;
+    padding: 0;
+    overflow: hidden;
+    color: #eeeeee;
+    --bs-heading-color: #eeeeee;
+    fill: #eeeeee;
+
+    .panel-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: #2f3542;
+        flex: 0 0 auto;
+
+        h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .close-btn {
+            aspect-ratio: 1 / 1;
+            height: 100%;
+            fill: #aaaaaa;
+            cursor: pointer;
+            transform-origin: center;
+            transition: transform 200ms ease-in-out;
+
+            &:hover {
+                transform: scale(1.2);
+            }
+        }
+    }
+
+    .panel-body {
+        flex: 1 1 auto;
+        overflow: auto;
+        padding: 1rem 1.25rem;
+        -webkit-overflow-scrolling: touch;
+
+        &::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+    }
+
+    .panel-footer {
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding: 0.75rem 1.25rem;
+        background: #2f3542;
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+
+    .btn {
+        color: var(--btn-color);
+        background-color: var(--btn-background);
+        border-radius: 1.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        font-size: 0.875rem;
+
+        &.dark {
+            --btn-color: #eeeeee;
+            --btn-background: #1a1d25;
+        }
+    }
+}

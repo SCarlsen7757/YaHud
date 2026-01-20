@@ -6,10 +6,15 @@
 @implements IDisposable
 
 <div class="overlay" @onclick="OnClose">
-    <div class="overlay-panel settings-panel" @onclick:stopPropagation>
+    <div class="settings-overlay-layout">
+        <SettingsMasterPanel OnClose="OnClose" Widgets="Widgets" />
+    </div>
+
+
+    @* <div class="overlay-panel settings-panel" @onclick:stopPropagation>
         <!-- Header -->
         <div class="panel-header">
-            <h3>Widget Settings</h3>
+            <h2>Widget Settings</h2>
 
             <EnumSelect TEnum="SettingsViewMode"
                         Value="@CurrentViewMode"
@@ -19,7 +24,12 @@
 
         <!-- Scrollable body -->
         <div class="panel-body">
-            <div class="groups-grid">
+            <div class="category-list">
+                @foreach (var group in WidgetsByCategory)
+                {
+                    <SettingsCategory Name="@group.Key" Widgets="@group.AsEnumerable()" />
+                }
+
                 @foreach (var widget in Widgets)
                 {
                     <div class="group-column">
@@ -29,7 +39,7 @@
                                     <strong class="widget-name">@widget.Name</strong>
                                     <span class="widget-category">@widget.Category</span>
                                 </div>
-                                <WidgetSettings Settings="widget.Settings" />
+                                <WidgetSettings Settings="widget.Settings" ViewMode="CurrentViewMode" />
                                 <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
                                     <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset Position</button>
                                     <button class="btn-primary" @onclick="() => widget.ResetScale()">Reset Scale</button>
@@ -45,12 +55,9 @@
         <!-- Footer -->
         <div class="panel-footer button-group">
             <button class="btn-primary" @onclick="OnClose" aria-label="Close settings panel">Close</button>
-            @if (CurrentViewMode == SettingsViewMode.Expert)
-            {
-                <button class="btn-primary" @onclick="() => SettingsService.ClearAll()" aria-label="Clear all settings">Clear settings</button>
-            }
+            <button class="btn-primary" @onclick="() => SettingsService.ClearAll()" aria-label="Clear all settings">Clear settings</button>
         </div>
-    </div>
+    </div> *@
 </div>
 
 @code {
@@ -77,6 +84,8 @@
         CurrentViewMode = v;
         return Task.CompletedTask;
     }
+
+    private IEnumerable<IGrouping<string, IWidget>> WidgetsByCategory => Widgets.GroupBy(w => w.Category);
 
     private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsPropertyChangedHandlers = new();
 

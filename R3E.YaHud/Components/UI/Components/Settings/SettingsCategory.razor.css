@@ -1,0 +1,42 @@
+﻿.category-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.category-title {
+    border-bottom: 1px solid #eeeeee;
+    background: #57606f;
+    position: sticky;
+    top: 0;
+    padding: 0.5rem 1rem;
+    font-size: 1.5rem;
+}
+
+.category-widgets {
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.widget-item {
+    background: #747d8c;
+    border-radius: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+
+    .widget-name {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .widget-actions {
+        .btn {
+            aspect-ratio: 1/1;
+            width: 2rem;
+            padding: 0 0.5rem;
+        }
+    }
+}
