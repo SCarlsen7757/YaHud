@@ -8,6 +8,7 @@
 @using R3E.YaHud.Services
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.UI.Components
+@using R3E.YaHud.Components.UI.Components.Settings
 
 @if (!locked)
 {
@@ -59,7 +60,7 @@
 
 @if (showSettings)
 {
-    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings" />
+    <Settings Widgets="SettingsService.Widgets" OnClose="HideSettings" />
 }
 
 @code {
