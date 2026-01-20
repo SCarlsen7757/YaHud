@@ -15,7 +15,7 @@
         .OrderBy(x => x.Attr!.Order))
     {
         if (prop.Prop.Name != nameof(BasicSettings.Visible) && !Settings.Visible) { continue; }
-        if (prop.Attr!.ViewMode > SettingsService.GlobalSettings.ViewMode) { continue; }
+        if (prop.Attr!.ViewMode > ViewMode) { continue; }
 
         // Ask concrete Settings instance to evaluate visibility each time
         if (!Settings.IsPropertyVisible(prop.Prop.Name)) { continue; }
@@ -29,8 +29,7 @@
 
 @code {
     [Parameter] public required TSettings Settings { get; set; }
-
-    [Inject] public SettingsService SettingsService { get; set; } = default!;
+    [Parameter] public required SettingsViewMode ViewMode { get; set; }
 
     // mapping: property name -> picker container id
     private readonly Dictionary<string, string> pickerIds = new();
