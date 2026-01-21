@@ -4,8 +4,8 @@
 }
 
 .category-title {
-    border-bottom: 1px solid #eeeeee;
-    background: #57606f;
+    background: #8390a6;
+    background: linear-gradient(90deg, rgba(131, 144, 166, 1) 0%, rgba(87, 96, 111, 1) 100%);
     position: sticky;
     top: 0;
     padding: 0.5rem 1rem;
@@ -37,6 +37,7 @@
             aspect-ratio: 1/1;
             width: 2rem;
             padding: 0 0.5rem;
+            display: flex;
         }
     }
 }
