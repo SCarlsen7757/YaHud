@@ -1,0 +1,23 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+<div class="widget-menu-wrapper">
+    <button class="btn ghost" @onclick="() => _menuOpen = !_menuOpen">
+        <Icon Name="elipsis-vertical" />
+    </button>
+
+    @if (_menuOpen)
+    {
+        <div class="widget-menu">
+            <button class="btn dark" @onclick="() => { /* TODO: Implement reset functionality */ _menuOpen = false; }">
+                <Icon Name="rotate-left" /> Reset Widget
+            </button>
+            <button class="btn dark" @onclick="() => { /* TODO: Implement settings functionality */ _menuOpen = false; }">
+                <Icon Name="gear" /> Widget Settings
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IWidget Widget { get; set; } = null!;
+    private bool _menuOpen = false;
+}

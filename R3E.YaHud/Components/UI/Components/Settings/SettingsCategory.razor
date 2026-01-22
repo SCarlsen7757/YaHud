@@ -7,9 +7,11 @@
             <li class="widget-item">
                 <h4 class="widget-name">@widget.Name</h4>
                 <div class="widget-actions">
-                    <button class="btn dark"  aria-label="Toggle visibility">
-                        <Icon Name="eye" />
+                    <button class="btn dark @(widget.Settings!.Visible ? "" : "not-visible")" aria-label="Toggle visibility" @onclick="() => ToggleWidgetVisibility(widget)">
+                        <Icon Name=@(widget.Settings!.Visible ? "eye" : "eye-slash") />
                     </button>
+
+                    <SettingsWidgetMenu Widget="widget" />
                 </div>
             </li>
         }
@@ -21,4 +23,12 @@
     [Parameter] public required IEnumerable<IWidget> Widgets { get; set; }
 
     private IEnumerable<IWidget> AlphabeticallySortedWidgets => Widgets.OrderBy(w => w.Name);
+
+    private void ToggleWidgetVisibility(IWidget widget)
+    {
+        if (widget.Settings != null)
+        {
+            widget.Settings.Visible = !widget.Settings.Visible;
+        }
+    }
 }

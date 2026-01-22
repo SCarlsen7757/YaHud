@@ -5,13 +5,14 @@
 
 @if (!string.IsNullOrEmpty(svgMarkup))
 {
-    @* <svg> *@
+    @* <div class="icon @Class"> *@
         @((MarkupString)svgMarkup)
-    @* </svg> *@
+    @* </div> *@
 }
 
 @code {
     [Parameter] public required string Name { get; set; }
+    // [Parameter] public string Class { get; set; } = "";
 
     private string? svgMarkup;
     private static readonly Dictionary<string, string> cache = new();
