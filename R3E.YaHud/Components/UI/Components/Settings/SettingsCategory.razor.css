@@ -33,11 +33,22 @@
     }
 
     .widget-actions {
+        display: flex;
+        gap: 0.25rem;
+
         .btn {
             aspect-ratio: 1/1;
             width: 2rem;
             padding: 0 0.5rem;
             display: flex;
+
+            &.not-visible {
+                --btn-color: #ff7f50;
+            }
+
+            &.ghost {
+                padding: 0;
+            }
         }
     }
 }
