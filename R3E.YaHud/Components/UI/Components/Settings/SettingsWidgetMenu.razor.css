@@ -1,0 +1,32 @@
+﻿.btn {
+    aspect-ratio: 1/1;
+    width: 2rem;
+    padding: 0 0.5rem;
+    display: flex;
+
+    &.ghost {
+        padding: 0;
+    }
+}
+
+.widget-menu-wrapper {
+    position: relative;
+}
+
+.widget-menu {
+    position: absolute;
+    left: calc(½00% + 6px);
+    top: 0;
+    z-index: 13000;
+    background: rgba(33,33,33,0.95);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    padding: 0.35rem;
+    max-height: 240px;
+    overflow: auto;
+    /* ensure dropdown width follows toggle width and respects container */
+    min-width: 100%;
+    width: auto;
+    box-sizing: border-box;
+    max-width: calc(100vw - 4rem); /* safety so it never goes off-screen */
+}
