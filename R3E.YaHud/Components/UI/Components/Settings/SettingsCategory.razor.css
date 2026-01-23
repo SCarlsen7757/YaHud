@@ -9,7 +9,8 @@
     position: sticky;
     top: 0;
     padding: 0.5rem 1rem;
-    font-size: 1.5rem;
+    font-size: 1.55rem;
+    font-weight: bold;
     z-index: 1;
 }
 
