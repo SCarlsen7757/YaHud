@@ -1,0 +1,21 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+
+<div class="settings-panel settings-detail" @onclick="() => events.RaiseBodyClick()" @onclick:stopPropagation>
+    <div class="panel-header">
+        <h2>@Widget.Name</h2>
+    </div>
+
+    <div class="panel-body">
+        
+    </div>
+
+    <div class="panel-footer">
+        <button class="btn dark" @onclick="() => Widget.ResetProperties()" aria-label="Clear widget settings">Clear Settings</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public required IWidget Widget { get; set; }
+
+    [CascadingParameter] public SettingPanelEvents events { get; set; }
+}
