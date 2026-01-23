@@ -384,7 +384,6 @@ window.HudHelper = (function () {
         },
 
         setPosition: function (elementId, xPercent, yPercent) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.setPosition: element not found', elementId);
@@ -394,12 +393,10 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
-            });
 
         },
 
         setScale: function (elementId, scale) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.setScale: element not found', elementId);
@@ -407,11 +404,9 @@ window.HudHelper = (function () {
                 }
                 el.scale = scale;
                 el.style.transform = `scale(${scale})`;
-            });
         },
 
         resetPosition: function (elementId, dotnetHelper, xPercent = 50, yPercent = 50) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.resetPosition: element not found', elementId);
@@ -433,12 +428,10 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
-            });
 
         },
 
         resetScale: function (elementId, dotnetHelper) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.resetScale: element not found', elementId);
@@ -456,7 +449,6 @@ window.HudHelper = (function () {
                 } catch (ex) {
                     console.error('HudHelper: Failed to update widget scale (sync)', ex);
                 }
-            });
         },
 
         setWidgetSettings: function (elementId, value) {
