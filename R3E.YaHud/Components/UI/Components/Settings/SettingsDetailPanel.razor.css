@@ -1,0 +1,9 @@
+﻿.settings-detail {
+    grid-area: detail;
+
+    .panel-body {
+        background: linear-gradient(135deg, #57606f 21px, #5e6677 22px, #5e6677 24px, transparent 24px, transparent 67px, #5e6677 67px, #5e6677 69px, transparent 69px), linear-gradient(225deg, #57606f 21px, #5e6677 22px, #5e6677 24px, transparent 24px, transparent 67px, #5e6677 67px, #5e6677 69px, transparent 69px) 0 64px;
+        background-color: #57606f;
+        background-size: 64px 128px;
+    }
+}
