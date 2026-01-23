@@ -1,23 +1,32 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
 <div class="widget-menu-wrapper">
-    <button class="btn ghost" @onclick="() => _menuOpen = !_menuOpen">
+    <button class="btn ghost" @onclick="() => menuOpen = !menuOpen" @onclick:stopPropagation>
         <Icon Name="elipsis-vertical" />
     </button>
 
-    @if (_menuOpen)
+    @if (menuOpen)
     {
         <div class="widget-menu">
-            <button class="btn dark" @onclick="() => { /* TODO: Implement reset functionality */ _menuOpen = false; }">
-                <Icon Name="rotate-left" /> Reset Widget
-            </button>
-            <button class="btn dark" @onclick="() => { /* TODO: Implement settings functionality */ _menuOpen = false; }">
-                <Icon Name="gear" /> Widget Settings
-            </button>
+            <ul>
+                <li class="menu-item" @onclick="() => Widget.ResetPosition()">Reset Position</li>
+                <li class="menu-item" @onclick="() => Widget.ResetScale()">Reset Scale</li>
+            </ul>
         </div>
     }
 </div>
 
 @code {
     [Parameter] public IWidget Widget { get; set; } = null!;
-    private bool _menuOpen = false;
+    [CascadingParameter] public SettingPanelEvents? masterPanelEvents { get; set; }
+
+    private bool menuOpen = false;
+
+    protected override void OnInitialized()
+    {
+        masterPanelEvents!.BodyClicked += () =>
+        {
+            menuOpen = false;
+            InvokeAsync(StateHasChanged);
+        };
+    }
 }
