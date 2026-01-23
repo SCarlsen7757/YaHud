@@ -41,6 +41,7 @@ namespace R3E.YaHud.Components.Widget.Core
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
+        private bool initializedTransformations = false;
 
         protected abstract void Update();
 
@@ -56,7 +57,6 @@ namespace R3E.YaHud.Components.Widget.Core
             if (UseR3EData) TelemetryService.DataUpdated += OnTelemetryDataUpdated;
         }
 
-        private bool _init = false;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
@@ -72,14 +72,14 @@ namespace R3E.YaHud.Components.Widget.Core
             if (!(Settings?.Visible ?? false))
                 return;
 
-            if (ElementRef.Context is not null && !_init)
+            if (ElementRef.Context is not null && !initializedTransformations)
             {
-                _init = true;
+                initializedTransformations = true;
                 await JS.InvokeVoidAsync(
-                   "HudHelper.setScale",
-                   ElementId,
-                   Settings.Scale
-               );
+                    "HudHelper.setScale",
+                    ElementId,
+                    Settings.Scale
+                );
 
                 await JS.InvokeVoidAsync(
                     "HudHelper.setPosition",
@@ -91,8 +91,6 @@ namespace R3E.YaHud.Components.Widget.Core
 
             try
             {
-               
-
                 objRef ??= DotNetObjectReference.Create(this);
 
                 await JS.InvokeVoidAsync(
