@@ -21,6 +21,7 @@ namespace R3E.YaHud.Components.Widget.Core
         protected bool TestMode => TestModeService.TestMode;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
+        public ElementReference ElementRef { get; set; }
         public abstract string ElementId { get; }
         public abstract string Name { get; }
         public abstract string Category { get; }
@@ -55,6 +56,7 @@ namespace R3E.YaHud.Components.Widget.Core
             if (UseR3EData) TelemetryService.DataUpdated += OnTelemetryDataUpdated;
         }
 
+        private bool _init = false;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
@@ -70,13 +72,14 @@ namespace R3E.YaHud.Components.Widget.Core
             if (!(Settings?.Visible ?? false))
                 return;
 
-            try
+            if (ElementRef.Context is not null && !_init)
             {
+                _init = true;
                 await JS.InvokeVoidAsync(
-                    "HudHelper.setScale",
-                    ElementId,
-                    Settings.Scale
-                );
+                   "HudHelper.setScale",
+                   ElementId,
+                   Settings.Scale
+               );
 
                 await JS.InvokeVoidAsync(
                     "HudHelper.setPosition",
@@ -84,6 +87,11 @@ namespace R3E.YaHud.Components.Widget.Core
                     Settings.XPercent,
                     Settings.YPercent
                 );
+            }
+
+            try
+            {
+               
 
                 objRef ??= DotNetObjectReference.Create(this);
 
