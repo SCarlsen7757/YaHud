@@ -11,6 +11,7 @@
     grid-template-areas:
         "master detail";
     padding: 2rem;
+    gap: 2rem;
 }
 
 /*.settings-panel {

@@ -10,6 +10,7 @@
     top: 0;
     padding: 0.5rem 1rem;
     font-size: 1.5rem;
+    z-index: 1;
 }
 
 .category-widgets {
@@ -26,6 +27,61 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    cursor: pointer;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("assets/img/top-tiretrack.svg");
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position-y: center;
+        background-position-x: center;
+        z-index: -2;
+        transform-origin: center;
+        transform: rotate(169deg);
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #747d8c;
+        z-index: -1;
+        transform-origin: center;
+        transform: rotate(169deg) translateX(0px);
+        transition: transform 500ms ease-in-out;
+    }
+
+
+    &.selected, &:hover {
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #747d8c;
+            z-index: -1;
+            transform-origin: center;
+            transform: rotate(169deg) translateX(-350px);
+        }
+    }
+
+
+
+
 
     .widget-name {
         margin: 0;
