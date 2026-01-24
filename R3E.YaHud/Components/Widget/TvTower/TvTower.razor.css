@@ -38,7 +38,7 @@
 
         .tv-table th.col-manu,
         .tv-table td.col-manu {
-            width: 22px;
+            width: 32px;
         }
 
         .tv-table th.col-car,
@@ -61,7 +61,7 @@
 
         .tv-table th.col-pit,
         .tv-table td.col-pit {
-            width: 1.8rem;
+            width: 2.5rem;
             text-align: center;
         }
 
