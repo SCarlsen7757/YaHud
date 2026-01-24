@@ -19,57 +19,51 @@
     background: rgba(0, 0, 0, 0.55);
 }
 
-.tv-table thead {
-    background: rgb(0, 0, 0, 0,80);
-    font-size: 12px;
-    text-align: left;
-}
-
-.tv-table th,
-.tv-table td {
-    padding: 2px 4px;
-}
-
-.tv-table th.col-pos,
-.tv-table td.col-pos {
-    width: 18px;
-    text-align: right;
-}
-
-.tv-table th.col-delta,
-.tv-table td.col-delta {
-    width: 20px;
-    text-align: left;
-}
-
-.tv-table th.col-manu,
-.tv-table td.col-manu {
-    width: 20px;
-}
-
-.tv-table th.col-car,
-.tv-table td.col-car {
-    width: 24px;
-    text-align: right;
-}
-
-    .tv-table th.col-best,
-    .tv-table td.col-best {
-        width: 70px;
-        text-align: center;
+    .tv-table thead {
+        background: rgb(0, 0, 0, 0,80);
+        font-size: 12px;
+        text-align: left;
     }
 
-.tv-table th.col-tyre,
-.tv-table td.col-tyre {
-    width: 30px;
-    text-align: center;
-}
+    .tv-table th,
+    .tv-table td {
+        padding: 2px 4px;
+    }
 
-.tv-table th.col-pit,
-.tv-table td.col-pit {
-    width: 25px;
-    text-align: center;
-}
+        .tv-table th.col-pos,
+        .tv-table td.col-pos {
+            width: 1.6rem;
+            text-align: right;
+        }
+
+        .tv-table th.col-manu,
+        .tv-table td.col-manu {
+            width: 22px;
+        }
+
+        .tv-table th.col-car,
+        .tv-table td.col-car {
+            width: 1.6rem;
+            text-align: right;
+        }
+
+        .tv-table th.col-best,
+        .tv-table td.col-best {
+            width: 70px;
+            text-align: center;
+        }
+
+        .tv-table th.col-tyre,
+        .tv-table td.col-tyre {
+            width: 30px;
+            text-align: center;
+        }
+
+        .tv-table th.col-pit,
+        .tv-table td.col-pit {
+            width: 25px;
+            text-align: center;
+        }
 
 .tv-row:nth-child(odd) {
     background: rgba(0, 0, 0, 0.25);

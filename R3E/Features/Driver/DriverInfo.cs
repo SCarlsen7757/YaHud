@@ -18,10 +18,10 @@
         public float DistanceGap { get; init; }
         public TimeSpan TimeGap { get; init; }
         public TimeSpan BestLapTime { get; init; }
-        public int TireTypeFront { get; init; }
-        public int TireTypeRear { get; init; }
-        public int TireSubtypeFront { get; init; }
-        public int TireSubtypeRear { get; init; }
+        public Constant.TireType TireTypeFront { get; init; }
+        public Constant.TireType TireTypeRear { get; init; }
+        public Constant.TireSubtype TireSubtypeFront { get; init; }
+        public Constant.TireSubtype TireSubtypeRear { get; init; }
         public bool IsInPitLane { get; init; }
         public int NumPitStops { get; init; }
         public bool IsCurrentLapValid { get; init; }
