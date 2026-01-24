@@ -15,7 +15,7 @@
                     <th class="col-car"></th>
                     <th class="col-driver">Driver</th>
                     <th class="col-best">Best</th>
-                    <th class="col-tyre">Tyres</th>
+                    <th class="col-tire">Tire</th>
                     <th class="col-pit">Pit</th>
                 </tr>
             </thead>
@@ -40,7 +40,7 @@
                         <td class="col-car">@d.CarNumber</td>
                         <td class="col-driver">@d.Name</td>
                         <td class="col-best">@FormatLap(d.BestLapTime)</td>
-                        <td class="col-tyre">@FormatTyre(d.TireSubtypeFront, d.TireSubtypeRear)</td>
+                        <td class="col-tire">@FormatTire(d.TireSubtypeFront, d.TireSubtypeRear)</td>
                         <td class="col-pit" style="background-color:@GetPitStopColor(d);">@(d.IsInPitLane ? "PIT" : string.Empty)</td>
                     </tr>
                 }
@@ -110,7 +110,7 @@
         return $"{totalMinutes}:{seconds:00}.{millis:000}";
     }
 
-    private static string FormatTyre(R3E.Constant.TireSubtype frontSubtype, R3E.Constant.TireSubtype rearSubtype)
+    private static string FormatTire(R3E.Constant.TireSubtype frontSubtype, R3E.Constant.TireSubtype rearSubtype)
     {
         if (frontSubtype == rearSubtype)
         {
