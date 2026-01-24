@@ -21,7 +21,7 @@
 
     .tv-table thead {
         background: rgb(0, 0, 0, 0,80);
-        font-size: 12px;
+        font-size: 0.8rem;
         text-align: left;
     }
 
@@ -49,19 +49,19 @@
 
         .tv-table th.col-best,
         .tv-table td.col-best {
-            width: 70px;
+            width: 5rem;
             text-align: center;
         }
 
-        .tv-table th.col-tyre,
-        .tv-table td.col-tyre {
-            width: 30px;
+        .tv-table th.col-tire,
+        .tv-table td.col-tire {
+            width: 2.4rem;
             text-align: center;
         }
 
         .tv-table th.col-pit,
         .tv-table td.col-pit {
-            width: 25px;
+            width: 1.8rem;
             text-align: center;
         }
 
