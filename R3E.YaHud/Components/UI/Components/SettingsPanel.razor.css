@@ -54,6 +54,7 @@
         padding: 0.5rem 1rem;
         border: none;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        font-size: 0.875rem;
     }
 
         .settings-panel .btn-primary:active,

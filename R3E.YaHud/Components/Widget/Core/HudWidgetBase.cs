@@ -21,6 +21,7 @@ namespace R3E.YaHud.Components.Widget.Core
         protected bool TestMode => TestModeService.TestMode;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
+        public ElementReference ElementRef { get; set; }
         public abstract string ElementId { get; }
         public abstract string Name { get; }
         public abstract string Category { get; }
@@ -40,6 +41,7 @@ namespace R3E.YaHud.Components.Widget.Core
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
+        private bool initializedTransformations = false;
 
         protected abstract void Update();
 
@@ -70,19 +72,29 @@ namespace R3E.YaHud.Components.Widget.Core
             if (!(Settings?.Visible ?? false))
                 return;
 
-            try
+            if (ElementRef.Context is not null && !initializedTransformations)
             {
+                initializedTransformations = true;
+                await JS.InvokeVoidAsync(
+                    "HudHelper.setScale",
+                    ElementId,
+                    Settings.Scale
+                );
+
                 await JS.InvokeVoidAsync(
                     "HudHelper.setPosition",
                     ElementId,
                     Settings.XPercent,
                     Settings.YPercent
                 );
+            }
 
+            try
+            {
                 objRef ??= DotNetObjectReference.Create(this);
 
                 await JS.InvokeVoidAsync(
-                    "HudHelper.registerDraggable",
+                    "HudHelper.registerTransformable",
                     ElementId,
                     objRef,
                     Locked,
@@ -113,9 +125,9 @@ namespace R3E.YaHud.Components.Widget.Core
                 try
                 {
                     if (newState)
-                        await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
+                        await JS.InvokeVoidAsync("HudHelper.disableTransformation", ElementId);
                     else
-                        await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
+                        await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
 
                     StateHasChanged();
                 }
@@ -167,7 +179,26 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ResetPosition()
         {
-            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, objRef, DefaultXPercent, DefaultYPercent);
+        }
+
+        public async Task ResetScale()
+        {
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId, objRef);
+        }
+
+        public async Task ResetProperties()
+        {
+            if (Settings != null)
+                Settings.PropertyChanged -= Settings_PropertyChanged;
+
+            Settings = new TSettings() { XPercent = Settings!.XPercent, YPercent = Settings!.YPercent, Scale = Settings!.Scale };
+            Settings.PropertyChanged += Settings_PropertyChanged;
+
+            await SettingsService.Clear(this);
+            await InvokeAsync(StateHasChanged);
         }
 
         public async Task ClearSettings()
@@ -220,6 +251,46 @@ namespace R3E.YaHud.Components.Widget.Core
             catch (Exception ex)
             {
                 Logger?.LogError(ex, "Unexpected error in UpdateWidgetPosition for widget {ElementId}", ElementId);
+            }
+        }
+
+        [JSInvokable]
+        public async Task UpdateWidgetScale(double scale)
+        {
+            try
+            {
+                // Guard against being called after component is disposed
+                if (disposed)
+                {
+                    Logger?.LogDebug("UpdateWidgetScale called on disposed component (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                if (Settings == null)
+                {
+                    Logger?.LogWarning("UpdateWidgetScale called with null Settings (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                Logger?.LogDebug("UpdateWidgetScale called: {ElementId} scale={scale}",
+                    ElementId, scale);
+
+                Settings.Scale = scale;
+                await SettingsService.Save(this);
+
+                Logger?.LogDebug("UpdateWidgetScale saved successfully for {ElementId}", ElementId);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                Logger?.LogDebug(ex, "Component disposed during UpdateWidgetScale for {ElementId}", ElementId);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
+            {
+                Logger?.LogDebug(ex, "Widget {ElementId} is no longer available", ElementId);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Unexpected error in UpdateWidgetScale for widget {ElementId}", ElementId);
             }
         }
 

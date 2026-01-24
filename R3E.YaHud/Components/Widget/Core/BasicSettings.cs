@@ -25,6 +25,8 @@ namespace R3E.YaHud.Components.Widget.Core
             }
         }
 
+        public double Scale { get; set; } = 1.0;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
 
