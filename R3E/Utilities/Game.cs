@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
 
-namespace R3E
+namespace R3E.Utilities
 {
-    public class Utilities
+    public static class Game
     {
         public static bool IsRrreRunning()
         {

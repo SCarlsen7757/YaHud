@@ -23,7 +23,8 @@ namespace R3E.Features.Image
 
         public async Task<string> GetManufacturerImageAsync(int manufacturerId, ImageSize size = ImageSize.Small)
         {
-            logger.LogDebug("Fetching manufacturer image for ID: {ManufacturerId} with size: {Size}", manufacturerId, size);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Fetching manufacturer image for ID: {ManufacturerId} with size: {Size}", manufacturerId, size);
             var imageUrl = await GetImageUrlAsync(manufacturerId.ToString(), size);
             if (logger.IsEnabled(LogLevel.Debug))
             {
@@ -38,7 +39,8 @@ namespace R3E.Features.Image
 
         public async Task<string> GetClassImageAsync(int classId, ImageSize size = ImageSize.Small)
         {
-            logger.LogDebug("Fetching class image for ID: {ClassId} with size: {Size}", classId, size);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Fetching class image for ID: {ClassId} with size: {Size}", classId, size);
             var imageUrl = await GetImageUrlAsync(classId.ToString(), size);
             if (logger.IsEnabled(LogLevel.Debug))
             {
@@ -49,6 +51,30 @@ namespace R3E.Features.Image
                 }
             }
             return imageUrl;
+        }
+
+        public string GetManufacturerImageCached(int manufacturerId, ImageSize size = ImageSize.Small)
+        {
+            var cacheKey = $"img_{manufacturerId}_{size}";
+
+            if (cache.TryGetValue(cacheKey, out string? cachedUrl))
+            {
+                return cachedUrl!;
+            }
+
+            return string.Empty;
+        }
+
+        public string GetClassImageCached(int classId, ImageSize size = ImageSize.Small)
+        {
+            var cacheKey = $"img_{classId}_{size}";
+
+            if (cache.TryGetValue(cacheKey, out string? cachedUrl))
+            {
+                return cachedUrl!;
+            }
+
+            return string.Empty;
         }
 
         private async Task<string> GetImageUrlAsync(string id, ImageSize size)
@@ -77,7 +103,8 @@ namespace R3E.Features.Image
                 if (response.IsSuccessStatusCode && response.RequestMessage?.RequestUri != null)
                 {
                     var imageUrl = response.RequestMessage.RequestUri.ToString();
-                    logger.LogDebug("Successfully retrieved image URL for ID {Id}: {ImageUrl}", id, imageUrl);
+                    if (logger.IsEnabled(LogLevel.Debug))
+                        logger.LogDebug("Successfully retrieved image URL for ID {Id}: {ImageUrl}", id, imageUrl);
 
                     var cacheOptions = new MemoryCacheEntryOptions
                     {
@@ -95,7 +122,8 @@ namespace R3E.Features.Image
                 logger.LogError(ex, "Exception occurred while fetching image for ID: {Id}", id);
             }
 
-            logger.LogDebug("Returning fallback image for ID: {Id}", id);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Returning fallback image for ID: {Id}", id);
             return FALLBACK_IMAGE;
         }
 

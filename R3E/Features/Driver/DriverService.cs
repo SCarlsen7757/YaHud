@@ -1,6 +1,8 @@
 ﻿using R3E.Core.Interfaces;
 using R3E.Core.Services;
+using R3E.Features.Image;
 using R3E.Features.TimeGap;
+using R3E.Utilities;
 
 namespace R3E.Features.Driver
 {
@@ -12,6 +14,7 @@ namespace R3E.Features.Driver
     {
         private readonly ITelemetryService telemetry;
         private readonly ITimeGapService timeGapService;
+        private readonly IImageService imageService;
         private readonly ILogger<DriverService> logger;
         private readonly TelemetryData telemetryData;
 
@@ -23,10 +26,12 @@ namespace R3E.Features.Driver
         public DriverService(
             ITelemetryService telemetry,
             ITimeGapService timeGapService,
+            IImageService imageService,
             ILogger<DriverService> logger)
         {
             this.telemetry = telemetry;
             this.timeGapService = timeGapService;
+            this.imageService = imageService;
             this.logger = logger;
 
             // Store reference to TelemetryData once
@@ -139,6 +144,7 @@ namespace R3E.Features.Driver
                 bool isPlayer = (i == playerIndex);
                 TimeSpan timeGap = TimeSpan.Zero;
 
+
                 if (!isPlayer)
                 {
                     float relGap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
@@ -151,17 +157,105 @@ namespace R3E.Features.Driver
 
                 float distanceGap = (float)item.RelativeDiff * trackLength;
 
-                result.Add(new DriverInfo
-                {
-                    DriverData = item.Driver,
-                    IsPlayer = isPlayer,
-                    LapDifference = item.Driver.CompletedLaps - raw.CompletedLaps,
-                    DistanceGap = distanceGap,
-                    TimeGap = timeGap
-                });
+                result.Add(BuildDriverInfo(item.Driver, isPlayer, distanceGap, timeGap));
             }
 
             return result;
         }
+
+        /// <summary>
+        /// Gets all drivers sorted by their position in the race/session.
+        /// Useful for standings/tower displays.
+        /// </summary>
+        /// <returns>List of all drivers sorted by position (1st place first)</returns>
+        public IList<DriverInfo> GetAllDriversByPosition()
+        {
+            List<DriverInfo> result = [];
+
+            var raw = telemetryData.Raw;
+
+            if (raw.NumCars <= 0 || raw.DriverData == null)
+                return result;
+
+            var playerSlotId = raw.VehicleInfo.SlotId;
+
+            var allDrivers = raw.DriverData
+                .Take(raw.NumCars)
+                .Where(d => d.DriverInfo.SlotId >= 0)
+                .OrderBy(d => d.Place)
+                .ToList();
+
+            foreach (var driver in allDrivers)
+            {
+                bool isPlayer = driver.DriverInfo.SlotId == playerSlotId;
+                TimeSpan timeGap = TimeSpan.Zero;
+
+                if (!isPlayer)
+                {
+                    float relGap = timeGapService.GetTimeGapRelative(playerSlotId, driver.DriverInfo.SlotId);
+                    timeGap = TimeSpan.FromSeconds(-relGap);
+                }
+
+                result.Add(BuildDriverInfo(driver, isPlayer, 0, timeGap));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a DriverInfo object from raw driver data with all enriched fields.
+        /// </summary>
+        private DriverInfo BuildDriverInfo(
+            Data.DriverData driver,
+            bool isPlayer,
+            float distanceGap,
+            TimeSpan timeGap)
+        {
+            var raw = telemetryData.Raw;
+
+            return new DriverInfo
+            {
+                DriverData = driver,
+                IsPlayer = isPlayer,
+                LapDifference = driver.CompletedLaps - raw.CompletedLaps,
+                DistanceGap = distanceGap,
+                TimeGap = timeGap,
+                Name = GetDriverName(driver.DriverInfo.Name),
+                CarNumber = driver.DriverInfo.CarNumber,
+                Position = driver.Place,
+                ClassPosition = driver.PlaceClass,
+                Rating = driver.DriverInfo.Rating,
+                Reputation = driver.DriverInfo.Reputation,
+                BestLapTime = GetBestLapTime(driver.SectorTimeBestSelf),
+                TireTypeFront = driver.TireTypeFront,
+                TireTypeRear = driver.TireTypeRear,
+                TireSubtypeFront = driver.TireSubtypeFront,
+                TireSubtypeRear = driver.TireSubtypeRear,
+                IsInPitLane = driver.InPitlane == 1,
+                NumPitStops = driver.NumPitstops,
+                IsCurrentLapValid = driver.CurrentLapValid == 1,
+                ManufacturerImageUrl = imageService.GetManufacturerImageCached(driver.DriverInfo.ManufacturerId, ImageSize.Small),
+                ClassImageUrl = imageService.GetClassImageCached(driver.DriverInfo.ClassId, ImageSize.Small),
+                ManufacturerId = driver.DriverInfo.ManufacturerId,
+                ClassId = driver.DriverInfo.ClassId
+            };
+        }
+
+        private static string GetDriverName(byte[] nameBytes)
+        {
+            var fullName = TelemetryData.GetDriverName(nameBytes);
+            return string.IsNullOrWhiteSpace(fullName) ? string.Empty : Name.ShortenDriverName(fullName);
+        }
+
+        private static TimeSpan GetBestLapTime(Data.Sectors<float> sectors)
+        {
+            var total = sectors.Sector1 + sectors.Sector2 + sectors.Sector3;
+
+            if (total <= 0f || total >= 10000f)
+                return TimeSpan.Zero;
+
+            return TimeSpan.FromSeconds(total);
+        }
     }
 }
+
