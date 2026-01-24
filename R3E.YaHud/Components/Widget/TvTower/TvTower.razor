@@ -88,7 +88,7 @@
             new() { Name = "You", Position = 4, CarNumber = 7, TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, BestLapTime = TimeSpan.FromSeconds(85.790), IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp", NumPitStops = 1, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
             new() { Name = "M. Engel", Position = 5, CarNumber = 5, TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, BestLapTime = TimeSpan.FromSeconds(88.715), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp", NumPitStops = 1 },
             new() { Name = "O. Jarvis", Position = 6, CarNumber = 77, BestLapTime = TimeSpan.FromSeconds(95.391), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Hard, TireSubtypeRear = R3E.Constant.TireSubtype.Hard, NumPitStops = 1 },
-            new() { Name = "N. Cassidy", Position = 7, CarNumber = 37, BestLapTime = new TimeSpan(0, 1, 29, 191), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0 },
+            new() { Name = "N. Cassidy", Position = 7, CarNumber = 37, BestLapTime = new TimeSpan(0, 1, 29, 191), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable, FinishStatus = (int)Constant.FinishStatus.DNQ} },
         };
     }
 
@@ -129,6 +129,17 @@
 
     private string GetPitStopColor(Features.Driver.DriverInfo driver)
     {
+        var finishStatus = (Constant.FinishStatus)driver.DriverData.FinishStatus;
+
+        switch (finishStatus)
+        {
+            case Constant.FinishStatus.DNF:
+            case Constant.FinishStatus.DNQ:
+            case Constant.FinishStatus.DQ:
+            case Constant.FinishStatus.Finished:
+                return string.Empty;
+        }
+
         var pitStopStatus = (Constant.PitStopStatus)driver.DriverData.PitStopStatus;
 
         return pitStopStatus switch
@@ -148,8 +159,9 @@
             case Constant.FinishStatus.DNF:
             case Constant.FinishStatus.DNQ:
             case Constant.FinishStatus.DQ:
-            case Constant.FinishStatus.Finished:
                 return finishStatus.ToString().ToUpper();
+            case Constant.FinishStatus.Finished:
+                return "FIN";
         }
 
         return driver.IsInPitLane ? "PIT" : string.Empty;
