@@ -4,10 +4,7 @@
 @using R3E.Features.Driver
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.RelativeDriver
-@using R3E.YaHud.Components.Widget.RelativeDriver.Models
 @inherits HudWidgetBase<RelativeDriverSettings>
-@inject IImageService ImageService
-@inject ITimeGapService TimeGapService
 @inject DriverService DriverService
 
 <WidgetHost Owner="this">
@@ -27,11 +24,11 @@
                             }
                         </div>
 
-                        <div class="car-number" style="color: @Settings.TextColor">
+                        <div class="car-number" style="color: @Settings!.TextColor">
                             @driver.CarNumber
                         </div>
 
-                        <div class="driver-name" style="color: @Settings.TextColor">
+                        <div class="driver-name" style="color: @Settings!.TextColor">
                             @driver.Name
                         </div>
 
@@ -55,12 +52,13 @@
         }
         else
         {
-            <div class="no-data" style="color: @Settings.TextColor">
+            <div class="no-data" style="color: @Settings!.TextColor">
                 No data available
             </div>
         }
     </div>
 </WidgetHost>
+
 
 @code {
     public override string ElementId { get => "relativeDriverWidget"; }
@@ -74,7 +72,7 @@
 
     private const float Epsilon = 0.01f;
 
-    private List<DisplayDriver> displayDrivers = new();
+    private List<Features.Driver.DriverInfo> displayDrivers = new();
     private bool IsQualifying => (R3E.Constant.Session)TelemetryService.Data.Raw.SessionType == R3E.Constant.Session.Qualify && !TestMode;
 
     public RelativeDriver()
@@ -94,57 +92,30 @@
         }
 
         var relativeDrivers = DriverService.GetRelativeDrivers(7);
-
-        List<DisplayDriver> newDisplayDrivers = [];
-
-        foreach (var relDriver in relativeDrivers)
-        {
-            var driver = relDriver.DriverData;
-
-            var displayDriver = new DisplayDriver
-            {
-                Name = TelemetryData.GetDriverName(driver.DriverInfo.Name),
-                CarNumber = driver.DriverInfo.CarNumber,
-                Rating = driver.DriverInfo.Rating,
-                Reputation = driver.DriverInfo.Reputation,
-                IsPlayer = relDriver.IsPlayer,
-                LapDifference = relDriver.LapDifference,
-                IsOutLap = IsQualifying && driver.CurrentLapValid == 0,
-                IsInvalidLap = IsQualifying && driver.CurrentLapValid == 0,
-                TimeGap = relDriver.TimeGap,
-                DistanceGap = relDriver.DistanceGap,
-                ClassImageUrl = await ImageService.GetClassImageAsync(driver.DriverInfo.ClassId, ImageSize.Small),
-                ManufacturerImageUrl = await ImageService.GetManufacturerImageAsync(driver.DriverInfo.ManufacturerId, ImageSize.Small)
-            };
-
-            newDisplayDrivers.Add(displayDriver);
-        }
-
-        displayDrivers = newDisplayDrivers;
+        displayDrivers = relativeDrivers.ToList();
     }
 
     protected override void UpdateWithTestData()
     {
-        displayDrivers = new List<DisplayDriver>
+        displayDrivers = new List<Features.Driver.DriverInfo>
         {
-            new() { Name = "Kevin Magnussen", CarNumber = 15, Rating = 4922f, Reputation = 98.8f, TimeGap = TimeSpan.FromSeconds(-32.5), DistanceGap = -450.0f, IsPlayer = false, LapDifference = 1, IsOutLap = true, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
-            new() { Name = "Mirko Bortolotti", CarNumber = 63, Rating = 4756f, Reputation = 95.2f, TimeGap = TimeSpan.FromSeconds(-31.2), DistanceGap = -430.0f, IsPlayer = false, LapDifference = 1, IsOutLap = false, IsInvalidLap = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp" },
-            new() { Name = "Kévin Estre", CarNumber = 6, Rating = 4834f, Reputation = 96.7f, TimeGap = TimeSpan.FromSeconds(-10.5), DistanceGap = -145.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
-            new() { Name = "You", CarNumber = 007, Rating = 3245f, Reputation = 82.5f, TimeGap = TimeSpan.Zero, DistanceGap = 0f, IsPlayer = true, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
-            new() { Name = "Maro Engel", CarNumber = 5, Rating = 4623f, Reputation = 93.4f, TimeGap = TimeSpan.FromSeconds(0.8), DistanceGap = 11.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
-            new() { Name = "Oliver Jarvis", CarNumber = 77, Rating = 4512f, Reputation = 91.8f, TimeGap = TimeSpan.FromSeconds(61.5), DistanceGap = 850.0f, IsPlayer = false, LapDifference = 0, IsOutLap = false, IsInvalidLap = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/mazda-mx-5-cup-10977-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
-            new() { Name = "Nick Cassidy", CarNumber = 37, Rating = 4689f, Reputation = 94.1f, TimeGap = TimeSpan.FromSeconds(122.2), DistanceGap = 1690.0f, IsPlayer = false, LapDifference = -1, IsOutLap = false, IsInvalidLap = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/nsu-tts-cup-4813-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
+            new() { Name = "K. Magnussen", CarNumber = 15, Rating = 4922f, Reputation = 98.8f, TimeGap = TimeSpan.FromSeconds(-32.5), DistanceGap = -450.0f, IsPlayer = false, LapDifference = 1, IsCurrentLapValid = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp" },
+            new() { Name = "M. Bortolotti", CarNumber = 63, Rating = 4756f, Reputation = 95.2f, TimeGap = TimeSpan.FromSeconds(-31.2), DistanceGap = -430.0f, IsPlayer = false, LapDifference = 1, IsCurrentLapValid = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp" },
+            new() { Name = "K. Estre", CarNumber = 6, Rating = 4834f, Reputation = 96.7f, TimeGap = TimeSpan.FromSeconds(-10.5), DistanceGap = -145.0f, IsPlayer = false, LapDifference = 0, IsCurrentLapValid = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/hypercars-13129-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp" },
+            new() { Name = "You", CarNumber = 007, Rating = 3245f, Reputation = 82.5f, TimeGap = TimeSpan.Zero, DistanceGap = 0f, IsPlayer = true, LapDifference = 0, IsCurrentLapValid = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp" },
+            new() { Name = "M. Engel", CarNumber = 5, Rating = 4623f, Reputation = 93.4f, TimeGap = TimeSpan.FromSeconds(0.8), DistanceGap = 11.0f, IsPlayer = false, LapDifference = 0, IsCurrentLapValid = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/gtr-3-1703-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp" },
+            new() { Name = "O. Jarvis", CarNumber = 77, Rating = 4512f, Reputation = 91.8f, TimeGap = TimeSpan.FromSeconds(61.5), DistanceGap = 850.0f, IsPlayer = false, LapDifference = 0, IsCurrentLapValid = true, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/mazda-mx-5-cup-10977-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp" },
+            new() { Name = "N. Cassidy", CarNumber = 37, Rating = 4689f, Reputation = 94.1f, TimeGap = TimeSpan.FromSeconds(122.2), DistanceGap = 1690.0f, IsPlayer = false, LapDifference = -1, IsCurrentLapValid = false, ClassImageUrl = "https://prod.r3eassets.com/assets/content/carclass/nsu-tts-cup-4813-image-small.webp", ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp" }
         };
     }
 
-    private string GetRowStyle(DisplayDriver driver)
+    private string GetRowStyle(Features.Driver.DriverInfo driver)
     {
         if (driver.IsPlayer)
         {
             return $"background-color: {Settings?.PlayerRowColor};";
         }
 
-        // Race mode: lap difference colors
         if (!IsQualifying)
         {
             if (driver.LapDifference > 0)
@@ -156,14 +127,9 @@
                 return $"color: {Settings?.LapBehindColor};";
             }
         }
-        // Qualifying mode: lap status colors
         else
         {
-            if (driver.IsOutLap)
-            {
-                return $"color: {Settings?.OutLapColor};";
-            }
-            else if (driver.IsInvalidLap)
+            if (!driver.IsCurrentLapValid)
             {
                 return $"color: {Settings?.InvalidLapColor};";
             }
@@ -172,7 +138,7 @@
         return "";
     }
 
-    private string GetGapColor(DisplayDriver driver)
+    private string GetGapColor(Features.Driver.DriverInfo driver)
     {
         if (Settings?.GapMode == GapDisplayMode.Time)
         {
@@ -186,7 +152,7 @@
         }
     }
 
-    private string FormatGap(DisplayDriver driver)
+    private string FormatGap(Features.Driver.DriverInfo driver)
     {
         if (Settings?.GapMode == GapDisplayMode.Time)
         {

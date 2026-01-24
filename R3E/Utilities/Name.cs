@@ -1,8 +1,8 @@
-﻿namespace R3E.YaHud
+﻿namespace R3E.Utilities
 {
-    public class NameShortener
+    public static class Name
     {
-        public static string ShortenName(string fullName)
+        public static string ShortenDriverName(string fullName)
         {
             if (string.IsNullOrWhiteSpace(fullName)) return string.Empty;
 
