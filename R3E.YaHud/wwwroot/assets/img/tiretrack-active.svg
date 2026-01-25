@@ -1,28 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="23.552 23.823 408.1 50">
 	<defs>
-    <linearGradient id="Gradient1" x1="0" x2="0" y1="0" y2="1">
-		<stop class="stop1" offset="0%" />
-		<stop class="stop2" offset="50%" />
-      <stop class="stop3" offset="100%" />
-    </linearGradient>
-  </defs>
-  <style>
-	  #rect1 {
-	  fill: url("#Gradient1");
-	  }
-	  .stop1 {
-	  stop-color: black;
-	  stop-opacity: 0;
-	  }
-	  .stop2 {
-	  stop-color: black;
-	  stop-opacity: 1;
-	  }
-	  .stop3 {
-	  stop-color: black;
-
-	  }
-  </style>
+		<linearGradient id="Gradient1" x1="0" x2="0" y1="0" y2="1">
+			<stop class="stop1" offset="0%" />
+			<stop class="stop2" offset="50%" />
+			<stop class="stop3" offset="100%" />
+		</linearGradient>
+	</defs>
+	<style>
+		#rect1 {
+		fill: url("#Gradient1");
+		}
+		.stop1 {
+		stop-color: #ff7f50;
+		stop-opacity: 0;
+		}
+		.stop2 {
+		stop-color: #ff7f50;
+		stop-opacity: 0.6;
+		}
+		.stop3 {
+		stop-color: #ff7f50;
+		stop-opacity: 0;
+		}
+	</style>
 	<path d="M236.266,26.153c-0.45,1.476-1.119,2.992-1.872,4.403v-4.563c0.43,0.016,0.86,0.032,1.29,0.048
 	C235.871,26.026,236.069,26.111,236.266,26.153z M102.507,58.029l-8.684-7.29c0.484,0.147,0.929,0.208,1.337,0.171
 	c-0.408,0.037-0.853-0.024-1.337-0.171L93.657,50.6l3.341-3.842l0.948,0.796c-0.337-0.188-0.68-0.379-1.053-0.587

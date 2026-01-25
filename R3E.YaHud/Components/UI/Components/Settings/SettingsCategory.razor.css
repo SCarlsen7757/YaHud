@@ -40,7 +40,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: url("assets/img/top-tiretrack.svg");
+        background-image: url("assets/img/tiretrack.svg");
         background-repeat: no-repeat;
         background-size: contain;
         background-position-y: center;
@@ -48,6 +48,10 @@
         z-index: -2;
         transform-origin: center;
         transform: rotate(169deg);
+    }
+
+    &.selected::before {
+        background-image: url("assets/img/tiretrack-active.svg");
     }
 
     &::after {
@@ -87,6 +91,12 @@
     .widget-name {
         margin: 0;
         font-size: 1rem;
+    }
+
+    &.selected {
+        .widget-name {
+            color: #ff7f50;
+        }
     }
 
     .widget-actions {
