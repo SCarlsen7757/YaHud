@@ -1,0 +1,53 @@
+﻿.tire-widget {
+    width: 130px;
+    padding: 10px;
+    background: #000;
+    color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    text-align: center;
+}
+
+.tire-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.bar-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 70px;
+    width: 28px;
+}
+
+    .bar span {
+        display: block;
+        height: 10px;
+        border-radius: 3px;
+        background: #1aff8c; /* active green */
+        opacity: 0.9;
+    }
+
+        /* inactive segments */
+        .bar span.inactive {
+            background: #0b3d2e;
+            opacity: 0.6;
+        }
+
+/* center label */
+.center-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Optional: blue “target” zone */
+.bar span.target {
+    background: #1e90ff;
+}

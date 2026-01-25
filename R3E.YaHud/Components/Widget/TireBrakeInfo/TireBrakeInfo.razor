@@ -1,0 +1,93 @@
+﻿@using R3E.YaHud.Components.UI.Helpers
+@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.TireBrakeInfo.Components
+@inherits HudWidgetBase<TireBrakeInfoSettings>
+
+@if (Settings?.Visible ?? false)
+{
+    <div id="@ElementId" class="tire-widget">
+        <!-- Top values -->
+        <div class="tire-values top">
+            <span>@frontLeftPressure</span>
+            <span>@frontRightPressure</span>
+        </div>
+
+        <!-- Top bar -->
+        <div class="bar-row">
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=true ></TireBrakeVisual>
+            </div>
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=false></TireBrakeVisual>
+            </div>
+        </div>
+
+        <!-- Center label -->
+        <div class="center-label">@tyreChoice</div>
+
+        <!-- Bottom bar -->
+        <div class="bar-row">
+
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=true></TireBrakeVisual>
+            </div>
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=false></TireBrakeVisual>
+            </div>
+        </div>
+
+        <!-- Bottom values -->
+        <div class="tire-values bottom">
+            <span>@rearLeftPressure</span>
+            <span>@rearRightPressure</span>
+        </div>
+
+    </div>
+}
+
+@code {
+    public override string ElementId { get => "TireBrakeInfoWidget"; }
+    public override string Name => "TireBrakeInfo";
+    public override string Category => "Telemetry";
+    public override bool Collidable => false;
+
+    public override double DefaultXPercent => 90;
+    public override double DefaultYPercent => 90;
+
+    string[] nameMap = { "front-left", "front-right", "rear-left", "rear-right" }; 
+    string frontLeftPressure = "26.0 psi";
+    string frontRightPressure = "26.0 psi";
+    string rearLeftPressure = "26.0 psi";
+    string rearRightPressure = "26.0 psi";
+    string tyreChoice = "Hard";
+
+    class tyreInfo
+    {
+        public string leftColor { get; set; }
+        public string middleColor { get; set; }
+        public string rightColor { get; set; }
+        public string brakeColor { get; set; }
+    }
+
+    tyreInfo frontLeft = new();
+    tyreInfo frontRight = new();
+    tyreInfo rearLeft = new();
+    tyreInfo rearRight = new();
+
+
+    protected override void UpdateWithTestData()
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override void Update()
+    {
+        //throw new NotImplementedException();
+        if (Settings is null) return;
+        var NewestData = TelemetryService.Data;
+        if (NewestData is null) return;
+
+        frontLeft.leftColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontLeft.OptimalTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp), (NewestData.Raw.TireTemp.FrontLeft.CurrentTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp))
+
+    }
+}
