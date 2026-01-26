@@ -7,7 +7,10 @@
         public SettingsTypes Type { get; } = type;
 
         public uint Order { get; } = order;
+        public string Category { get; set; } = "General";
+
         public string? Description { get; set; }
+
 
         public SettingsViewMode ViewMode { get; set; } = SettingsViewMode.Beginner;
         public double Min { get; set; } = 0;
