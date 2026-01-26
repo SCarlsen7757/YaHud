@@ -6,16 +6,17 @@
             <div class="tire" style="background-color:@TireMiddleColor" />
             <div class="tire right" style="background-color:@TireRightColor" />
             <div class="brake" style="background-color:@BrakeColor" />
+            <span class="tire-type-left">H</span>
         } else
         {
             <div class="brake" style="background-color:@BrakeColor" />
             <div class="tire left" style="background-color:@TireRightColor" />
             <div class="tire" style="background-color:@TireMiddleColor" />
             <div class="tire right" style="background-color:@TireLeftColor" />
+            <span class="tire-type-right">H</span>
         }
 
     </div>
-
 </div>
 
 @code {
@@ -24,4 +25,5 @@
     [Parameter] public string TireRightColor { get; set; } = "darkgray";
     [Parameter] public string BrakeColor { get; set; } = "yellow";
     [Parameter] public bool LeftSideTire { get; set; } = true;
+    [Parameter] public string TyreType { get; set; } = "Hard";
 }
