@@ -22,8 +22,19 @@
             </div>
         </div>
 
+        <div class="tire-values bottom">
+            <span>100</span>
+            <span>100</span>
+        </div>
+
         <!-- Center label -->
         <div class="center-label">@tyreChoice</div>
+
+        <div class="tire-values">
+
+            <span>@rearLeftPressure</span>
+            <span>@rearRightPressure</span>
+        </div>
 
         <!-- Bottom bar -->
         <div class="bar-row">
@@ -38,8 +49,8 @@
 
         <!-- Bottom values -->
         <div class="tire-values bottom">
-            <span>@rearLeftPressure</span>
-            <span>@rearRightPressure</span>
+            <span>100</span>
+            <span>100</span>
         </div>
 
     </div>
@@ -87,21 +98,26 @@
         var NewestData = TelemetryService.Data;
         if (NewestData is null) return;
 
-        frontLeft.leftColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontLeft.OptimalTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp), (NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Left - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp));
-        frontLeft.middleColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontLeft.OptimalTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp), (NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Center - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp));
-        frontLeft.rightColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontLeft.OptimalTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp), (NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Right - NewestData.Raw.TireTemp.FrontLeft.ColdTemp) / (NewestData.Raw.TireTemp.FrontLeft.HotTemp - NewestData.Raw.TireTemp.FrontLeft.ColdTemp));
+        frontLeft.leftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Left);
+        frontLeft.middleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Center);
+        frontLeft.rightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Right);
 
-        frontRight.leftColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontRight.OptimalTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp), (NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Left - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp));
-        frontRight.middleColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontRight.OptimalTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp), (NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Center - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp));
-        frontRight.rightColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.FrontRight.OptimalTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp), (NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Right - NewestData.Raw.TireTemp.FrontRight.ColdTemp) / (NewestData.Raw.TireTemp.FrontRight.HotTemp - NewestData.Raw.TireTemp.FrontRight.ColdTemp));
+        frontRight.leftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Left);
+        frontRight.middleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Center);
+        frontRight.rightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Right);
 
-        rearLeft.leftColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearLeft.OptimalTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp), (NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Left - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp));
-        rearLeft.middleColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearLeft.OptimalTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp), (NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Center - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp));
-        rearLeft.rightColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearLeft.OptimalTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp), (NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Right - NewestData.Raw.TireTemp.RearLeft.ColdTemp) / (NewestData.Raw.TireTemp.RearLeft.HotTemp - NewestData.Raw.TireTemp.RearLeft.ColdTemp));
+        rearLeft.leftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Left);
+        rearLeft.middleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Center);
+        rearLeft.rightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Right);
 
-        rearRight.leftColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearRight.OptimalTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp), (NewestData.Raw.TireTemp.RearRight.CurrentTemp.Left - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp));
-        rearRight.middleColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearRight.OptimalTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp), (NewestData.Raw.TireTemp.RearRight.CurrentTemp.Center - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp));
-        rearRight.rightColor = ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (NewestData.Raw.TireTemp.RearRight.OptimalTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp), (NewestData.Raw.TireTemp.RearRight.CurrentTemp.Right - NewestData.Raw.TireTemp.RearRight.ColdTemp) / (NewestData.Raw.TireTemp.RearRight.HotTemp - NewestData.Raw.TireTemp.RearRight.ColdTemp));
+        rearRight.leftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Left);
+        rearRight.middleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Center);
+        rearRight.rightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Right);
 
+    }
+
+    private static string GetLerpRGB3Color(Data.TireTempInformation tireData, float tireTemperature)
+    {
+        return ColorUtils.LerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (tireData.OptimalTemp - tireData.ColdTemp) / (tireData.HotTemp - tireData.ColdTemp), (tireTemperature - tireData.ColdTemp) / (tireData.HotTemp - tireData.ColdTemp));
     }
 }

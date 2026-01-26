@@ -48,5 +48,29 @@
     align-self: center;
     display: flex;
     flex-direction: column;
+}
 
+.tire-type-left {
+    position: absolute;
+    transform: translate(9.5px, 15px);
+    border: 4px solid red;
+    border-radius: 10px;
+    background: red;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.tire-type-right {
+    position: absolute;
+    transform: translate(21.5px, 15px);
+    border: 4px solid red;
+    border-radius: 10px;
+    background: red;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
