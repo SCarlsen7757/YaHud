@@ -9,7 +9,7 @@
 @typeparam TSettings where TSettings : BasicSettings
 
 <div>
-    @foreach (var prop in Settings!.GetType().GetProperties()
+    @* @foreach (var prop in Settings!.GetType().GetProperties()
         .Select(p => new { Prop = p, Attr = p.GetCustomAttribute<SettingTypeAttribute>() })
         .Where(x => x.Attr != null)
         .OrderBy(x => x.Attr!.Order))
@@ -24,7 +24,7 @@
             <label>@prop.Attr!.DisplayName</label>
             @RenderInput(prop.Prop, prop.Attr)
         </div>
-    }
+    } *@
 </div>
 
 @code {

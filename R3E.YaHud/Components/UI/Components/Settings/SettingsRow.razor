@@ -1,0 +1,72 @@
+﻿@using Microsoft.AspNetCore.Components.Rendering
+@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Services.Settings
+@using System.Reflection
+<p class="setting-row-label">@SettingsInfo.Attr!.DisplayName</p>
+<p>
+    @if (SettingsInfo.Attr!.Type == SettingsTypes.Checkbox)
+    {
+        
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Number)
+    {
+        
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Enum)
+    {
+        RenderEnumSelect();
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.ColorPicker)
+    {
+
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Slider)
+    {
+        
+    }
+
+</p>
+
+@code {
+    [Parameter] public required IWidget Widget { get; set; }
+    [Parameter] public required SettingInfo SettingsInfo { get; set; }
+
+    private RenderFragment RenderEnumSelect() => builder =>
+    {
+        var enumType = SettingsInfo.Prop.PropertyType;
+        if (!enumType.IsEnum) return;
+
+        // Use reflection to call the generic method
+        var method = typeof(SettingsRow)
+            .GetMethod(nameof(RenderEnumDropdownGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .MakeGenericMethod(enumType);
+
+        var args = new object?[] { builder };
+        method.Invoke(this, args);
+    };
+
+    private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop) where TEnum : struct, Enum
+    {
+        var instance = SettingsInfo.Prop.GetValue(Widget.Settings) ?? Activator.CreateInstance(typeof(TEnum)) ?? default(TEnum);
+        var enumValue = (TEnum)instance;
+
+        int seq = 0;
+
+        // Create a generic EnumSelect component
+        var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));
+        builder.OpenComponent(seq++, componentType);
+        builder.AddAttribute(seq++, "Value", enumValue);
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, newValue => SettingsInfo.Prop.SetValue(Widget.Settings, newValue)));
+        builder.AddAttribute(seq++, "LabelProvider", new Func<TEnum, string>(v => GetEnumDisplayName(v)));
+        builder.CloseComponent();
+    }
+
+    private string GetEnumDisplayName<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        var type = typeof(TEnum);
+        var name = Enum.GetName(type, value) ?? value.ToString();
+        var field = type.GetField(name);
+        var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
+        return displayAttr?.Name ?? name;
+    }
+}
