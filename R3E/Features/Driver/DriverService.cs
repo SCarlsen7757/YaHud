@@ -51,7 +51,7 @@ namespace R3E.Features.Driver
 
             var raw = telemetryData.Raw;
 
-            if (raw.NumCars <= 0 || raw.DriverData == null || maxDrivers <= 0)
+            if (raw.NumCars <= 0 || raw.DriverData == null || maxDrivers <= 1)
                 return result;
 
             var playerSlotId = raw.VehicleInfo.SlotId;
