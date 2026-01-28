@@ -1,5 +1,5 @@
 ﻿.tire-widget {
-    width: 130px;
+    width: 150px;
     padding: 10px;
     background: #000;
     color: #fff;
@@ -11,7 +11,20 @@
     display: flex;
     justify-content: space-between;
     font-size: 14px;
-    margin: 4px 0;
+    margin: 2px 0;
+    height: 18px;
+}
+
+.tire-values.bottom {
+    margin: 2px 5px;
+}
+
+.tire-temps {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    height: 18px;
+    margin: 0 5px
 }
 
 .bar-row {
@@ -50,4 +63,50 @@
 /* Optional: blue “target” zone */
 .bar span.target {
     background: #1e90ff;
+}
+
+
+.tire-type {
+    border: 4px solid red;
+    border-radius: 10px;
+    background: red;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2px 0;
+}
+
+.tire-age {
+    border: 4px solid lightgray;
+    border-radius: 10px;
+    background: lightgray;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2px 0;
+}
+
+.tire-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 5px;
+    flex-direction: column;
+
+}
+
+hr.solid {
+    border-top: 2px solid #fff;
+    margin: 8px 0;
+}
+
+p.brake-temp {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    margin-bottom: 0;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    width: 15px;
 }

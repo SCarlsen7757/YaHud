@@ -17,18 +17,23 @@
             <div style="height:50px; width:50px">
                 <TireBrakeVisual LeftSideTire=true ></TireBrakeVisual>
             </div>
+            <div class="tire-info">
+                <span class="tire-type">H</span>
+                <span class="tire-age">10</span>
+            </div>
             <div style="height:50px; width:50px">
                 <TireBrakeVisual LeftSideTire=false></TireBrakeVisual>
             </div>
         </div>
 
         <div class="tire-values bottom">
-            <span>100</span>
-            <span>100</span>
+            <span>100%</span>
+            <span>100%</span>
         </div>
 
         <!-- Center label -->
-        <div class="center-label">@tyreChoice</div>
+        @* <div class="center-label">@tyreChoice</div> *@
+        <hr class="solid">
 
         <div class="tire-values">
 
@@ -38,19 +43,28 @@
 
         <!-- Bottom bar -->
         <div class="bar-row">
-
+            @* <p class="brake-temp">72°</p> *@
             <div style="height:50px; width:50px">
                 <TireBrakeVisual LeftSideTire=true></TireBrakeVisual>
+            </div>
+            <div class="tire-info">
+                <span class="tire-type">H</span>
+                <span class="tire-age">5</span>
             </div>
             <div style="height:50px; width:50px">
                 <TireBrakeVisual LeftSideTire=false></TireBrakeVisual>
             </div>
+            @* <p class="brake-temp">107°</p> *@
         </div>
 
         <!-- Bottom values -->
         <div class="tire-values bottom">
-            <span>100</span>
-            <span>100</span>
+            <span>100%</span>
+            <span>100%</span>
+        </div>
+        <div class="tire-temps">
+            <span>72°</span>
+            <span>107°</span>
         </div>
 
     </div>
