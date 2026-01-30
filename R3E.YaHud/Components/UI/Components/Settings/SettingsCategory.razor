@@ -7,7 +7,7 @@
             <li class="widget-item @(SettingsContext.SelectedWidget?.ElementId == widget.ElementId ? "selected" : "")" @onclick="() => SettingsContext.OpenDetails!(widget)">
                 <h4 class="widget-name">@widget.Name</h4>
                 <div class="widget-actions">
-                    <button class="btn dark @(widget.Settings!.Visible ? "" : "not-visible")" aria-label="Toggle visibility" @onclick="() => ToggleWidgetVisibility(widget)" @onclick:stopPropagation> 
+                    <button class="btn dark no-focus @(widget.Settings!.Visible ? "" : "not-visible")" aria-label="Toggle visibility" @onclick="() => ToggleWidgetVisibility(widget)" @onclick:stopPropagation> 
                         <Icon Name=@(widget.Settings!.Visible ? "eye" : "eye-slash") />
                     </button>
 
