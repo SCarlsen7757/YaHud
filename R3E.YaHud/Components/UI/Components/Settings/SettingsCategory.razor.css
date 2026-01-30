@@ -86,17 +86,9 @@
 
 
 
-
-
     .widget-name {
         margin: 0;
         font-size: 1rem;
-    }
-
-    &.selected {
-        .widget-name {
-            color: #ff7f50;
-        }
     }
 
     .widget-actions {
