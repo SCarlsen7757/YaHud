@@ -2,6 +2,7 @@
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Services.Settings
 @using System.Reflection
+@using System.Globalization
 @inject IJSRuntime JS
 @implements IDisposable
 
@@ -44,10 +45,10 @@
         <div id="@SliderWrapperId" class="slider-wrapper">
             <input type="range" 
                 class="slider" 
-                   min=@SettingsInfo.Attr.Min.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                   max=@SettingsInfo.Attr.Max.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                   step=@SettingsInfo.Attr.Step.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                   value=@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))
+                   min=@SettingsInfo.Attr.Min.ToString(CultureInfo.InvariantCulture)
+                   max=@SettingsInfo.Attr.Max.ToString(CultureInfo.InvariantCulture)
+                   step=@SettingsInfo.Attr.Step.ToString(CultureInfo.InvariantCulture)
+                   value="@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))"
                 @onchange="e =>
                 {
                     var val = double.Parse(e.Value.ToString(), System.Globalization.CultureInfo.InvariantCulture);
