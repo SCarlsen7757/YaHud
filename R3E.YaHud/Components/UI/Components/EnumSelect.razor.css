@@ -38,11 +38,6 @@
     line-height: 1;
 }
 
-/* hover matches native select hover */
-.custom-select-toggle:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-}
-
 /* focus visual similar to .btn:focus in app.css */
 .custom-select-toggle:focus,
 .custom-select-toggle:focus-visible {

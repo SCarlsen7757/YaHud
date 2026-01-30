@@ -513,7 +513,7 @@ window.colorisHelper = (function () {
         // inputId: actual input element id in DOM which Coloris will attach to
         // initialColor: hex string
         // dotNetRef: DotNetObjectReference to call back into Blazor
-        register: function (containerId, inputId, initialColor, dotNetRef) {
+        register: function (inputId, initialColor, dotNetRef) {
             try {
                 const inputEl = document.getElementById(inputId);
                 if (!inputEl) {
@@ -521,21 +521,13 @@ window.colorisHelper = (function () {
                     return;
                 }
 
-                // set initial value & background
-                inputEl.value = initialColor || '#ffffff';
-                inputEl.style.background = initialColor || '#ffffff';
-                inputEl.style.color = 'transparent'; // hide text inside swatch
-
                 // input handler to propagate changes to Blazor and update hex readout
                 const listener = function (ev) {
                     try {
                         const val = inputEl.value;
-                        // update a nearby readonly hex input if exists
-                        const hexEl = document.getElementById('hex_' + containerId);
-                        if (hexEl) hexEl.value = val;
                         // call back to Blazor
                         if (dotNetRef && typeof dotNetRef.invokeMethodAsync === 'function') {
-                            dotNetRef.invokeMethodAsync('NotifyColorChanged', containerId, val);
+                            dotNetRef.invokeMethodAsync('NotifyColorChanged', val);
                         }
                     } catch (e) {
                         console.error('colorisHelper.register listener: callback error', e);
@@ -544,13 +536,17 @@ window.colorisHelper = (function () {
 
                 inputEl.addEventListener('input', listener, { passive: true });
 
-                pickers[containerId] = { inputEl, dotNetRef, listener };
+                pickers[inputId] = { inputEl, dotNetRef };
 
                 // initialize Coloris for this specific input (safe even if Coloris initialized elsewhere)
                 ensureColorisReady(function () {
                     try {
                         // attach Coloris to this exact input only
-                        Coloris({ el: '#' + inputId });
+                        Coloris({
+                            el: '#' + inputId,
+                            theme: "dark",
+                            defaultColor: initialColor,
+                        });
                     } catch (e) {
                         console.error('colorisHelper: Coloris init failed', e);
                     }
@@ -560,37 +556,48 @@ window.colorisHelper = (function () {
             }
         },
 
-        setColor: function (containerId, hex) {
-            const entry = pickers[containerId];
-            if (!entry) {
-                console.warn('colorisHelper.setColor: picker not found', containerId);
-                return;
-            }
-            try {
-                entry.inputEl.value = hex;
-                entry.inputEl.style.background = hex;
-                // dispatch input event so Coloris and Blazor sync
-                const ev = new Event('input', { bubbles: true });
-                entry.inputEl.dispatchEvent(ev);
-            } catch (e) {
-                console.error('colorisHelper.setColor error', e);
-            }
-        },
-
-        unregister: function (containerId) {
-            const entry = pickers[containerId];
-            if (!entry) return;
-            try {
-                entry.inputEl.removeEventListener('input', entry.listener);
-            } catch (e) {
-                console.warn('colorisHelper.unregister: removeEventListener error', e);
-            }
-            delete pickers[containerId];
+        unregister: function (inputId) {
+            delete pickers[inputId];
         },
 
         // debug helper
         list: function () {
             console.log('coloris pickers:', Object.keys(pickers));
+        }
+    };
+})();
+
+window.customSlider = (function () {
+    let listeners = {};
+
+    return {
+        register: function (elementId) {
+            if (elementId in listeners) return;
+
+            console.log("customSlider.register for element", elementId);
+            const wrapper = document.getElementById(elementId);
+            const slider = wrapper.querySelector('.slider');
+            const value = wrapper.querySelector('.slider-handle');
+
+            const update = () => {
+                console.log(slider.min, slider.max, slider.value);
+                const offset = (slider.max - slider.min) * 0.05;
+                const min = slider.min - offset || 0;
+                const max = Number(slider.max) + offset || 100;
+                console.log(min, max);
+                const percent = (slider.value - min) / (max - min);
+
+                value.innerText = slider.value;
+                value.style.left = `${percent * 100}%`;
+            };
+
+            slider.addEventListener('input', update);
+            listeners[elementId] = update;
+            update();
+        },
+        unregister: function (elementId) {
+            console.log("customSlider.unregister");
+            delete listeners[elementId];
         }
     };
 })();
