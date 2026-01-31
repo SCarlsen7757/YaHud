@@ -2,7 +2,7 @@
 @using R3E.YaHud.Services.Settings
 @using System.Reflection
 
-<div class="settings-panel settings-detail" @onclick="() => events.RaiseBodyClick()" @onclick:stopPropagation>
+<div class="settings-panel settings-detail" @onclick="() => Events.RaiseBodyClick()" @onclick:stopPropagation>
     <div class="panel-header">
         <h2>@Widget.Name</h2>
 
@@ -31,7 +31,7 @@
                             <div class="settings-list">
                                 @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
                                 {
-                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo.Attr!)) { continue; }
 
                                     <SettingsRow @key=@(Widget.GetType().Name + "." + settingInfo.Prop.Name) Widget="Widget" SettingsInfo="settingInfo" />
                                 }
@@ -47,9 +47,9 @@
                             <div class="settings-list">
                                 @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
                                 {
-                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo.Attr!)) { continue; }
 
-                                    <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
+                                    <SettingsRow @key=@(Widget.GetType().Name + "." + settingInfo.Prop.Name) Widget="Widget" SettingsInfo="settingInfo" />
                                 }
                             </div>
                         </div>
@@ -68,7 +68,7 @@
 @code {
     [Parameter] public required IWidget Widget { get; set; }
 
-    [CascadingParameter] public SettingPanelEvents events { get; set; }
+    [CascadingParameter] public SettingPanelEvents Events { get; set; } = default!;
 
     [Inject] public SettingsService SettingsService { get; set; } = default!;
 

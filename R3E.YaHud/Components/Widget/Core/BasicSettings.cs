@@ -36,13 +36,12 @@ namespace R3E.YaHud.Components.Widget.Core
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public bool IsPropertyVisible(SettingInfo settingInfo)
+        public bool IsPropertyVisible(SettingTypeAttribute attr)
         {
-            //if (settingInfo.Prop.Name == nameof(Visible)) return false;
             
-            if (string.IsNullOrEmpty(settingInfo.Attr!.VisibilityPredicateName)) return true;
+            if (string.IsNullOrEmpty(attr.VisibilityPredicateName)) return true;
 
-            var method = this.GetType().GetMethod(settingInfo.Attr!.VisibilityPredicateName,
+            var method = this.GetType().GetMethod(attr!.VisibilityPredicateName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null || method.ReturnType != typeof(bool) || method.GetParameters().Length != 0) return true;
 

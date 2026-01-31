@@ -2,7 +2,7 @@
 @using R3E.YaHud.Services.Settings
 @inject SettingsService SettingsService
 
-<div class="settings-panel settings-master" @onclick="() => events.RaiseBodyClick()" @onclick:stopPropagation>
+<div class="settings-panel settings-master" @onclick="() => Events.RaiseBodyClick()" @onclick:stopPropagation>
     <div class="panel-header">
         <h2>Widget Settings</h2>
         <div class="close-btn" @onclick="OnClose">
@@ -26,7 +26,8 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public List<IWidget> Widgets { get; set; } = [];
 
-    [CascadingParameter] public SettingPanelEvents events { get; set; }
+    [CascadingParameter]
+    public SettingPanelEvents Events { get; set; } = default!;
 
     private IEnumerable<IGrouping<string, IWidget>> WidgetsByCategory => Widgets.GroupBy(w => w.Category);
 }
