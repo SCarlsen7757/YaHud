@@ -1,0 +1,4 @@
+﻿.widget-preview {
+    grid-area: preview;
+    background: rgba(0 0 0 / .5);
+}

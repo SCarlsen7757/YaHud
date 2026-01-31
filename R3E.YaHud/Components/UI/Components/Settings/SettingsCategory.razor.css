@@ -1,0 +1,111 @@
+﻿.category-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.category-title {
+    background: #8390a6;
+    background: linear-gradient(90deg, rgba(131, 144, 166, 1) 0%, rgba(87, 96, 111, 1) 100%);
+    position: sticky;
+    top: 0;
+    padding: 0.5rem 1rem;
+    font-size: 1.55rem;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.category-widgets {
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.widget-item {
+    background: #747d8c;
+    border-radius: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    position: relative;
+    cursor: pointer;
+
+    .select-effect {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        z-index: 1;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("assets/img/tiretrack.svg");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position-y: center;
+            background-position-x: center;
+            transform-origin: center;
+            transform: rotate(169deg);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50px;
+            right: 0;
+            bottom: 0;
+            background: #747D8C;
+            background: linear-gradient(270deg,rgba(116, 125, 140, 0) 0%, rgba(116, 125, 140, 1) 20%, rgba(116, 125, 140, 1) 100%);
+            transform-origin: center;
+            transform: rotate(169deg) translateX(0px);
+            transition: transform 500ms ease-in-out;
+        }
+    }
+
+    &.selected {
+        .select-effect::before {
+            background-image: url("assets/img/tiretrack-active.svg");
+        }
+    }
+
+    &.selected, &:hover {
+        .select-effect::after {
+            transform: rotate(169deg) translateX(-375px);
+        }
+    }
+
+
+
+    .widget-name {
+        margin: 0;
+        font-size: 1rem;
+        z-index: 5;
+    }
+
+    .widget-actions {
+        display: flex;
+        gap: 0.25rem;
+        z-index: 5;
+
+        .btn {
+            aspect-ratio: 1/1;
+            width: 2rem;
+            padding: 0 0.5rem;
+            display: flex;
+
+            &.not-visible {
+                --btn-color: #ff7f50;
+            }
+
+            &.ghost {
+                padding: 0;
+            }
+        }
+    }
+}

@@ -2,7 +2,7 @@
 @using System.Linq
 
 <div class="custom-select" tabindex="0" @onblur="OnBlur" @onkeydown="OnKeyDown">
-    <button class="custom-select-toggle" @onclick="Toggle" type="button" aria-haspopup="listbox" aria-expanded="@_open.ToString().ToLower()">
+    <button class="btn dark custom-select-toggle" @onclick="Toggle" type="button" aria-haspopup="listbox" aria-expanded="@_open.ToString().ToLower()">
         @GetLabel(Value)
         <span class="caret">▾</span>
     </button>
