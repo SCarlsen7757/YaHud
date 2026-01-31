@@ -10,6 +10,7 @@ using R3E.Features.Sector;
 using R3E.Features.TimeGap;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
+using R3E.Tray;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +77,34 @@ builder.Services.AddSingleton<DriverService>();
 builder.Services.AddSingleton<SectorService>();
 builder.Services.AddSingleton<RadarService>();
 
+
+
 var app = builder.Build();
+
+// ---------------------------------------------------------
+// Start system tray in a background thread
+// ---------------------------------------------------------
+Thread trayThread = new Thread(() =>
+
+{
+    Console.WriteLine("Tray thread started"); // should always print
+
+    // Call R3E.Tray's Program.Main(), which already handles OS
+    TrayProgram.Main(app);
+})
+    
+{ 
+    IsBackground = true // ensures the tray exits with the app
+};
+Console.WriteLine("Tray icon started.");
+
+if (OperatingSystem.IsWindows())
+{
+    // Windows Forms requires STA
+    trayThread.SetApartmentState(ApartmentState.STA);
+}  
+
+trayThread.Start();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
