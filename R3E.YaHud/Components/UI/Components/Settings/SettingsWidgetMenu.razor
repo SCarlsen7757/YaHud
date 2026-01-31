@@ -11,8 +11,8 @@
     {
         <div id="@MenuId" class="widget-menu">
             <ul>
-                <li class="menu-item" @onclick="() => Widget.ResetPosition()">Reset Position</li>
-                <li class="menu-item" @onclick="() => Widget.ResetScale()">Reset Scale</li>
+                <li class="menu-item" @onclick="() => { Widget.ResetPosition(); ToggleMenu(); }">Reset Position</li>
+                <li class="menu-item" @onclick="() => { Widget.ResetScale(); ToggleMenu(); }">Reset Scale</li>
             </ul>
         </div>
     }
