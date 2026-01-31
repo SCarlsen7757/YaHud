@@ -68,7 +68,9 @@
     private string ColorInputId => $"color_input__{SettingsInfo.Prop.Name}";
 
     private string? registeredSliderId;
+    private bool sliderRegistrationPending;
     private string? registeredColorPickerId;
+    private bool colorPickerRegistrationPending;
 
     private DotNetObjectReference<SettingsRow>? objRef;
 
