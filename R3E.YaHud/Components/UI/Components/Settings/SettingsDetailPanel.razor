@@ -33,7 +33,7 @@
                                 {
                                     @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
 
-                                    <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
+                                    <SettingsRow @key=@(Widget.GetType().Name + "." + settingInfo.Prop.Name) Widget="Widget" SettingsInfo="settingInfo" />
                                 }
                             </div>
                         </div>
