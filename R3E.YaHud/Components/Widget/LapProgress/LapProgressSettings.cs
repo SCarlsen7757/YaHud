@@ -7,7 +7,6 @@ namespace R3E.YaHud.Components.Widget.LapProgress
     {
         private const string DeltaTimeCategory = "Delta Time";
         private const string SectorTimeCategory = "Sector Times";
-        private const string OtherCategory = "Other";
 
 
         [SettingType("Positive Negative Bar Range", SettingsTypes.Number, 1,
@@ -66,14 +65,12 @@ namespace R3E.YaHud.Components.Widget.LapProgress
         [SettingType("Completed Lap Sector Times Visible Time", SettingsTypes.Number, 1,
             Min = 0, Max = 10, Step = 1,
             Description = "The number of seconds, the sector times for a completed lap is visible before resetting.",
-            ViewMode = SettingsViewMode.Beginner,
-            Category = OtherCategory)]
+            ViewMode = SettingsViewMode.Beginner)]
         public double CompletedLapSectorTimesVisibleTime { get; set; } = 5;
 
         [SettingType("Lap Distance Bar Color", SettingsTypes.ColorPicker, 2,
             Description = "The color of the lap distance bar.",
-            ViewMode = SettingsViewMode.Intermediate,
-            Category = OtherCategory)]
+            ViewMode = SettingsViewMode.Intermediate)]
         public string LapDistanceBarColor { get; set; } = "#ffffff";
 
         
