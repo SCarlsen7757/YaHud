@@ -4,7 +4,6 @@
 @using R3E.YaHud.Components.Widget.Core
 @using System.ComponentModel
 @inject IJSRuntime JS
-@* @implements IDisposable *@
 
 <div class="overlay" @onclick="OnClose">
     <div class="settings-overlay-layout">
@@ -18,55 +17,6 @@
             }
         </CascadingValue>
     </div>
-
-
-    @* <div class="overlay-panel settings-panel" @onclick:stopPropagation>
-        <!-- Header -->
-        <div class="panel-header">
-            <h2>Widget Settings</h2>
-
-            <EnumSelect TEnum="SettingsViewMode"
-                        Value="@CurrentViewMode"
-                        ValueChanged="OnViewModeChanged"
-                        LabelProvider="@(v => v.GetDisplayName())" />
-        </div>
-
-        <!-- Scrollable body -->
-        <div class="panel-body">
-            <div class="category-list">
-                @foreach (var group in WidgetsByCategory)
-                {
-                    <SettingsCategory Name="@group.Key" Widgets="@group.AsEnumerable()" />
-                }
-
-                @foreach (var widget in Widgets)
-                {
-                    <div class="group-column">
-                        <ul class="group-list">
-                            <li class="group-item">
-                                <div class="widget-header">
-                                    <strong class="widget-name">@widget.Name</strong>
-                                    <span class="widget-category">@widget.Category</span>
-                                </div>
-                                <WidgetSettings Settings="widget.Settings" ViewMode="CurrentViewMode" />
-                                <div class="item-actions @(widget.Settings!.Visible ? "" : "hidden")">
-                                    <button class="btn-primary" @onclick="() => widget.ResetPosition()">Reset Position</button>
-                                    <button class="btn-primary" @onclick="() => widget.ResetScale()">Reset Scale</button>
-                                    <button class="btn-primary" @onclick="() => widget.ResetProperties()">Reset Properties</button>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="panel-footer button-group">
-            <button class="btn-primary" @onclick="OnClose" aria-label="Close settings panel">Close</button>
-            <button class="btn-primary" @onclick="() => SettingsService.ClearAll()" aria-label="Clear all settings">Clear settings</button>
-        </div>
-    </div> *@
 </div>
 
 @code {
@@ -76,11 +26,10 @@
     [Inject] public SettingsService SettingsService { get; set; } = default!;
 
     private SettingsContext SettingsContext = null!;
-    private SettingPanelEvents events = new SettingPanelEvents();
+    private readonly SettingPanelEvents events = new SettingPanelEvents();
 
     private void OpenDetailsForWidget(IWidget widget)
     {
-        JS.InvokeVoidAsync("Opened details for ", widget.ElementId);
         SettingsContext.SelectedWidget = widget;
         InvokeAsync(StateHasChanged);
     }
@@ -95,74 +44,4 @@
             };
     }
 
-
-
-
-    // private SettingsViewMode CurrentViewMode
-    // {
-    //     get => SettingsService.GlobalSettings.ViewMode;
-    //     set
-    //     {
-    //         if (SettingsService.GlobalSettings.ViewMode != value)
-    //         {
-    //             SettingsService.GlobalSettings.ViewMode = value;
-    //             StateHasChanged();
-    //         }
-    //     }
-    // }
-
-    // private Task OnViewModeChanged(SettingsViewMode v)
-    // {
-    //     CurrentViewMode = v;
-    //     return Task.CompletedTask;
-    // }
-
-    // private IEnumerable<IGrouping<string, IWidget>> WidgetsByCategory => Widgets.GroupBy(w => w.Category);
-
-    // private readonly Dictionary<BasicSettings, PropertyChangedEventHandler> settingsPropertyChangedHandlers = new();
-
-    // protected override void OnParametersSet()
-    // {
-    //     base.OnParametersSet();
-
-    //     var currentSettings = Widgets?
-    //         .Select(w => w.Settings)
-    //         .Where(s => s is not null)
-    //         .Cast<BasicSettings>()
-    //         .ToList() ?? new List<BasicSettings>();
-
-    //     var toRemove = settingsPropertyChangedHandlers.Keys.Except(currentSettings).ToList();
-    //     foreach (var s in toRemove)
-    //     {
-    //         s.PropertyChanged -= settingsPropertyChangedHandlers[s];
-    //         settingsPropertyChangedHandlers.Remove(s);
-    //     }
-
-    //     foreach (var s in currentSettings)
-    //     {
-    //         if (!settingsPropertyChangedHandlers.ContainsKey(s))
-    //         {
-    //             PropertyChangedEventHandler handler = (sender, args) =>
-    //             {
-    //                 if (string.IsNullOrEmpty(args?.PropertyName) || args.PropertyName == nameof(BasicSettings.Visible))
-    //                 {
-    //                     InvokeAsync(StateHasChanged);
-    //                 }
-    //             };
-
-    //             s.PropertyChanged += handler;
-    //             settingsPropertyChangedHandlers[s] = handler;
-    //         }
-    //     }
-    // }
-
-    // public void Dispose()
-    // {
-    //     foreach (var kv in settingsPropertyChangedHandlers)
-    //     {
-    //         kv.Key.PropertyChanged -= kv.Value;
-    //     }
-
-    //     settingsPropertyChangedHandlers.Clear();
-    // }
 }

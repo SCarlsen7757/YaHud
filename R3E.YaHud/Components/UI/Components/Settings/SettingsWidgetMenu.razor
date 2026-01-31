@@ -1,4 +1,6 @@
 ﻿@using R3E.YaHud.Components.Widget.Core
+@implements IDisposable
+
 <div class="widget-menu-wrapper">
     <button class="btn ghost" @onclick="() => menuOpen = !menuOpen" @onclick:stopPropagation>
         <Icon Name="elipsis-vertical" />
@@ -17,16 +19,28 @@
 
 @code {
     [Parameter] public IWidget Widget { get; set; } = null!;
-    [CascadingParameter] public SettingPanelEvents? masterPanelEvents { get; set; }
+    [CascadingParameter] public SettingPanelEvents? MasterPanelEvents { get; set; }
 
     private bool menuOpen = false;
+    private Action? bodyClickedHandler;
 
     protected override void OnInitialized()
     {
-        masterPanelEvents!.BodyClicked += () =>
+        if (MasterPanelEvents != null)
         {
-            menuOpen = false;
-            InvokeAsync(StateHasChanged);
-        };
+            this.bodyClickedHandler = () =>
+            {
+                menuOpen = false;
+                InvokeAsync(StateHasChanged);
+            };
+            MasterPanelEvents.BodyClicked += this.bodyClickedHandler;
+        }
+    }
+    public void Dispose()
+    {
+        if (MasterPanelEvents != null && bodyClickedHandler != null)
+        {
+            MasterPanelEvents.BodyClicked -= bodyClickedHandler;
+        }
     }
 }

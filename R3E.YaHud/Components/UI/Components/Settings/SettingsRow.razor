@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <p class="setting-row-label">@SettingsInfo.Attr!.DisplayName</p>
-<p class="setting-row-input">
+<div class="setting-row-input">
     @if (SettingsInfo.Attr!.Type == SettingsTypes.Checkbox)
     {
         <label class="checkbox">
@@ -58,7 +58,7 @@
         </div>
     }
 
-</p>
+</div>
 
 @code {
     [Parameter] public required IWidget Widget { get; set; }
@@ -68,9 +68,7 @@
     private string ColorInputId => $"color_input__{SettingsInfo.Prop.Name}";
 
     private string? registeredSliderId;
-    private bool sliderRegistrationPending;
     private string? registeredColorPickerId;
-    private bool colorPickerRegistrationPending;
 
     private DotNetObjectReference<SettingsRow>? objRef;
 
@@ -219,6 +217,12 @@
         {
             _ = JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
             registeredColorPickerId = null;
+        }
+
+        if (objRef is not null)
+        {
+            objRef.Dispose();
+            objRef = null;
         }
     }
 }
