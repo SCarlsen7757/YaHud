@@ -1,0 +1,46 @@
+﻿.btn {
+    aspect-ratio: 1/1;
+    width: 2rem;
+    padding: 0 0.5rem;
+    display: flex;
+
+    &.ghost {
+        padding: 0 !important;
+    }
+}
+
+.widget-menu-wrapper {
+    position: relative;
+}
+
+.widget-menu {
+    position: absolute;
+    right: calc(100%);
+    top: 0;
+    z-index: 2147483647;
+    background: rgba(33,33,33,1);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    width: fit-content;
+    /* ensure dropdown width follows toggle width and respects container */
+
+    ul {
+        list-style: none;
+        padding: 0.5rem 0;
+        margin-bottom: 0;
+    }
+
+    .menu-item {
+        white-space: nowrap;
+        padding: 0 0.5rem;
+        cursor: pointer;
+
+        &:not(:last-child) {
+            margin-bottom: 0.25rem;
+        }
+
+        &:hover {
+            background: hsl(from rgba(33,33,33,1) h s calc(l + 13))
+        }
+    }
+}
