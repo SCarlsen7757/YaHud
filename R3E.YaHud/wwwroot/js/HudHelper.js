@@ -591,6 +591,65 @@ window.customSlider = (function () {
     };
 })();
 
+// Portal helpers for dropdowns
+window.domPortal = {
+    moveToBody: function (elementId, dotNetRef) {
+        console.log("called moveToBody");
+        const el = document.getElementById(elementId);
+        const elRect = el.getBoundingClientRect();
+        if (!el) return;
+        // create wrapper so we preserve absolute positioning
+        let placeholder = el.__placeholder;
+        if (!placeholder) {
+            placeholder = document.createElement('div');
+            placeholder.style.position = "absolute";
+            placeholder.style.right = `calc(100% + ${elRect.width}px)`;
+            placeholder.style.top = "0";
+            el.parentNode.insertBefore(placeholder, el);
+            el.__placeholder = placeholder;
+        }
+        document.body.appendChild(el);
+        el.style.position = 'fixed'; // we'll position using bounding rect
+        const rect = placeholder.getBoundingClientRect();
+        el.style.left = rect.left + 'px';
+        el.style.top = rect.top + 'px';
+        el.style.zIndex = 100000;
+
+        let backdrop = document.createElement("div");
+        backdrop.style.position = "absolute";
+        backdrop.style.inset = `0`;
+        backdrop.style.zIndex = 90000;
+        backdrop.addEventListener("click", e => {
+            this.restore(elementId);
+            document.body.removeChild(backdrop);
+            dotNetRef.invokeMethodAsync('OnBackdropClicked');
+        });
+        document.body.appendChild(backdrop);
+    },
+    restore: function (elementId) {
+        console.log("called restore");
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const placeholder = el.__placeholder;
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(el, placeholder);
+            placeholder.remove();
+            el.__placeholder = null;
+            el.style.position = '';
+            el.style.left = '';
+            el.style.top = '';
+            el.style.zIndex = '';
+        }
+    },
+    elementExists: function (id) {
+        try {
+            return !!document.getElementById(id);
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
 // AudioController manager — uses WebAudio for volume/playbackRate/pan, falls back to HTMLAudio
 (function () {
     if (window.audioControllerManager) return;
