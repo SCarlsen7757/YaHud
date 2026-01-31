@@ -581,11 +581,10 @@ window.customSlider = (function () {
             };
 
             slider.addEventListener('input', update);
-            listeners[elementId] = {slider, update};
+            listeners[elementId] = update;
             update();
         },
         unregister: function (elementId) {
-            listeners[elementId].removeEventListener(listeners[elementId].update)
 
             delete listeners[elementId];
         }
