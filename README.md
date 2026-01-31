@@ -41,7 +41,7 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
    - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux
    - `R3E.Relay-win-x64-v{version}.zip` - Relay service (required for Linux support)
 
-1. 2. Extract the files to your preferred location
+2. Extract the files to your preferred location
 
 ### Configuration
 
