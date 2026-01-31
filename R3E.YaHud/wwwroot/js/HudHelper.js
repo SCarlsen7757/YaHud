@@ -566,17 +566,14 @@ window.customSlider = (function () {
         register: function (elementId) {
             if (elementId in listeners) return;
 
-            console.log("customSlider.register for element", elementId);
             const wrapper = document.getElementById(elementId);
             const slider = wrapper.querySelector('.slider');
             const value = wrapper.querySelector('.slider-handle');
 
             const update = () => {
-                console.log(slider.min, slider.max, slider.value);
                 const offset = (slider.max - slider.min) * 0.05;
                 const min = slider.min - offset || 0;
                 const max = Number(slider.max) + offset || 100;
-                console.log(min, max);
                 const percent = (slider.value - min) / (max - min);
 
                 value.innerText = slider.value;
@@ -588,7 +585,6 @@ window.customSlider = (function () {
             update();
         },
         unregister: function (elementId) {
-            console.log("customSlider.unregister");
             delete listeners[elementId];
         }
     };

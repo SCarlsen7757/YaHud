@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <p class="setting-row-label">@SettingsInfo.Attr!.DisplayName</p>
-<p>
+<p class="setting-row-input">
     @if (SettingsInfo.Attr!.Type == SettingsTypes.Checkbox)
     {
         <label class="checkbox">
@@ -54,7 +54,7 @@
                     var val = double.Parse(e.Value.ToString(), System.Globalization.CultureInfo.InvariantCulture);
                    SettingsInfo.Prop.SetValue(Widget.Settings, Convert.ChangeType(val, SettingsInfo.Prop.PropertyType, System.Globalization.CultureInfo.InvariantCulture));
                 }" />
-            <div class="slider-handle">@SettingsInfo.Prop.GetValue(Widget.Settings)</div>
+            <div class="slider-handle">@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))</div>
         </div>
     }
 
@@ -111,6 +111,29 @@
         var field = type.GetField(name);
         var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
         return displayAttr?.Name ?? name;
+    }
+
+    // Ensure we react to parameter changes: unregister any previously-registered JS resources
+    protected override Task OnParametersSetAsync()
+    {
+        // If a slider was previously registered but this parameter set no longer represents that same slider -> unregister immediately
+        if (registeredSliderId is not null &&
+            (SettingsInfo.Attr is null || SettingsInfo.Attr.Type != SettingsTypes.Slider || registeredSliderId != SliderWrapperId))
+        {
+            // fire-and-forget; DOM not required for unregister
+            _ = JS.InvokeVoidAsync("customSlider.unregister", registeredSliderId);
+            registeredSliderId = null;
+        }
+
+        // If a color picker was previously registered but the parameters now changed -> unregister
+        if (registeredColorPickerId is not null &&
+            (SettingsInfo.Attr is null || SettingsInfo.Attr.Type != SettingsTypes.ColorPicker || registeredColorPickerId != ColorInputId))
+        {
+            _ = JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
+            registeredColorPickerId = null;
+        }
+
+        return base.OnParametersSetAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
