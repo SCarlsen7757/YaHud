@@ -354,7 +354,9 @@ window.HudHelper = (function () {
         },
 
         enableTransformation: function (elementId) {
+            const el = document.getElementById(elementId);
             const entry = registry[elementId];
+            entry.el = el;
             if (!entry) {
                 console.warn('HudHelper.enableTransformation: element not registered', elementId);
                 return;
