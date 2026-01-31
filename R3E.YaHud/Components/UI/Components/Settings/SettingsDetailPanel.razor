@@ -16,43 +16,45 @@
         <div class="widget-preview">
 
         </div>
-        <div class="settings-columns">
-            <div class="column">
-                @if (SettingCategories.Count() == 0)
-                {
-                    <p class="no-settings">No Settings for current view mode.</p>
-                }
+        <div class="scrollable-area">
+            <div class="settings-columns">
+                <div class="column">
+                    @if (SettingCategories.Count() == 0)
+                    {
+                        <p class="no-settings">No Settings for current view mode.</p>
+                    }
 
-                @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 0))
-                {
-                    <div class="Settings-card">
-                        <h4 class="settings-category-title">@category.Key</h4>
-                        <div class="settings-list">
-                            @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
-                            {
-                                @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
+                    @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 0))
+                    {
+                        <div class="Settings-card">
+                            <h4 class="settings-category-title">@category.Key</h4>
+                            <div class="settings-list">
+                                @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
+                                {
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
 
-                                <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
-                            }
+                                    <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
+                                }
+                            </div>
                         </div>
-                    </div>
-                }
-            </div>
-            <div class="column">
-                @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 1))
-                {
-                    <div class="Settings-card">
-                        <h4 class="settings-category-title">@category.Key</h4>
-                        <div class="settings-list">
-                            @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
-                            {
-                                @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
+                    }
+                </div>
+                <div class="column">
+                    @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 1))
+                    {
+                        <div class="Settings-card">
+                            <h4 class="settings-category-title">@category.Key</h4>
+                            <div class="settings-list">
+                                @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
+                                {
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo)) { continue; }
 
-                                <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
-                            }
+                                    <SettingsRow Widget="Widget" SettingsInfo="settingInfo" />
+                                }
+                            </div>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
 
