@@ -7,7 +7,15 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(OS)' == 'Unix'">
         <PackageReference Include="GtkSharp" Version="3.24.24.32" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Include all files in the Assets folder -->
+        <None Include="Assets\**\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </None>
     </ItemGroup>
 </Project>

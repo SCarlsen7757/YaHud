@@ -1,19 +1,35 @@
 namespace R3E.Tray.Linux;
 
+using System;
+using System.IO;
 using Gtk;
 
-class LinuxTray
+public static class LinuxTray
 {
-    static void Main(string[] args)
+    public static void Run()
     {
         Application.Init();
 
-        var tray = new StatusIcon(new Gdk.Pixbuf("icon.png"))
+        // Path to the tray icon
+        var iconPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Assets",
+            "trayfavicon.png"
+        );
+
+        if (!File.Exists(iconPath))
+        {
+            Console.WriteLine($"Tray icon not found: {iconPath}");
+            return; // stop if icon missing
+        }
+
+        var tray = new StatusIcon(new Gdk.Pixbuf(iconPath))
         {
             Visible = true,
             TooltipText = "YaHud"
         };
 
+        // Create a simple menu
         var menu = new Menu();
 
         var quit = new MenuItem("Quit");
@@ -22,7 +38,10 @@ class LinuxTray
         menu.Append(quit);
         menu.ShowAll();
 
-        tray.PopupMenu += (_, _) => menu.Popup();
+        tray.PopupMenu += (_, _) =>
+        {
+            menu.Popup();
+        };
 
         Application.Run();
     }
