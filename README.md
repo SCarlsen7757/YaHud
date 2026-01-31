@@ -53,7 +53,7 @@ Add the following launch option to RaceRoom (required for all platforms):
 
 To add launch options in Steam:
 
-1. 1. Right-click RaceRoom Racing Experience in your library
+1. Right-click RaceRoom Racing Experience in your library
 2. Select "Properties"
 3. In the "General" tab, add the launch option to the "Launch Options" field
 
@@ -67,34 +67,62 @@ YaHud.exe
 
 The HUD will automatically connect to RaceRoom's shared memory.
 
-#### Linux (via Relay)
+#### Linux (via Relay) 
+---
 
-To install .NET 10 on Linux write the following commands in the terminal:
+Before the HUD will work you will need to install the following:
+
+   - `.NET 10` - For the HUD application dependency
+   - `GTK libraries` - For the tray application on Linux
+
+### Only for Debian / Ubuntu / Linux Mint based distoes:
 
 ```bash
+# 1. Add Microsoft package repository
 wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 sudo apt update
-```
 
-After you have done this, install the app by writing this command in the terminal:
-
-```bash
+# 2. Install .NET 10 SDK
 sudo apt install dotnet-sdk-10.0
-```
 
-Wait for the installation to complete.
-When finished you can run this command to verify that you have installed .NET 10 correctly:
-
-```bash
+# 3. Verify that .NET has been installed correct
 dotnet --version
+
+# 4. Install GTK 3 libraries
+sudo apt install libgtk-3-dev
 ```
 
-It should show something like this: `10.0.100`
+---
+### Only for Fedora / RHEL / CentOS based distoes:
+```bash
+# 1. Install .NET 10 SDK
+sudo dnf install dotnet-sdk-10.0
+
+# 2. Verify that .NET has been installed correct
+dotnet --version
+
+# 3. Install GTK 3 libraries
+sudo dnf install gtk3-devel
+```
+
+---
+### Only for Arch Linux / Manjaro based distoes:
+```bash
+# 1. Install .NET 10 SDK (runtime included)
+sudo pacman -S dotnet-sdk
+
+# 2. Verify that .NET has been installed correct
+dotnet --version
+
+# 3. Install GTK 3 libraries
+sudo pacman -S gtk3
+```
+---
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
-1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix
+1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix. <br>
    An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/R3ERelay` so it is already located inside your proton env.
 
 2. Start the relay service in the Proton environment using the `Terminal` command:
@@ -110,8 +138,9 @@ STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
 
 > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
-3. On your Linux machine, run the HUD application:
-
+3. On your Linux machine download `R3E.YaHud-linux-x64-v{version}.zip` from the release page. <br>
+Extract the zip somewhere, and change directory in your `terminal` to the folder, you have extracted the HUD application. <br>
+To run the HUD application run the following command in the terminal:
 ```bash
 ./YaHud
 ```
@@ -217,7 +246,11 @@ R3E/
 │   └── wwwroot/            # Static assets
 ├── R3E/                    # Core library
 │   └── API/                # RaceRoom API and telemetry
-└── R3E.Relay/              # UDP relay service
+├── R3E.Relay/              # UDP relay service
+└── R3E.Tray/               # Tray service
+    ├── Assets              # Contains icon for tray service
+    ├── Linux               # GTK code for tray Applet for Linux
+    └── Windows             # Windows Forms code for tray app for Windows
 ```
 
 ### Creating Custom Widgets
@@ -291,6 +324,7 @@ Example:
 - Bootstrap 5
 - Font Awesome (icons)
 - Coloris (color picker)
+- GTK Libraries (Linux icon applet)
 
 ### Platform Support
 
