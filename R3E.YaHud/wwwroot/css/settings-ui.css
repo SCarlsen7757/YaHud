@@ -169,20 +169,20 @@
     cursor: not-allowed;
 }
 
+
+/*         WebKit browsers (Chrome, Edge, Safari) — limited styling */
+        .text-input[type="number"]::-webkit-outer-spin-button,
+        .text-input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+
 .color-field {
     cursor: text;
     position: relative;
     padding: 0;
     overflow: hidden;
     min-width: 8rem;
-
-    .color-display {
-        position: absolute;
-        right: 0;
-        aspect-ratio: 1 / 1;
-        height: 100%;
-        pointer-events: none;
-    }
 
     input[type="text"] {
         width: 100%;
@@ -192,6 +192,12 @@
         padding: 0.45rem 1rem;
         --input-color: #eeeeee;
         color: var(--input-color);
+        border-radius: 1.5rem;
+    }
+
+    .clr-field button {
+        border-bottom-right-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
     }
 }
 
