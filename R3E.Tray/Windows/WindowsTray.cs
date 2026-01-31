@@ -1,6 +1,42 @@
+#if WINDOWS
 namespace R3E.Tray.Windows;
 
-public class WindowsTray
+using System;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+
+public static class WindowsTray
 {
-        
+    public static void Run()
+    {
+        // Path to the tray icon in Assets folder
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "trayfavicon.png");
+
+        if (!File.Exists(iconPath))
+        {
+            Console.WriteLine($"Tray icon not found: {iconPath}");
+            return;
+        }
+
+        // Create the NotifyIcon (tray icon)
+        using var tray = new NotifyIcon
+        {
+            Icon = new Icon(iconPath),
+            Visible = true,
+            Text = "YaHud"
+        };
+
+        // Create a context menu with a Quit item
+        var menu = new ContextMenuStrip();
+        var quitItem = new ToolStripMenuItem("Quit");
+        quitItem.Click += (_, _) => Application.Exit();
+        menu.Items.Add(quitItem);
+
+        tray.ContextMenuStrip = menu;
+
+        // Start the Windows Forms message loop (blocks until quit)
+        Application.Run();
+    }
 }
+#endif

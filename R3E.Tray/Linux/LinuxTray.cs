@@ -1,3 +1,4 @@
+#if LINUX
 namespace R3E.Tray.Linux;
 
 using System;
@@ -46,3 +47,4 @@ public static class LinuxTray
         Application.Run();
     }
 }
+#endif

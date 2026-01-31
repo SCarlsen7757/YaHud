@@ -5,17 +5,45 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <!-- 
+          Optional: Prevent IDE warnings on Linux/Mac when WindowsProperties exist.
+          $(OS) is usually 'Unix' on Linux/macOS and 'Windows_NT' on Windows.
+          This ensures UseWindowsForms is only applied on Windows.
+        -->
+    </PropertyGroup>
+
+    <!-- Windows-specific properties -->
+    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+        <UseWindowsForms>true</UseWindowsForms>
+        <!-- Define a compilation symbol so #if WINDOWS works -->
+        <DefineConstants>WINDOWS</DefineConstants>
+    </PropertyGroup>
+
+    <!-- Linux/Unix-specific packages -->
+    <PropertyGroup Condition="'$(OS)' == 'Unix'">
+        <!-- Define a compilation symbol so #if LINUX works -->
+        <DefineConstants>LINUX</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Unix'">
         <PackageReference Include="GtkSharp" Version="3.24.24.32" />
     </ItemGroup>
 
+
+    <!-- Include all files in the Assets folder for all platforms -->
     <ItemGroup>
-        <!-- Include all files in the Assets folder -->
         <None Include="Assets\**\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </None>
     </ItemGroup>
+
+    <!-- Optional: cross-platform hints for IDEs -->
+    <!--
+      - On Windows: WinForms assemblies are included
+      - On Linux/macOS: GTKSharp package is included
+      - Assets folder is always copied
+      - IDEs will no longer show warnings for missing Windows-only properties on Linux
+    -->
 </Project>
