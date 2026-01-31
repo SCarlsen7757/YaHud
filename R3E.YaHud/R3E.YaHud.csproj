@@ -7,13 +7,24 @@
     <AssemblyName>YaHud</AssemblyName>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(OS)' == 'Unix'">
+    <DefineConstants>LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <DefineConstants>WINDOWS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="GitVersion.MsBuild" Version="6.4.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="..\R3E\R3E.csproj" />
+    <ProjectReference Include="..\R3E.Tray\R3E.Tray.csproj" />
     <PackageReference Include="SharpHook" Version="7.0.3" />
   </ItemGroup>
 
+  
+  
 </Project>

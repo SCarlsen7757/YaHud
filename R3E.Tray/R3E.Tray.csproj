@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
+        <OutputType>Library</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -26,7 +26,13 @@
         <DefineConstants>LINUX</DefineConstants>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+
     <ItemGroup Condition="'$(OS)' == 'Unix'">
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <PackageReference Include="GtkSharp" Version="3.24.24.32" />
     </ItemGroup>
 

@@ -1,13 +1,13 @@
 #if LINUX
 namespace R3E.Tray.Linux;
-
+using Microsoft.Extensions.Hosting;
 using System;
 using System.IO;
 using Gtk;
-
+using Microsoft.AspNetCore.Builder; // <-- needed for WebApplication
 public static class LinuxTray
 {
-    public static void Run()
+    public static void Run(WebApplication? hostApp = null)
     {
         Application.Init();
 
@@ -32,18 +32,19 @@ public static class LinuxTray
 
         // Create a simple menu
         var menu = new Menu();
-
         var quit = new MenuItem("Quit");
-        quit.Activated += (_, _) => Application.Quit();
-
+        
+        quit.Activated += (_, _) =>
+        {
+            // Stop Blazor host
+            hostApp?.StopAsync(TimeSpan.FromMilliseconds(500)).Wait();
+            Application.Quit(); // GTK main loop exits
+        };
         menu.Append(quit);
         menu.ShowAll();
-
-        tray.PopupMenu += (_, _) =>
-        {
-            menu.Popup();
-        };
-
+        
+        // Correct PopupMenu handler
+        tray.PopupMenu += (_, _) => menu.Popup(); // simple version that works
         Application.Run();
     }
 }
