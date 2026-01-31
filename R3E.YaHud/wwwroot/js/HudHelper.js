@@ -623,10 +623,10 @@ window.domPortal = {
         backdrop.style.zIndex = 90000;
         backdrop.addEventListener("click", e => {
             this.restore(elementId);
-            document.body.removeChild(backdrop);
             dotNetRef.invokeMethodAsync('OnBackdropClicked');
         });
         document.body.appendChild(backdrop);
+        el.backdrop = backdrop;
     },
     restore: function (elementId) {
         console.log("called restore");
@@ -641,6 +641,11 @@ window.domPortal = {
             el.style.left = '';
             el.style.top = '';
             el.style.zIndex = '';
+        }
+
+        if (el.backdrop) {
+            document.body.removeChild(el.backdrop);
+            el.backdrop = undefined;
         }
     },
     elementExists: function (id) {
