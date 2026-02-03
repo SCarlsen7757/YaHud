@@ -15,6 +15,7 @@
 
     <!-- Windows-specific properties -->
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+        <TargetFramework>net10.0-windows</TargetFramework>
         <UseWindowsForms>true</UseWindowsForms>
         <!-- Define a compilation symbol so #if WINDOWS works -->
         <DefineConstants>WINDOWS</DefineConstants>
