@@ -75,7 +75,7 @@ Before the HUD will work you will need to install the following:
    - `.NET 10` - For the HUD application dependency
    - `GTK libraries` - For the tray application on Linux
 
-### Only for Debian / Ubuntu / Linux Mint based distoes:
+### Only for Debian / Ubuntu / Linux Mint based distros:
 
 ```bash
 # 1. Add Microsoft package repository
