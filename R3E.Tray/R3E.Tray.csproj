@@ -25,7 +25,7 @@
 
 
     <!-- Include all files in the Assets folder for all platforms -->
-    <ItemGroup>
+    <ItemGroup> 
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <None Include="Assets\**\*.*">
             <FrameworkReference Include="Microsoft.AspNetCore.App" />
