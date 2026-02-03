@@ -11,20 +11,19 @@ public static class LinuxTray
     {
         Application.Init();
 
-        // Path to the tray icon
-        var iconPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "Assets",
-            "trayfavicon.png"
-        );
+        // Load tray icon from embedded resource to avoid relying on app base directory
+        var assembly = typeof(LinuxTray).Assembly;
+        const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
 
-        if (!File.Exists(iconPath))
+        using var iconStream = assembly.GetManifestResourceStream(iconResourceName);
+        if (iconStream == null)
         {
-            Console.WriteLine($"Tray icon not found: {iconPath}");
+            Console.WriteLine($"Tray icon resource not found: {iconResourceName}");
             return; // stop if icon missing
         }
 
-        var tray = new StatusIcon(new Gdk.Pixbuf(iconPath))
+        var trayPixbuf = new Gdk.Pixbuf(iconStream);
+        var tray = new StatusIcon(trayPixbuf)
         {
             Visible = true,
             TooltipText = "YaHud"
