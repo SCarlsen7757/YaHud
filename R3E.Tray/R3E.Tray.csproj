@@ -13,25 +13,12 @@
         -->
     </PropertyGroup>
 
-    <!-- Windows-specific properties -->
-    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-        <TargetFramework>net10.0-windows</TargetFramework>
-        <UseWindowsForms>true</UseWindowsForms>
-        <!-- Define a compilation symbol so #if WINDOWS works -->
-        <DefineConstants>WINDOWS</DefineConstants>
-    </PropertyGroup>
-
     <!-- Linux/Unix-specific packages -->
     <PropertyGroup Condition="'$(OS)' == 'Unix'">
         <!-- Define a compilation symbol so #if LINUX works -->
         <DefineConstants>LINUX</DefineConstants>
     </PropertyGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    </ItemGroup>
-
-
+    
     <ItemGroup Condition="'$(OS)' == 'Unix'">
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <PackageReference Include="GtkSharp" Version="3.24.24.32" />

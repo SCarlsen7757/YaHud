@@ -9,14 +9,5 @@ public static class TrayProgram
         Console.WriteLine("Using Linux");
         Linux.LinuxTray.Run(hostApp);
     #endif
-         
-    #if WINDOWS
-        Console.WriteLine("Using Windows");
-        Windows.WindowsTray.Run(hostApp);
-    #endif
-
-    #if !LINUX && !WINDOWS
-        Console.WriteLine("Unsupported OS");
-    #endif
     }
 }
