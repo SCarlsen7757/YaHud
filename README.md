@@ -86,7 +86,7 @@ sudo apt update
 # 2. Install .NET 10 SDK
 sudo apt install dotnet-sdk-10.0
 
-# 3. Verify that .NET has been installed correct
+# 3. Verify that .NET has been installed correctly
 dotnet --version
 
 # 4. Install GTK 3 libraries
@@ -94,12 +94,12 @@ sudo apt install libgtk-3-dev
 ```
 
 ---
-### Only for Fedora / RHEL / CentOS based distoes:
+### Only for Fedora / RHEL / CentOS based distros:
 ```bash
 # 1. Install .NET 10 SDK
 sudo dnf install dotnet-sdk-10.0
 
-# 2. Verify that .NET has been installed correct
+# 2. Verify that .NET has been installed correctly
 dotnet --version
 
 # 3. Install GTK 3 libraries
@@ -107,12 +107,12 @@ sudo dnf install gtk3-devel
 ```
 
 ---
-### Only for Arch Linux / Manjaro based distoes:
+### Only for Arch Linux / Manjaro based distros:
 ```bash
 # 1. Install .NET 10 SDK (runtime included)
 sudo pacman -S dotnet-sdk
 
-# 2. Verify that .NET has been installed correct
+# 2. Verify that .NET has been installed correctly
 dotnet --version
 
 # 3. Install GTK 3 libraries
