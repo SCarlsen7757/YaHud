@@ -20,13 +20,13 @@
     </PropertyGroup>
     
     <ItemGroup Condition="'$(OS)' == 'Unix'">
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <PackageReference Include="GtkSharp" Version="3.24.24.32" />
     </ItemGroup>
 
 
     <!-- Include all files in the Assets folder for all platforms -->
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <None Include="Assets\**\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
