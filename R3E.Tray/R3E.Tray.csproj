@@ -28,6 +28,7 @@
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <None Include="Assets\**\*.*">
+            <FrameworkReference Include="Microsoft.AspNetCore.App" />
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </None>
