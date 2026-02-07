@@ -8,6 +8,7 @@ using R3E.Features.Image;
 using R3E.Features.Radar;
 using R3E.Features.Sector;
 using R3E.Features.TimeGap;
+using R3E.Features.TireWidget;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -75,6 +76,7 @@ builder.Services.AddSingleton<FuelService>();
 builder.Services.AddSingleton<DriverService>();
 builder.Services.AddSingleton<SectorService>();
 builder.Services.AddSingleton<RadarService>();
+builder.Services.AddSingleton<TireWidgetService>();
 
 var app = builder.Build();
 
