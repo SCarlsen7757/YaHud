@@ -18,9 +18,12 @@ namespace R3E.Features.TireWidget
 
         public TireData<float> TireWear { get; internal set; }
 
+
+
         public TireWidgetData(TelemetryData telemetryData) 
         { 
             this.telemetryData = telemetryData;
+            TireWear = new TireData<float>();
         }
     }
 }

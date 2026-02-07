@@ -9,66 +9,67 @@
 
 @if (Settings?.Visible ?? false)
 {
-    <div id="@ElementId" class="tire-widget">
-        <div class="tire-values top">
-            <span>@frontLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-            <span>@frontRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-        </div>
-
-        <div class="bar-row">
-            <div style="height:50px; width:50px">
-                <TireBrakeVisual LeftSideTire=true TireLeftColor="@frontLeft.LeftColor" TireMiddleColor="@frontLeft.MiddleColor" TireRightColor="@frontLeft.RightColor" BrakeColor="@frontLeft.BrakeColor"></TireBrakeVisual>
+    <WidgetHost Owner="this">
+        <div id="@ElementId" class="tire-widget">
+            <div class="tire-values top">
+                <span>@frontLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+                <span>@frontRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
             </div>
-            <div class="tire-info">
-                <span class="tire-type" style="border-color: @TireChoiceBackgroundColor; background: @TireChoiceBackgroundColor">@frontTireChoice</span>
-                <span class="tire-age" style="border-color: @TireAgeBackgroundColor; background: @TireAgeBackgroundColor">@frontTireAge</span>
+
+            <div class="bar-row">
+                <div style="height:50px; width:50px">
+                    <TireBrakeVisual LeftSideTire=true TireLeftColor="@frontLeft.LeftColor" TireMiddleColor="@frontLeft.MiddleColor" TireRightColor="@frontLeft.RightColor" BrakeColor="@frontLeft.BrakeColor"></TireBrakeVisual>
+                </div>
+                <div class="tire-info">
+                    <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@frontTireChoice</span>
+                    <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@frontTireAge</span>
+                </div>
+                <div style="height:50px; width:50px">
+                    <TireBrakeVisual LeftSideTire=false TireLeftColor="@frontRight.LeftColor" TireMiddleColor="@frontRight.MiddleColor" TireRightColor="@frontRight.RightColor" BrakeColor="@frontRight.BrakeColor"></TireBrakeVisual>
+                </div>
             </div>
-            <div style="height:50px; width:50px">
-                <TireBrakeVisual LeftSideTire=false TireLeftColor="@frontRight.LeftColor" TireMiddleColor="@frontRight.MiddleColor" TireRightColor="@frontRight.RightColor" BrakeColor="@frontRight.BrakeColor"></TireBrakeVisual>
+
+            <div class="tire-values bottom">
+                <span>@frontLeft.TireWear.ToString("F0")%</span>
+                <span>@frontRight.TireWear.ToString("F0")%</span>
             </div>
-        </div>
-
-        <div class="tire-values bottom">
-            <span>@frontLeft.TireWear.ToString("F0")%</span>
-            <span>@frontRight.TireWear.ToString("F0")%</span>
-        </div>
-        <div class="tire-temps">
-            <span>@frontLeft.TireTemperature.ToString("F0")°</span>
-            <span>@frontRight.TireTemperature.ToString("F0")°</span>
-        </div>
-
-        <hr class="solid">
-
-        <div class="tire-values">
-
-            <span>@rearLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-            <span>@rearRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-        </div>
-
-        <div class="bar-row">
-            <div style="height:50px; width:50px">
-                <TireBrakeVisual LeftSideTire=true TireLeftColor="@rearLeft.LeftColor" TireMiddleColor="@rearLeft.MiddleColor" TireRightColor="@rearLeft.RightColor" BrakeColor="@rearLeft.BrakeColor"></TireBrakeVisual>
+            <div class="tire-temps">
+                <span>@frontLeft.TireTemperature.ToString("F0")°</span>
+                <span>@frontRight.TireTemperature.ToString("F0")°</span>
             </div>
-            <div class="tire-info">
-                <span class="tire-type" style="border-color: @TireChoiceBackgroundColor; background: @TireChoiceBackgroundColor">@rearTireChoice</span>
-                <span class="tire-age" style="border-color: @TireAgeBackgroundColor; background: @TireAgeBackgroundColor">@rearTireAge</span>
-            </div>
-            <div style="height:50px; width:50px">
-                <TireBrakeVisual LeftSideTire=false TireLeftColor="@rearRight.LeftColor" TireMiddleColor="@rearRight.MiddleColor" TireRightColor="@rearRight.RightColor" BrakeColor="@rearRight.BrakeColor"></TireBrakeVisual>
-            </div>
-        </div>
 
-        <div class="tire-values bottom">
-            <span>@rearLeft.TireWear.ToString("F0")%</span>
-            <span>@rearRight.TireWear.ToString("F0")%</span>
-        </div>
-        <div class="tire-temps">
-            <span>@rearLeft.TireTemperature.ToString("F0")°</span>
-            <span>@rearRight.TireTemperature.ToString("F0")°</span>
-        </div>
+            <hr class="solid">
 
-    </div>
-    
+            <div class="tire-values">
+
+                <span>@rearLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+                <span>@rearRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+            </div>
+
+            <div class="bar-row">
+                <div style="height:50px; width:50px">
+                    <TireBrakeVisual LeftSideTire=true TireLeftColor="@rearLeft.LeftColor" TireMiddleColor="@rearLeft.MiddleColor" TireRightColor="@rearLeft.RightColor" BrakeColor="@rearLeft.BrakeColor"></TireBrakeVisual>
+                </div>
+                <div class="tire-info">
+                    <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@rearTireChoice</span>
+                    <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@rearTireAge</span>
+                </div>
+                <div style="height:50px; width:50px">
+                    <TireBrakeVisual LeftSideTire=false TireLeftColor="@rearRight.LeftColor" TireMiddleColor="@rearRight.MiddleColor" TireRightColor="@rearRight.RightColor" BrakeColor="@rearRight.BrakeColor"></TireBrakeVisual>
+                </div>
+            </div>
+
+            <div class="tire-values bottom">
+                <span>@rearLeft.TireWear.ToString("F0")%</span>
+                <span>@rearRight.TireWear.ToString("F0")%</span>
+            </div>
+            <div class="tire-temps">
+                <span>@rearLeft.TireTemperature.ToString("F0")°</span>
+                <span>@rearRight.TireTemperature.ToString("F0")°</span>
+            </div>
+
+        </div>
+    </WidgetHost>
 }
 
 @code {
@@ -85,12 +86,8 @@
     int frontTireAge = 0;
     int rearTireAge = 0;
 
-    string TireChoiceBackgroundColor = "#2b2727";
-    string TireAgeBackgroundColor = "#a18e8e";
-
-    string ColdFallBackColor = "#a9a9ff";
-    string OptimalFallBackColor = "#00c300";
-    string HotFallBackColor = "#ff0000";
+    string tireChoiceBackgroundColor = "#2b2727";
+    string tireAgeBackgroundColor = "#a18e8e";
 
     class TireInfo
     {
@@ -106,10 +103,10 @@
     }
 
 
-    TireInfo frontLeft = new();
-    TireInfo frontRight = new();
-    TireInfo rearLeft = new();
-    TireInfo rearRight = new();
+    readonly TireInfo frontLeft = new();
+    readonly TireInfo frontRight = new();
+    readonly TireInfo rearLeft = new();
+    readonly TireInfo rearRight = new();
 
 
     protected override void UpdateWithTestData()
@@ -163,53 +160,63 @@
     protected override void Update()
     {
         if (Settings is null) return;
-        var NewestData = TireWidgetService.TireWidgetData;
-        if (NewestData is null) return;
+        var newestData = TireWidgetService.TireWidgetData;
+        if (newestData is null) return;
 
-        TireAgeBackgroundColor = Settings.TireAgeBackgroundColor;
-        TireChoiceBackgroundColor = Settings.TireChoiceBackgroundColor;
+        tireAgeBackgroundColor = Settings.TireAgeBackgroundColor;
+        tireChoiceBackgroundColor = Settings.TireChoiceBackgroundColor;
 
-        frontLeft.LeftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Left, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        frontLeft.MiddleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Center, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        frontLeft.RightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontLeft, NewestData.Raw.TireTemp.FrontLeft.CurrentTemp.Right, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
+        var coldColor = HexToRgbColor(Settings.TireColdColor);
+        var optimalColor = HexToRgbColor(Settings.TireOptimalColor);
+        var hotColor = HexToRgbColor(Settings.TireHotColor);
 
-        frontRight.LeftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Left, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        frontRight.MiddleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Center, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        frontRight.RightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.FrontRight, NewestData.Raw.TireTemp.FrontRight.CurrentTemp.Right, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
+        frontLeft.LeftColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontLeft, newestData.Raw.TireTemp.FrontLeft.CurrentTemp.Left, coldColor, optimalColor, hotColor);
+        frontLeft.MiddleColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontLeft, newestData.Raw.TireTemp.FrontLeft.CurrentTemp.Center, coldColor, optimalColor, hotColor);
+        frontLeft.RightColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontLeft, newestData.Raw.TireTemp.FrontLeft.CurrentTemp.Right, coldColor, optimalColor, hotColor);
 
-        rearLeft.LeftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Left, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        rearLeft.MiddleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Center, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        rearLeft.RightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearLeft, NewestData.Raw.TireTemp.RearLeft.CurrentTemp.Right, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
 
-        rearRight.LeftColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Left, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        rearRight.MiddleColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Center, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
-        rearRight.RightColor = GetLerpRGB3Color(NewestData.Raw.TireTemp.RearRight, NewestData.Raw.TireTemp.RearRight.CurrentTemp.Right, HexToRgbColor(Settings.TireColdColor), HexToRgbColor(Settings.TireOptimalColor), HexToRgbColor(Settings.TireHotColor));
+        frontRight.LeftColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontRight, newestData.Raw.TireTemp.FrontRight.CurrentTemp.Left, coldColor, optimalColor, hotColor);
+        frontRight.MiddleColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontRight, newestData.Raw.TireTemp.FrontRight.CurrentTemp.Center, coldColor, optimalColor, hotColor);
+        frontRight.RightColor = GetLerpRGB3Color(newestData.Raw.TireTemp.FrontRight, newestData.Raw.TireTemp.FrontRight.CurrentTemp.Right, coldColor, optimalColor, hotColor);
 
-        frontTireChoice = GetTireTypeName(NewestData.Raw.TireSubtypeFront);
-        rearTireChoice = GetTireTypeName(NewestData.Raw.TireSubtypeRear);
+        rearLeft.LeftColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearLeft, newestData.Raw.TireTemp.RearLeft.CurrentTemp.Left, coldColor, optimalColor, hotColor);
+        rearLeft.MiddleColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearLeft, newestData.Raw.TireTemp.RearLeft.CurrentTemp.Center, coldColor, optimalColor, hotColor);
+        rearLeft.RightColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearLeft, newestData.Raw.TireTemp.RearLeft.CurrentTemp.Right, coldColor, optimalColor, hotColor);
 
-        frontTireAge = NewestData.FrontTireAge;
-        rearTireAge = NewestData.RearTireAge;
+        rearRight.LeftColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearRight, newestData.Raw.TireTemp.RearRight.CurrentTemp.Left, coldColor, optimalColor, hotColor);
+        rearRight.MiddleColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearRight, newestData.Raw.TireTemp.RearRight.CurrentTemp.Center, coldColor, optimalColor, hotColor);
+        rearRight.RightColor = GetLerpRGB3Color(newestData.Raw.TireTemp.RearRight, newestData.Raw.TireTemp.RearRight.CurrentTemp.Right, coldColor, optimalColor, hotColor);
 
-        frontLeft.TirePressure = UnitConverter.Convert(NewestData.Raw.TirePressure.FrontLeft, PressureUnit.Kpa, PressureUnit.Psi);
-        frontRight.TirePressure = UnitConverter.Convert(NewestData.Raw.TirePressure.FrontRight, PressureUnit.Kpa, PressureUnit.Psi);
-        rearLeft.TirePressure = UnitConverter.Convert(NewestData.Raw.TirePressure.RearLeft, PressureUnit.Kpa, PressureUnit.Psi);
-        rearRight.TirePressure = UnitConverter.Convert(NewestData.Raw.TirePressure.RearRight, PressureUnit.Kpa, PressureUnit.Psi);
+        frontTireChoice = GetTireTypeName(newestData.Raw.TireSubtypeFront);
+        rearTireChoice = GetTireTypeName(newestData.Raw.TireSubtypeRear);
 
-        frontLeft.TireTemperature = NewestData.FrontLeftTireTemp;
-        frontRight.TireTemperature = NewestData.FrontRightTireTemp;
-        rearLeft.TireTemperature = NewestData.RearLeftTireTemp;
-        rearRight.TireTemperature = NewestData.RearRightTireTemp;
+        frontTireAge = newestData.FrontTireAge;
+        rearTireAge = newestData.RearTireAge;
 
-        frontLeft.TireWear = NewestData.TireWear.FrontLeft;
-        frontRight.TireWear = NewestData.TireWear.FrontRight;
-        rearLeft.TireWear = NewestData.TireWear.RearLeft;
-        rearRight.TireWear = NewestData.TireWear.RearRight;
+        frontLeft.TirePressure = UnitConverter.Convert(newestData.Raw.TirePressure.FrontLeft, PressureUnit.Kpa, PressureUnit.Psi);
+        frontRight.TirePressure = UnitConverter.Convert(newestData.Raw.TirePressure.FrontRight, PressureUnit.Kpa, PressureUnit.Psi);
+        rearLeft.TirePressure = UnitConverter.Convert(newestData.Raw.TirePressure.RearLeft, PressureUnit.Kpa, PressureUnit.Psi);
+        rearRight.TirePressure = UnitConverter.Convert(newestData.Raw.TirePressure.RearRight, PressureUnit.Kpa, PressureUnit.Psi);
 
-        frontLeft.BrakeColor = GetLerpRGB3BrakeColor(NewestData.Raw.BrakeTemp.FrontLeft, HexToRgbColor(Settings.BrakeColdColor), HexToRgbColor(Settings.BrakeOptimalColor), HexToRgbColor(Settings.BrakeHotColor));
-        frontRight.BrakeColor = GetLerpRGB3BrakeColor(NewestData.Raw.BrakeTemp.FrontRight, HexToRgbColor(Settings.BrakeColdColor), HexToRgbColor(Settings.BrakeOptimalColor), HexToRgbColor(Settings.BrakeHotColor));
-        rearLeft.BrakeColor = GetLerpRGB3BrakeColor(NewestData.Raw.BrakeTemp.RearLeft, HexToRgbColor(Settings.BrakeColdColor), HexToRgbColor(Settings.BrakeOptimalColor), HexToRgbColor(Settings.BrakeHotColor));
-        rearRight.BrakeColor = GetLerpRGB3BrakeColor(NewestData.Raw.BrakeTemp.RearRight, HexToRgbColor(Settings.BrakeColdColor), HexToRgbColor(Settings.BrakeOptimalColor), HexToRgbColor(Settings.BrakeHotColor));
+        frontLeft.TireTemperature = newestData.FrontLeftTireTemp;
+        frontRight.TireTemperature = newestData.FrontRightTireTemp;
+        rearLeft.TireTemperature = newestData.RearLeftTireTemp;
+        rearRight.TireTemperature = newestData.RearRightTireTemp;
+
+        frontLeft.TireWear = newestData.TireWear.FrontLeft;
+        frontRight.TireWear = newestData.TireWear.FrontRight;
+        rearLeft.TireWear = newestData.TireWear.RearLeft;
+        rearRight.TireWear = newestData.TireWear.RearRight;
+
+        var brakeColdColor = HexToRgbColor(Settings.BrakeColdColor);
+        var brakeOptimalColor = HexToRgbColor(Settings.BrakeOptimalColor);
+        var brakeHotColor = HexToRgbColor(Settings.BrakeHotColor);
+
+
+        frontLeft.BrakeColor = GetLerpRGB3BrakeColor(newestData.Raw.BrakeTemp.FrontLeft, brakeColdColor, brakeOptimalColor, brakeHotColor);
+        frontRight.BrakeColor = GetLerpRGB3BrakeColor(newestData.Raw.BrakeTemp.FrontRight, brakeColdColor, brakeOptimalColor, brakeHotColor);
+        rearLeft.BrakeColor = GetLerpRGB3BrakeColor(newestData.Raw.BrakeTemp.RearLeft, brakeColdColor, brakeOptimalColor, brakeHotColor);
+        rearRight.BrakeColor = GetLerpRGB3BrakeColor(newestData.Raw.BrakeTemp.RearRight, brakeColdColor, brakeOptimalColor, brakeHotColor);
 
     }
 
@@ -220,20 +227,33 @@
 
     private RgbColor HexToRgbColor(string hex)
     {
+        const int fallbackR = 169;
+        const int fallbackG = 169;
+        const int fallbackB = 169;
+        const string fallbackHex = "#a9a9a9";
+        var originalHex = hex;
         if (string.IsNullOrWhiteSpace(hex))
         {
-            Logger.LogError("Hex color cannot be null or empty.", nameof(hex));
-            hex = "#a9a9a9";
+            Logger.LogError("Hex color cannot be null or empty. Using fallback '{Hex}'.", fallbackHex);
+            return new RgbColor(fallbackR, fallbackG, fallbackB);
         }
-
-        hex = hex.Replace("#", "");
-
-        if (hex.Length != 6)
-            Logger.LogError("Hex color must be 6 characters long.", nameof(hex));
-
-        int r = Convert.ToInt32(hex.Substring(0, 2), 16);
-        int g = Convert.ToInt32(hex.Substring(2, 2), 16);
-        int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+        var sanitized = hex.Trim();
+        if (sanitized.StartsWith("#"))
+        {
+            sanitized = sanitized.Substring(1);
+        }
+        if (sanitized.Length != 6)
+        {
+            Logger.LogError("Hex color must be 6 characters long. Value '{Hex}' is invalid. Using fallback '{FallbackHex}'.", originalHex, fallbackHex);
+            return new RgbColor(fallbackR, fallbackG, fallbackB);
+        }
+        if (!int.TryParse(sanitized.Substring(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var r) ||
+            !int.TryParse(sanitized.Substring(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var g) ||
+            !int.TryParse(sanitized.Substring(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
+        {
+            Logger.LogError("Hex color '{Hex}' contains non-hex characters. Using fallback '{FallbackHex}'.", originalHex, fallbackHex);
+            return new RgbColor(fallbackR, fallbackG, fallbackB);
+        }
 
         return new RgbColor(r, g, b);
     }
@@ -249,12 +269,20 @@
         var optimal = (optimalColor ?? new RgbColor(0, 200, 0)).ToArray();
         var hot = (hotColor ?? new RgbColor(200, 0, 0)).ToArray();
 
+        // Guard against invalid temperature ranges
+        float tempRange = tireData.HotTemp - tireData.ColdTemp;
+        if (tempRange <= 0)
+        {
+            // If HotTemp <= ColdTemp, treat everything as cold
+            return ColorUtils.LerpRGB3(cold, optimal, hot, 0.5, 0);
+        }
+
         return ColorUtils.LerpRGB3(
             cold,
             optimal,
             hot,
-            (tireData.OptimalTemp - tireData.ColdTemp) / (tireData.HotTemp - tireData.ColdTemp),
-            (tireTemperature - tireData.ColdTemp) / (tireData.HotTemp - tireData.ColdTemp));
+            (tireData.OptimalTemp - tireData.ColdTemp) / tempRange,
+            (tireTemperature - tireData.ColdTemp) / tempRange);
     }
 
     private static string GetLerpRGB3BrakeColor(
@@ -267,12 +295,20 @@
         var optimal = (optimalColor ?? new RgbColor(0, 200, 0)).ToArray();
         var hot = (hotColor ?? new RgbColor(200, 0, 0)).ToArray();
 
+        // Guard against invalid temperature ranges
+        float tempRange = brakeData.HotTemp - brakeData.ColdTemp;
+        if (tempRange <= 0)
+        {
+            // If HotTemp <= ColdTemp, treat everything as cold
+            return ColorUtils.LerpRGB3(cold, optimal, hot, 0.5, 0);
+        }
+
         return ColorUtils.LerpRGB3(
-            cold, 
-            optimal, 
-            hot, 
-            (brakeData.OptimalTemp) / (brakeData.HotTemp - brakeData.ColdTemp), 
-            (brakeData.CurrentTemp - brakeData.ColdTemp) / (brakeData.HotTemp - brakeData.ColdTemp));
+            cold,
+            optimal,
+            hot,
+            (brakeData.OptimalTemp - brakeData.ColdTemp) / tempRange,
+            (brakeData.CurrentTemp - brakeData.ColdTemp) / tempRange);
     }
 
 
