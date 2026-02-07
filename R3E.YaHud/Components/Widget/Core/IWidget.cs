@@ -1,10 +1,13 @@
-﻿namespace R3E.YaHud.Components.Widget.Core
+﻿using Microsoft.AspNetCore.Components;
+
+namespace R3E.YaHud.Components.Widget.Core
 {
     public interface IWidget
     {
         public string Name { get; }
         public string Category { get; }
         public string ElementId { get; }
+        public ElementReference ElementRef { get; set; }
 
         public BasicSettings? Settings { get; }
         public Type GetSettingsType();
