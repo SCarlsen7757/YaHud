@@ -2,16 +2,16 @@
     <div class="wrapper">
         @if (LeftSideTire)
         {
-            <div class="tire left" style="background-color:@TireLeftColor" />
-            <div class="tire" style="background-color:@TireMiddleColor" />
-            <div class="tire right" style="background-color:@TireRightColor" />
-            <div class="brake" style="background-color:@BrakeColor" />
+            <div class="tire left" style="background-color:@TireLeftColor"></div>
+            <div class="tire" style="background-color:@TireMiddleColor"></div>
+            <div class="tire right" style="background-color:@TireRightColor"></div>
+            <div class="brake" style="background-color:@BrakeColor"></div>
         } else
         {
-            <div class="brake" style="background-color:@BrakeColor" />
-            <div class="tire left" style="background-color:@TireRightColor" />
-            <div class="tire" style="background-color:@TireMiddleColor" />
-            <div class="tire right" style="background-color:@TireLeftColor" />
+            <div class="brake" style="background-color:@BrakeColor"></div>
+            <div class="tire left" style="background-color:@TireRightColor"></div>
+            <div class="tire" style="background-color:@TireMiddleColor"></div>
+            <div class="tire right" style="background-color:@TireLeftColor"></div>
         }
 
     </div>
@@ -23,5 +23,4 @@
     [Parameter] public string TireRightColor { get; set; } = "darkgray";
     [Parameter] public string BrakeColor { get; set; } = "yellow";
     [Parameter] public bool LeftSideTire { get; set; } = true;
-    [Parameter] public string TyreType { get; set; } = "Hard";
 }

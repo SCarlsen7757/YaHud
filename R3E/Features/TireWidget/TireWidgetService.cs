@@ -1,5 +1,7 @@
-﻿using R3E.Core.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using R3E.Core.Interfaces;
 using R3E.Core.Services;
+using System.Globalization;
 
 namespace R3E.Features.TireWidget
 {
@@ -30,8 +32,34 @@ namespace R3E.Features.TireWidget
             TireWidgetData = new TireWidgetData(telemetryService.Data);
 
             telemetryService.DataUpdated += OnDataUpdated;
+            telemetryService.SessionTypeChanged += OnSessionTypeChanged;
+
+            logger.LogInformation("TireWidgetService initialized");
         }
 
+        private void OnSessionTypeChanged(TelemetryData data)
+        {
+            lock (sync)
+            {
+                logger.LogInformation("TireWidgetService: session changed - clearing state.");
+                TireWidgetData.FrontTireAge = 0;
+                TireWidgetData.RearTireAge = 0;
+                TireWidgetData.FrontLeftTireTemp = 0;
+                TireWidgetData.FrontRightTireTemp = 0;
+                TireWidgetData.RearLeftTireTemp = 0;
+                TireWidgetData.RearRightTireTemp = 0;
+                TireWidgetData.TireWear = new Data.TireData<float> { FrontLeft = 0, FrontRight = 0, RearLeft = 0, RearRight = 0 };
+            }
+
+            lastNumPitstopsPerformedFront = 0;
+            lastNumPitstopsPerformedRear = 0;
+
+            tireSetStartTimeFront = 0;
+            tireSetStartTimeRear = 0;
+
+            tireSetStartLapFront = 0;
+            tireSetStartLapRear = 0;
+        }
 
         private void OnDataUpdated(TelemetryData data)
         {
@@ -43,6 +71,7 @@ namespace R3E.Features.TireWidget
         public void Dispose()
         {
             telemetryService.DataUpdated -= OnDataUpdated;
+            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
             GC.SuppressFinalize(this);
         }
 
@@ -70,12 +99,12 @@ namespace R3E.Features.TireWidget
                 lastNumPitstopsPerformedRear = data.Raw.NumPitstopsPerformed;
             }
 
-            if (tireSetStartTimeFront == 0)
+            if (System.Math.Abs(tireSetStartTimeFront) < System.Double.Epsilon)
             {
                 ResetFrontTireAge();
             }
 
-            if (tireSetStartTimeRear == 0)
+            if (System.Math.Abs(tireSetStartTimeRear) < System.Double.Epsilon)
             {
                 ResetRearTireAge();
             }

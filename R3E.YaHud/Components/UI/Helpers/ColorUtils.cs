@@ -1,6 +1,6 @@
 ﻿namespace R3E.YaHud.Components.UI.Helpers
 {
-    public class ColorUtils
+    public static class ColorUtils
     {
         /// <summary>
         /// Linearly interpolates between two RGB colors.
@@ -47,6 +47,17 @@
             double t
         )
         {
+            // Guard against invalid middle values
+            if (middle <= 0)
+            {
+                return LerpRGB(color2, color3, t);
+            }
+
+            if (middle >= 1)
+            {
+                return LerpRGB(color1, color2, t);
+            }
+
             if (t < middle)
             {
                 return LerpRGB(color1, color2, t / middle);
