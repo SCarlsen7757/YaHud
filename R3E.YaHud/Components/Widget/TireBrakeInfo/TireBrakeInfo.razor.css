@@ -1,7 +1,7 @@
 ﻿.tire-widget {
     width: 150px;
     padding: 10px;
-    background: #000;
+    background: rgba(2, 0, 0, 0.5);
     color: #fff;
     font-family: 'Segoe UI', Arial, sans-serif;
     text-align: center;
@@ -40,19 +40,19 @@
     width: 28px;
 }
 
-    .bar span {
-        display: block;
-        height: 10px;
-        border-radius: 3px;
-        background: #1aff8c; /* active green */
-        opacity: 0.9;
-    }
+.bar span {
+    display: block;
+    height: 10px;
+    border-radius: 3px;
+    background: #1aff8c; /* active green */
+    opacity: 0.9;
+}
 
-        /* inactive segments */
-        .bar span.inactive {
-            background: #0b3d2e;
-            opacity: 0.6;
-        }
+    /* inactive segments */
+.bar span.inactive {
+    background: #0b3d2e;
+    opacity: 0.6;
+}
 
 /* center label */
 .center-label {
