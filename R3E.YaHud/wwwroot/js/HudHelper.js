@@ -354,7 +354,9 @@ window.HudHelper = (function () {
         },
 
         enableTransformation: function (elementId) {
+            const el = document.getElementById(elementId);
             const entry = registry[elementId];
+            entry.el = el;
             if (!entry) {
                 console.warn('HudHelper.enableTransformation: element not registered', elementId);
                 return;
@@ -384,7 +386,6 @@ window.HudHelper = (function () {
         },
 
         setPosition: function (elementId, xPercent, yPercent) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.setPosition: element not found', elementId);
@@ -394,12 +395,10 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
-            });
 
         },
 
         setScale: function (elementId, scale) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.setScale: element not found', elementId);
@@ -407,11 +406,9 @@ window.HudHelper = (function () {
                 }
                 el.scale = scale;
                 el.style.transform = `scale(${scale})`;
-            });
         },
 
         resetPosition: function (elementId, dotnetHelper, xPercent = 50, yPercent = 50) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.resetPosition: element not found', elementId);
@@ -433,12 +430,10 @@ window.HudHelper = (function () {
                 el.style.position = "absolute";
                 el.style.left = (xPercent / 100 * window.innerWidth) - (widgetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (widgetHeight / 2) + "px";
-            });
 
         },
 
         resetScale: function (elementId, dotnetHelper) {
-            requestAnimationFrame(() => {
                 const el = document.getElementById(elementId);
                 if (!el) {
                     console.warn('HudHelper.resetScale: element not found', elementId);
@@ -456,7 +451,6 @@ window.HudHelper = (function () {
                 } catch (ex) {
                     console.error('HudHelper: Failed to update widget scale (sync)', ex);
                 }
-            });
         },
 
         setWidgetSettings: function (elementId, value) {
@@ -513,7 +507,7 @@ window.colorisHelper = (function () {
         // inputId: actual input element id in DOM which Coloris will attach to
         // initialColor: hex string
         // dotNetRef: DotNetObjectReference to call back into Blazor
-        register: function (containerId, inputId, initialColor, dotNetRef) {
+        register: function (inputId, initialColor, dotNetRef) {
             try {
                 const inputEl = document.getElementById(inputId);
                 if (!inputEl) {
@@ -521,21 +515,13 @@ window.colorisHelper = (function () {
                     return;
                 }
 
-                // set initial value & background
-                inputEl.value = initialColor || '#ffffff';
-                inputEl.style.background = initialColor || '#ffffff';
-                inputEl.style.color = 'transparent'; // hide text inside swatch
-
                 // input handler to propagate changes to Blazor and update hex readout
                 const listener = function (ev) {
                     try {
                         const val = inputEl.value;
-                        // update a nearby readonly hex input if exists
-                        const hexEl = document.getElementById('hex_' + containerId);
-                        if (hexEl) hexEl.value = val;
                         // call back to Blazor
                         if (dotNetRef && typeof dotNetRef.invokeMethodAsync === 'function') {
-                            dotNetRef.invokeMethodAsync('NotifyColorChanged', containerId, val);
+                            dotNetRef.invokeMethodAsync('NotifyColorChanged', val);
                         }
                     } catch (e) {
                         console.error('colorisHelper.register listener: callback error', e);
@@ -544,13 +530,17 @@ window.colorisHelper = (function () {
 
                 inputEl.addEventListener('input', listener, { passive: true });
 
-                pickers[containerId] = { inputEl, dotNetRef, listener };
+                pickers[inputId] = { inputEl, dotNetRef };
 
                 // initialize Coloris for this specific input (safe even if Coloris initialized elsewhere)
                 ensureColorisReady(function () {
                     try {
                         // attach Coloris to this exact input only
-                        Coloris({ el: '#' + inputId });
+                        Coloris({
+                            el: '#' + inputId,
+                            theme: "dark",
+                            defaultColor: initialColor,
+                        });
                     } catch (e) {
                         console.error('colorisHelper: Coloris init failed', e);
                     }
@@ -560,32 +550,8 @@ window.colorisHelper = (function () {
             }
         },
 
-        setColor: function (containerId, hex) {
-            const entry = pickers[containerId];
-            if (!entry) {
-                console.warn('colorisHelper.setColor: picker not found', containerId);
-                return;
-            }
-            try {
-                entry.inputEl.value = hex;
-                entry.inputEl.style.background = hex;
-                // dispatch input event so Coloris and Blazor sync
-                const ev = new Event('input', { bubbles: true });
-                entry.inputEl.dispatchEvent(ev);
-            } catch (e) {
-                console.error('colorisHelper.setColor error', e);
-            }
-        },
-
-        unregister: function (containerId) {
-            const entry = pickers[containerId];
-            if (!entry) return;
-            try {
-                entry.inputEl.removeEventListener('input', entry.listener);
-            } catch (e) {
-                console.warn('colorisHelper.unregister: removeEventListener error', e);
-            }
-            delete pickers[containerId];
+        unregister: function (inputId) {
+            delete pickers[inputId];
         },
 
         // debug helper
@@ -594,6 +560,102 @@ window.colorisHelper = (function () {
         }
     };
 })();
+
+window.customSlider = (function () {
+    let listeners = {};
+
+    return {
+        register: function (elementId) {
+            if (elementId in listeners) return;
+
+            const wrapper = document.getElementById(elementId);
+            const slider = wrapper.querySelector('.slider');
+            const value = wrapper.querySelector('.slider-handle');
+
+            const update = () => {
+                const offset = (slider.max - slider.min) * 0.05;
+                const min = slider.min - offset || 0;
+                const max = Number(slider.max) + offset || 100;
+                const percent = (slider.value - min) / (max - min);
+
+                value.innerText = slider.value;
+                value.style.left = `${percent * 100}%`;
+            };
+
+            slider.addEventListener('input', update);
+            listeners[elementId] = update;
+            update();
+        },
+        unregister: function (elementId) {
+
+            delete listeners[elementId];
+        }
+    };
+})();
+
+// Portal helpers for dropdowns
+window.domPortal = {
+    moveToBody: function (elementId, dotNetRef) {
+        console.log("called moveToBody");
+        const el = document.getElementById(elementId);
+        const elRect = el.getBoundingClientRect();
+        if (!el) return;
+        // create wrapper so we preserve absolute positioning
+        let placeholder = el.__placeholder;
+        if (!placeholder) {
+            placeholder = document.createElement('div');
+            placeholder.style.position = "absolute";
+            placeholder.style.right = `calc(100% + ${elRect.width}px)`;
+            placeholder.style.top = "0";
+            el.parentNode.insertBefore(placeholder, el);
+            el.__placeholder = placeholder;
+        }
+        document.body.appendChild(el);
+        el.style.position = 'fixed'; // we'll position using bounding rect
+        const rect = placeholder.getBoundingClientRect();
+        el.style.left = rect.left + 'px';
+        el.style.top = rect.top + 'px';
+        el.style.zIndex = 100000;
+
+        let backdrop = document.createElement("div");
+        backdrop.style.position = "absolute";
+        backdrop.style.inset = `0`;
+        backdrop.style.zIndex = 90000;
+        backdrop.addEventListener("click", e => {
+            this.restore(elementId);
+            dotNetRef.invokeMethodAsync('OnBackdropClicked');
+        });
+        document.body.appendChild(backdrop);
+        el.backdrop = backdrop;
+    },
+    restore: function (elementId) {
+        console.log("called restore");
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const placeholder = el.__placeholder;
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(el, placeholder);
+            placeholder.remove();
+            el.__placeholder = null;
+            el.style.position = '';
+            el.style.left = '';
+            el.style.top = '';
+            el.style.zIndex = '';
+        }
+
+        if (el.backdrop) {
+            document.body.removeChild(el.backdrop);
+            el.backdrop = undefined;
+        }
+    },
+    elementExists: function (id) {
+        try {
+            return !!document.getElementById(id);
+        } catch (e) {
+            return false;
+        }
+    }
+};
 
 // AudioController manager — uses WebAudio for volume/playbackRate/pan, falls back to HTMLAudio
 (function () {

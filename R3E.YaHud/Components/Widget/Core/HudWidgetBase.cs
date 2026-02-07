@@ -21,6 +21,7 @@ namespace R3E.YaHud.Components.Widget.Core
         protected bool TestMode => TestModeService.TestMode;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
+        public ElementReference ElementRef { get; set; }
         public abstract string ElementId { get; }
         public abstract string Name { get; }
         public abstract string Category { get; }
@@ -40,6 +41,8 @@ namespace R3E.YaHud.Components.Widget.Core
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
+        private bool initializedTransformations = false;
+        private bool registeredTransformations = false;
 
         protected abstract void Update();
 
@@ -67,11 +70,39 @@ namespace R3E.YaHud.Components.Widget.Core
                 return;
             }
 
-            if (!(Settings?.Visible ?? false))
-                return;
 
-            try
+            if (!(Settings?.Visible ?? false))
             {
+                initializedTransformations = false;
+                await JS.InvokeVoidAsync("HudHelper.disableTransformation", ElementId);
+                return;
+            }
+
+            if (!registeredTransformations)
+            {
+                registeredTransformations = true;
+                try
+                {
+                    objRef ??= DotNetObjectReference.Create(this);
+
+                    await JS.InvokeVoidAsync(
+                        "HudHelper.registerTransformable",
+                        ElementId,
+                        objRef,
+                        Locked,
+                        Collidable
+                    );
+
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected if component is disposed mid-render
+                }
+            }
+
+            if (ElementRef.Context is not null && !initializedTransformations)
+            {
+                initializedTransformations = true;
                 await JS.InvokeVoidAsync(
                     "HudHelper.setScale",
                     ElementId,
@@ -85,20 +116,7 @@ namespace R3E.YaHud.Components.Widget.Core
                     Settings.YPercent
                 );
 
-                objRef ??= DotNetObjectReference.Create(this);
-
-                await JS.InvokeVoidAsync(
-                    "HudHelper.registerTransformable",
-                    ElementId,
-                    objRef,
-                    Locked,
-                    Collidable
-                );
-
-            }
-            catch (TaskCanceledException)
-            {
-                // Expected if component is disposed mid-render
+                await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
             }
         }
 

@@ -1,0 +1,131 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="widget-menu-wrapper">
+    <button class="btn ghost" @onclick="ToggleMenu" @onclick:stopPropagation>
+        <Icon Name="elipsis-vertical" />
+    </button>
+
+    @if (menuOpen)
+    {
+        <div id="@MenuId" class="widget-menu">
+            <ul>
+                <li class="menu-item" @onclick="() => { Widget.ResetPosition(); ToggleMenu(); }">Reset Position</li>
+                <li class="menu-item" @onclick="() => { Widget.ResetScale(); ToggleMenu(); }">Reset Scale</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IWidget Widget { get; set; } = null!;
+    [CascadingParameter] public SettingPanelEvents? MasterPanelEvents { get; set; }
+
+    private bool menuOpen = false;
+    private Action? bodyClickedHandler;
+
+    private DotNetObjectReference<SettingsWidgetMenu> objRef;
+
+    // Use widget id so portal target element id is stable per menu instance
+    private string MenuId => $"widget_menu__{Widget.ElementId}";
+
+    protected override void OnInitialized()
+    {
+        if (objRef == null)
+        {
+            objRef = DotNetObjectReference.Create(this);
+        }
+
+        if (MasterPanelEvents != null)
+        {
+            bodyClickedHandler = () =>
+            {
+                if (menuOpen)
+                {
+                    menuOpen = false;
+                    // fire-and-forget restore to avoid making event handler async
+                    _ = JS.InvokeVoidAsync("domPortal.restore", MenuId);
+                    InvokeAsync(StateHasChanged);
+                }
+            };
+            MasterPanelEvents.BodyClicked += bodyClickedHandler;
+        }
+    }
+
+    private async Task ToggleMenu()
+    {
+        menuOpen = !menuOpen;
+
+        // Request a render so the menu element is created/removed in the DOM.
+        await InvokeAsync(StateHasChanged);
+
+        if (menuOpen)
+        {
+            // Wait for the menu element to be present before calling the portal JS.
+            // Prefer calling a small JS helper `domPortal.elementExists(id)` if available,
+            // otherwise fall back to a short delay + yield.
+            try
+            {
+                var found = false;
+                for (var i = 0; i < 15; i++)
+                {
+                    // domPortal.elementExists should return true if element exists.
+                    // If the function is not present this will throw and fall back to the catch block.
+                    found = await JS.InvokeAsync<bool>("domPortal.elementExists", MenuId);
+                    if (found) break;
+                    await Task.Delay(20);
+                }
+
+                if (!found)
+                {
+                    // last-resort wait for a render tick and a tiny delay
+                    await Task.Yield();
+                    await Task.Delay(30);
+                }
+            }
+            catch
+            {
+                // domPortal.elementExists not present — ensure a render tick and small delay
+                await Task.Yield();
+                await Task.Delay(50);
+            }
+
+            // Move to body (assumes domPortal.moveToBody is implemented)
+            await JS.InvokeVoidAsync("domPortal.moveToBody", MenuId, objRef);
+        }
+        else
+        {
+            // Restore into original location
+            await JS.InvokeVoidAsync("domPortal.restore", MenuId);
+        }
+    }
+
+    [JSInvokable]
+    public void OnBackdropClicked()
+    {
+        menuOpen = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (MasterPanelEvents != null && bodyClickedHandler != null)
+        {
+            MasterPanelEvents.BodyClicked -= bodyClickedHandler;
+        }
+
+        // best-effort: restore menu if still moved
+        if (menuOpen)
+        {
+            _ = JS.InvokeVoidAsync("domPortal.restore", MenuId);
+            menuOpen = false;
+        }
+
+        if (objRef is not null)
+        {
+            objRef.Dispose();
+            objRef = null;
+        }
+    }
+}

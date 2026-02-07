@@ -1,0 +1,349 @@
+﻿.settings-panel {
+    display: flex;
+    flex-direction: column;
+    background: #57606f;
+    border-radius: 0.5rem;
+    padding: 0;
+    overflow: hidden;
+    color: #eeeeee;
+    --bs-heading-color: #eeeeee;
+    fill: #eeeeee;
+
+    .panel-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: #2f3542;
+        flex: 0 0 auto;
+        margin-bottom: 0;
+
+        h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .close-btn {
+            aspect-ratio: 1 / 1;
+            height: 100%;
+            fill: #aaaaaa;
+            cursor: pointer;
+            transform-origin: center;
+            transition: transform 200ms ease-in-out;
+
+            &:hover {
+                transform: scale(1.2);
+            }
+        }
+    }
+
+    .panel-body {
+        flex: 1 1 auto;
+        overflow: auto;
+        padding: 1rem 1.25rem;
+        -webkit-overflow-scrolling: touch;
+
+        &::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+    }
+
+    .panel-footer {
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding: 0.75rem 1.25rem;
+        background: #2f3542;
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        margin-top: 0;
+    }
+
+
+    .btn {
+        --btn-focus: #ff7f50;
+        color: var(--btn-color);
+        background-color: var(--btn-background);
+        border-radius: 1.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        font-size: 0.875rem;
+
+        &:active, &:focus {
+            border-color: var(--btn-focus);
+            box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.35), 0 4px 6px rgba(0, 0, 0, 0.3);
+            color: var(--btn-color);
+            background-color: var(--btn-background);
+        }
+
+        &.dark {
+            --btn-color: #eeeeee;
+            --btn-background: #1a1d25;
+        }
+
+        &.ghost {
+            --btn-background: transparent;
+            --btn-color: #1a1d25;
+            box-shadow: none;
+
+            &:active, &:focus {
+                --btn-focus: transparent;
+                --btn-color: #1a1d25;
+                color: var(--btn-color);
+            }
+        }
+
+        &.danger-hover {
+
+            &:hover {
+                --btn-background: #e53f4e;
+            }
+
+            &:active {
+                --btn-background: #ea6571;
+                background-color: var(--btn-background);
+            }
+        }
+
+        &.no-focus {
+            &:active, &:focus {
+                --btn-focus: transparent;
+                border-color: var(--btn-focus);
+                box-shadow: none;
+            }
+        }
+    }
+}
+
+.text-input {
+    --input-bg: #ffffff;
+    --input-color: #1a1d25;
+    --input-border: #1a1d25;
+    --input-focus: #ff7f50;
+    appearance: none;
+    background-color: var(--input-bg);
+    color: var(--input-color);
+    border: 0.15rem solid var(--input-border);
+    border-radius: 1.5rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+/* Dark variant */
+.text-input.dark {
+    --input-bg: #1a1d25;
+    --input-color: #eeeeee;
+    --input-border: #57606f;
+}
+
+/* Placeholder */
+.text-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* Hover */
+.text-input:hover:not(:focus) {
+    border-color: #747d8c;
+}
+
+/* Focus */
+.text-input:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.35), 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Disabled */
+.text-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/*         WebKit browsers (Chrome, Edge, Safari) — limited styling */
+        .text-input[type="number"]::-webkit-outer-spin-button,
+        .text-input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+
+.color-field {
+    cursor: text;
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+    min-width: 8rem;
+
+    input[type="text"] {
+        width: 100%;
+        background: transparent;
+        outline: none;
+        border: none;
+        padding: 0.45rem 1rem;
+        --input-color: #eeeeee;
+        color: var(--input-color);
+        border-radius: 1.5rem;
+    }
+
+    .clr-field button {
+        border-bottom-right-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
+    }
+}
+
+.checkbox {
+    --cb-bg: rgba(0, 0, 0, 0.45);
+    --cb-border: rgba(255, 255, 255, 0.35);
+    --cb-accent: #ff7f50;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 1.25rem
+}
+
+    /* Hide native checkbox */
+    .checkbox input {
+        position: absolute;
+        opacity: 0;
+        inset: 0;
+        margin: 0;
+        cursor: inherit;
+    }
+
+/* Visual box */
+.checkbox-box {
+    width: 1.15em;
+    height: 1.15em;
+    background: var(--cb-bg);
+    backdrop-filter: blur(4px);
+    border: 0.15rem solid var(--cb-border);
+    border-radius: 0.35rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    display: grid;
+    place-items: center;
+    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
+}
+
+    /* Checkmark */
+    .checkbox-box::after {
+        content: "";
+        width: 0.55em;
+        height: 0.3em;
+        border-left: 0.18em solid white;
+        border-bottom: 0.18em solid white;
+        transform: rotate(-45deg) scale(0);
+        transition: transform 120ms ease;
+    }
+
+/* Checked */
+.checkbox input:checked + .checkbox-box {
+    border-color: var(--cb-accent);
+}
+
+    .checkbox input:checked + .checkbox-box::after {
+        transform: rotate(-45deg) scale(1);
+    }
+
+/* Hover */
+.checkbox:hover .checkbox-box {
+    border-color: #747d8c;
+}
+
+/* Focus (keyboard) */
+.checkbox input:focus-visible + .checkbox-box {
+    box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.35), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Active (click feedback) */
+.checkbox input:active + .checkbox-box {
+    transform: scale(0.95);
+}
+
+/* Disabled */
+.checkbox input:disabled + .checkbox-box {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.slider-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Slider base */
+.slider {
+    appearance: none;
+    width: 100%;
+    height: 1.15rem;
+    background: transparent;
+    cursor: pointer;
+}
+
+    /* Track */
+    .slider::-webkit-slider-runnable-track {
+        height: 0.50rem;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 999px;
+        border: 0.15rem solid rgba(255, 255, 255, 0.35);
+    }
+
+    .slider::-moz-range-track {
+        height: 0.50rem;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 999px;
+        border: 0.15rem solid rgba(255, 255, 255, 0.35);
+    }
+
+    /* Native thumb – visually minimized but still interactive */
+    .slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 1.15rem;
+        height: 1.15rem;
+        background: transparent;
+        border: none;
+        margin-top: -0.45rem;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 1.15rem;
+        height: 1.15rem;
+        background: transparent;
+        border: none;
+    }
+
+/* Value handle */
+.slider-handle {
+    position: absolute;
+    top: 44%;
+    transform: translate(-50%, -50%);
+    min-width: 1.8rem;
+    height: 1.4rem;
+    padding: 0 0.4rem;
+    font-size: 0.75rem;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    border-radius: 999px;
+    box-shadow: 0 3px 6px rgba(0,0,0,.45);
+    display: grid;
+    place-items: center;
+    pointer-events: none; /* clicks go to the native thumb */
+}
+
+.color-field {
+    .clr-field {
+        width: 100%;
+    }
+}
