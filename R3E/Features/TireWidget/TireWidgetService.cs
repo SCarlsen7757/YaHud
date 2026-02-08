@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using R3E.Core.Interfaces;
 using R3E.Core.Services;
-using System.Globalization;
 
 namespace R3E.Features.TireWidget
 {
@@ -151,13 +150,32 @@ namespace R3E.Features.TireWidget
             lock (sync)
             {
                 TireWidgetData.TireWear = new Data.TireData<float> {
-                    FrontLeft = data.Raw.TireWear.FrontLeft * 100f, // Convert to percentage
-                    FrontRight = data.Raw.TireWear.FrontRight * 100f, // Convert to percentage
-                    RearLeft = data.Raw.TireWear.RearLeft * 100f, // Convert to percentage
-                    RearRight = data.Raw.TireWear.RearRight * 100f // Convert to percentage
+                    FrontLeft = ConvertTireWearToPercentage(data.Raw.TireWear.FrontLeft),
+                    FrontRight = ConvertTireWearToPercentage(data.Raw.TireWear.FrontRight),
+                    RearLeft = ConvertTireWearToPercentage(data.Raw.TireWear.RearLeft),
+                    RearRight = ConvertTireWearToPercentage(data.Raw.TireWear.RearRight)
                 };
 
             }
+        }
+
+        private float ConvertTireWearToPercentage(float wear)
+        {
+            // Map sentinel / negative values (e.g., -1 for N/A) to 0%
+            if (wear < 0f)
+            {
+                return 0f;
+            }
+            var percentage = wear * 100f;
+            if (percentage < 0f)
+            {
+                percentage = 0f;
+            }
+            else if (percentage > 100f)
+            {
+                percentage = 100f;
+            }
+            return percentage;
         }
     }
 }

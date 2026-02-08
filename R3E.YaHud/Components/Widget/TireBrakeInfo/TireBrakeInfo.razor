@@ -161,8 +161,8 @@
     {
         if (Settings is null) return;
         var newestData = TireWidgetService.TireWidgetData;
-        if (newestData is null) return;
-
+        
+        // Cache the background colors from settings to avoid repeated parsing in the color calculation methods if performance becomes an issue.
         tireAgeBackgroundColor = Settings.TireAgeBackgroundColor;
         tireChoiceBackgroundColor = Settings.TireChoiceBackgroundColor;
 
