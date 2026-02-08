@@ -74,6 +74,9 @@
         {
             if (from == to) return value;
 
+            if (value < 0)
+                return value;
+
             float baseValue = from switch
             {
                 PressureUnit.Kpa => value,
