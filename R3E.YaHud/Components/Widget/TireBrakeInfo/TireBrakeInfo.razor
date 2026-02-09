@@ -4,6 +4,7 @@
 @using R3E.YaHud.Components.Widget.Core
 @using R3E.YaHud.Components.Widget.TireBrakeInfo.Components
 @using System.Globalization
+@using static R3E.YaHud.Components.UI.Helpers.ColorUtils
 @inherits HudWidgetBase<TireBrakeInfoSettings>
 @inject TireWidgetService TireWidgetService
 
@@ -150,10 +151,10 @@
         rearLeft.TireWear = (float)Math.Max((random.NextDouble() * 100), 1);
         rearRight.TireWear = (float)Math.Max((random.NextDouble() * 100), 1);
 
-        frontLeft.BrakeColor = GetRandomColor(random.Next(1, 1000));
-        frontRight.BrakeColor = GetRandomColor(random.Next(1, 1000));
-        rearLeft.BrakeColor = GetRandomColor(random.Next(1, 1000));
-        rearRight.BrakeColor = GetRandomColor(random.Next(1, 1000));
+        frontLeft.BrakeColor = GetRandomColor(random.Next(1, 1000), true);
+        frontRight.BrakeColor = GetRandomColor(random.Next(1, 1000), true);
+        rearLeft.BrakeColor = GetRandomColor(random.Next(1, 1000), true);
+        rearRight.BrakeColor = GetRandomColor(random.Next(1, 1000), true);
 
     }
 
@@ -220,10 +221,7 @@
 
     }
 
-    private record struct RgbColor(int R, int G, int B)
-    {
-        public int[] ToArray() => [R, G, B];
-    }
+
 
     private RgbColor HexToRgbColor(string hex)
     {
@@ -265,9 +263,9 @@
         RgbColor? optimalColor = null,
         RgbColor? hotColor = null)
     {
-        var cold = (coldColor ?? new RgbColor(0, 0, 200)).ToArray();
-        var optimal = (optimalColor ?? new RgbColor(0, 200, 0)).ToArray();
-        var hot = (hotColor ?? new RgbColor(200, 0, 0)).ToArray();
+        var cold = coldColor ?? new RgbColor(0, 0, 200);
+        var optimal = optimalColor ?? new RgbColor(0, 200, 0);
+        var hot = hotColor ?? new RgbColor(200, 0, 0);
 
         // Guard against invalid temperature ranges
         float tempRange = tireData.HotTemp - tireData.ColdTemp;
@@ -291,9 +289,9 @@
         RgbColor? optimalColor = null,
         RgbColor? hotColor = null)
     {
-        var cold = (coldColor ?? new RgbColor(0, 0, 200)).ToArray();
-        var optimal = (optimalColor ?? new RgbColor(0, 200, 0)).ToArray();
-        var hot = (hotColor ?? new RgbColor(200, 0, 0)).ToArray();
+        var cold = coldColor ?? new RgbColor(0, 0, 200);
+        var optimal = optimalColor ?? new RgbColor(0, 200, 0);
+        var hot = hotColor ?? new RgbColor(200, 0, 0);
 
         // Guard against invalid temperature ranges
         float tempRange = brakeData.HotTemp - brakeData.ColdTemp;
@@ -337,50 +335,35 @@
         return tireType;
     }
 
-    private string GetRandomColor(int value)
+    private string GetRandomColor(int value, bool isBrake = false)
     {
-
-        int r, g, b;
-
-        if (value <= 20)
+        if (Settings is null)
         {
-            // Black → Gray
-            int shade = (int)(value / 20.0 * 128); // 0 → 128
-            r = g = b = shade;
-        }
-        else if (value <= 40)
-        {
-            // Gray → Blue
-            double t = (value - 20) / 20.0;
-            r = (int)(128 * (1 - t));
-            g = (int)(128 * (1 - t));
-            b = (int)(128 + 127 * t);
-        }
-        else if (value <= 60)
-        {
-            // Blue → Yellow
-            double t = (value - 40) / 20.0;
-            r = (int)(255 * t);
-            g = (int)(255 * t);
-            b = (int)(255 * (1 - t));
-        }
-        else if (value <= 80)
-        {
-            // Yellow → Orange
-            double t = (value - 60) / 20.0;
-            r = 255;
-            g = (int)(255 - 90 * t); // 255 → 165
-            b = 0;
-        }
-        else
-        {
-            // Orange → Red
-            double t = (value - 80) / 20.0;
-            r = 255;
-            g = (int)(165 * (1 - t));
-            b = 0;
+            return "rgb(128, 128, 128)"; // Fallback gray
         }
 
-        return $"rgb({r}, {g}, {b})";
+        // Get the appropriate color set based on whether it's for brakes or tires
+        var coldColor = isBrake
+            ? HexToRgbColor(Settings.BrakeColdColor)
+            : HexToRgbColor(Settings.TireColdColor);
+
+        var optimalColor = isBrake
+            ? HexToRgbColor(Settings.BrakeOptimalColor)
+            : HexToRgbColor(Settings.TireOptimalColor);
+
+        var hotColor = isBrake
+            ? HexToRgbColor(Settings.BrakeHotColor)
+            : HexToRgbColor(Settings.TireHotColor);
+
+        // Normalize value to 0-1 range
+        double t = Math.Clamp(value / 100.0, 0.0, 1.0);
+
+        // Use the existing LerpRGB3 with a midpoint at 0.5 for optimal temperature
+        return ColorUtils.LerpRGB3(
+            coldColor,
+            optimalColor,
+            hotColor,
+            0.5,
+            t);
     }
 }

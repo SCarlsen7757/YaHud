@@ -5,21 +5,21 @@
         /// <summary>
         /// Linearly interpolates between two RGB colors.
         /// </summary>
-        /// <param name="color1">Start color as [R, G, B].</param>
-        /// <param name="color2">End color as [R, G, B].</param>
+        /// <param name="color1">Start color.</param>
+        /// <param name="color2">End color.</param>
         /// <param name="t">
         /// Interpolation factor in the range [0, 1].
         /// 0 returns color1, 1 returns color2, values in between blend the two.
         /// </param>
         /// <returns>A CSS-style "rgb(r, g, b)" string representing the interpolated color.</returns>
-        public static string LerpRGB(int[] color1, int[] color2, double t)
+        public static string LerpRGB(RgbColor color1, RgbColor color2, double t)
         {
             // Clamp t to [0, 1]
             t = Math.Max(0, Math.Min(t, 1));
 
-            int r = (int)(color1[0] + (color2[0] - color1[0]) * t);
-            int g = (int)(color1[1] + (color2[1] - color1[1]) * t);
-            int b = (int)(color1[2] + (color2[2] - color1[2]) * t);
+            int r = (int)(color1.R + (color2.R - color1.R) * t);
+            int g = (int)(color1.G + (color2.G - color1.G) * t);
+            int b = (int)(color1.B + (color2.B - color1.B) * t);
 
             return $"rgb({r}, {g}, {b})";
         }
@@ -40,9 +40,9 @@
         /// A CSS-style "rgb(r, g, b)" string representing the interpolated color.
         /// </returns>
         public static string LerpRGB3(
-            int[] color1,
-            int[] color2,
-            int[] color3,
+            RgbColor color1,
+            RgbColor color2,
+            RgbColor color3,
             double middle,
             double t
         )
@@ -64,6 +64,11 @@
             }
 
             return LerpRGB(color2, color3, (t - middle) / (1 - middle));
+        }
+
+        public struct RgbColor(int R, int G, int B)
+        {
+            public int[] ToArray() => [R, G, B];
         }
     }
 }
