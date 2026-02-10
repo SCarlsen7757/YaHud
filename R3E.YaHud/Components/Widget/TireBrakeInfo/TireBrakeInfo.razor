@@ -8,70 +8,67 @@
 @inherits HudWidgetBase<TireBrakeInfoSettings>
 @inject TireWidgetService TireWidgetService
 
-@if (Settings?.Visible ?? false)
-{
-    <WidgetHost Owner="this">
-        <div id="@ElementId" class="tire-widget">
-            <div class="tire-values top">
-                <span>@frontLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-                <span>@frontRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-            </div>
-
-            <div class="bar-row">
-                <div style="height:50px; width:50px">
-                    <TireBrakeVisual LeftSideTire=true TireLeftColor="@frontLeft.LeftColor" TireMiddleColor="@frontLeft.MiddleColor" TireRightColor="@frontLeft.RightColor" BrakeColor="@frontLeft.BrakeColor"></TireBrakeVisual>
-                </div>
-                <div class="tire-info">
-                    <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@frontTireChoice</span>
-                    <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@frontTireAge</span>
-                </div>
-                <div style="height:50px; width:50px">
-                    <TireBrakeVisual LeftSideTire=false TireLeftColor="@frontRight.LeftColor" TireMiddleColor="@frontRight.MiddleColor" TireRightColor="@frontRight.RightColor" BrakeColor="@frontRight.BrakeColor"></TireBrakeVisual>
-                </div>
-            </div>
-
-            <div class="tire-values bottom">
-                <span>@frontLeft.TireWear.ToString("F0")%</span>
-                <span>@frontRight.TireWear.ToString("F0")%</span>
-            </div>
-            <div class="tire-temps">
-                <span>@frontLeft.TireTemperature.ToString("F0")°</span>
-                <span>@frontRight.TireTemperature.ToString("F0")°</span>
-            </div>
-
-            <hr class="solid">
-
-            <div class="tire-values">
-
-                <span>@rearLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-                <span>@rearRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
-            </div>
-
-            <div class="bar-row">
-                <div style="height:50px; width:50px">
-                    <TireBrakeVisual LeftSideTire=true TireLeftColor="@rearLeft.LeftColor" TireMiddleColor="@rearLeft.MiddleColor" TireRightColor="@rearLeft.RightColor" BrakeColor="@rearLeft.BrakeColor"></TireBrakeVisual>
-                </div>
-                <div class="tire-info">
-                    <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@rearTireChoice</span>
-                    <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@rearTireAge</span>
-                </div>
-                <div style="height:50px; width:50px">
-                    <TireBrakeVisual LeftSideTire=false TireLeftColor="@rearRight.LeftColor" TireMiddleColor="@rearRight.MiddleColor" TireRightColor="@rearRight.RightColor" BrakeColor="@rearRight.BrakeColor"></TireBrakeVisual>
-                </div>
-            </div>
-
-            <div class="tire-values bottom">
-                <span>@rearLeft.TireWear.ToString("F0")%</span>
-                <span>@rearRight.TireWear.ToString("F0")%</span>
-            </div>
-            <div class="tire-temps">
-                <span>@rearLeft.TireTemperature.ToString("F0")°</span>
-                <span>@rearRight.TireTemperature.ToString("F0")°</span>
-            </div>
-
+<WidgetHost Owner="this">
+    <div id="@ElementId" class="tire-widget">
+        <div class="tire-values top">
+            <span>@frontLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+            <span>@frontRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
         </div>
-    </WidgetHost>
-}
+
+        <div class="bar-row">
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=true TireLeftColor="@frontLeft.LeftColor" TireMiddleColor="@frontLeft.MiddleColor" TireRightColor="@frontLeft.RightColor" BrakeColor="@frontLeft.BrakeColor"></TireBrakeVisual>
+            </div>
+            <div class="tire-info">
+                <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@frontTireChoice</span>
+                <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@frontTireAge</span>
+            </div>
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=false TireLeftColor="@frontRight.LeftColor" TireMiddleColor="@frontRight.MiddleColor" TireRightColor="@frontRight.RightColor" BrakeColor="@frontRight.BrakeColor"></TireBrakeVisual>
+            </div>
+        </div>
+
+        <div class="tire-values bottom">
+            <span>@frontLeft.TireWear.ToString("F0")%</span>
+            <span>@frontRight.TireWear.ToString("F0")%</span>
+        </div>
+        <div class="tire-temps">
+            <span>@frontLeft.TireTemperature.ToString("F0")°</span>
+            <span>@frontRight.TireTemperature.ToString("F0")°</span>
+        </div>
+
+        <hr class="solid">
+
+        <div class="tire-values">
+
+            <span>@rearLeft.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+            <span>@rearRight.TirePressure.ToString("F1", CultureInfo.InvariantCulture) psi</span>
+        </div>
+
+        <div class="bar-row">
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=true TireLeftColor="@rearLeft.LeftColor" TireMiddleColor="@rearLeft.MiddleColor" TireRightColor="@rearLeft.RightColor" BrakeColor="@rearLeft.BrakeColor"></TireBrakeVisual>
+            </div>
+            <div class="tire-info">
+                <span class="tire-type" style="border-color: @tireChoiceBackgroundColor; background: @tireChoiceBackgroundColor">@rearTireChoice</span>
+                <span class="tire-age" style="border-color: @tireAgeBackgroundColor; background: @tireAgeBackgroundColor">@rearTireAge</span>
+            </div>
+            <div style="height:50px; width:50px">
+                <TireBrakeVisual LeftSideTire=false TireLeftColor="@rearRight.LeftColor" TireMiddleColor="@rearRight.MiddleColor" TireRightColor="@rearRight.RightColor" BrakeColor="@rearRight.BrakeColor"></TireBrakeVisual>
+            </div>
+        </div>
+
+        <div class="tire-values bottom">
+            <span>@rearLeft.TireWear.ToString("F0")%</span>
+            <span>@rearRight.TireWear.ToString("F0")%</span>
+        </div>
+        <div class="tire-temps">
+            <span>@rearLeft.TireTemperature.ToString("F0")°</span>
+            <span>@rearRight.TireTemperature.ToString("F0")°</span>
+        </div>
+
+    </div>
+</WidgetHost>
 
 @code {
     public override string ElementId { get => "TireBrakeInfoWidget"; }
@@ -133,10 +130,10 @@
         frontTireChoice = GetTireTypeName(random.Next(-1, 5));
         rearTireChoice = GetTireTypeName(random.Next(-1, 5));
 
-        frontTireAge = random.Next(0,100);
+        frontTireAge = random.Next(0, 100);
         rearTireAge = random.Next(0, 100);
 
-        frontLeft.TirePressure = (float)Math.Max((random.NextDouble() * 100),1);
+        frontLeft.TirePressure = (float)Math.Max((random.NextDouble() * 100), 1);
         frontRight.TirePressure = (float)Math.Max((random.NextDouble() * 100), 1);
         rearLeft.TirePressure = (float)Math.Max((random.NextDouble() * 100), 1);
         rearRight.TirePressure = (float)Math.Max((random.NextDouble() * 100), 1);
@@ -162,7 +159,7 @@
     {
         if (Settings is null) return;
         var newestData = TireWidgetService.TireWidgetData;
-        
+
         // Cache the background colors from settings to avoid repeated parsing in the color calculation methods if performance becomes an issue.
         tireAgeBackgroundColor = Settings.TireAgeBackgroundColor;
         tireChoiceBackgroundColor = Settings.TireChoiceBackgroundColor;
