@@ -66,7 +66,7 @@
             return LerpRGB(color2, color3, (t - middle) / (1 - middle));
         }
 
-        public struct RgbColor(int R, int G, int B)
+        public readonly record struct RgbColor(int R, int G, int B)
         {
             public int[] ToArray() => [R, G, B];
         }
