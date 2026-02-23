@@ -24,13 +24,9 @@
     </ItemGroup>
 
 
-    <!-- Include all files in the Assets folder for all platforms -->
     <ItemGroup> 
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
-        <None Include="Assets\**\*.*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </None>
+        <EmbeddedResource Include="Assets\**\*.*" />
     </ItemGroup>
 
 </Project>
