@@ -41,14 +41,17 @@ public class WindowsTrayService : IHostedService, IDisposable
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "trayfavicon.png");
-            if (!File.Exists(iconPath))
+            var assembly = typeof(WindowsTrayService).Assembly;
+            const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
+
+            using var iconStream = assembly.GetManifestResourceStream(iconResourceName);
+            if (iconStream == null)
             {
-                logger.LogWarning("Tray icon not found: {IconPath}", iconPath);
+                logger.LogWarning("Tray icon resource not found: {ResourceName}", iconResourceName);
                 return;
             }
 
-            using var bitmap = new Bitmap(iconPath);
+            using var bitmap = new Bitmap(iconStream);
             var icon = Icon.FromHandle(bitmap.GetHicon());
 
             trayIcon = new NotifyIcon
