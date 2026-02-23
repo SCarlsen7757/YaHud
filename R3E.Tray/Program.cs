@@ -1,13 +1,16 @@
 ﻿namespace R3E.Tray;
-using Microsoft.AspNetCore.Builder; // <-- needed for WebApplication
 
-public static class TrayProgram
+using Microsoft.Extensions.DependencyInjection;
+
+public static class TrayServiceExtensions
 {
-    public static void Main(WebApplication? hostApp = null)
+    public static IServiceCollection AddTrayService(this IServiceCollection services)
     {
-    #if LINUX
-        Console.WriteLine("Using Linux");
-        Linux.LinuxTray.Run(hostApp);
-    #endif
+#if WINDOWS
+        services.AddHostedService<Windows.WindowsTrayService>();
+#elif LINUX
+        services.AddHostedService<Linux.LinuxTrayService>();
+#endif
+        return services;
     }
 }
