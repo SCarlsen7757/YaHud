@@ -3,19 +3,19 @@
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework Condition="'$(OS)' == 'Windows_NT'">net10.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-        <!-- 
-          Optional: Prevent IDE warnings on Linux/Mac when WindowsProperties exist.
-          $(OS) is usually 'Unix' on Linux/macOS and 'Windows_NT' on Windows.
-          This ensures UseWindowsForms is only applied on Windows.
-        -->
+    <!-- Windows-specific: enable WinForms for NotifyIcon tray support -->
+    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+        <UseWindowsForms>true</UseWindowsForms>
+        <DefineConstants>WINDOWS</DefineConstants>
     </PropertyGroup>
 
     <!-- Linux/Unix-specific packages -->
     <PropertyGroup Condition="'$(OS)' == 'Unix'">
-        <!-- Define a compilation symbol so #if LINUX works -->
         <DefineConstants>LINUX</DefineConstants>
     </PropertyGroup>
     
@@ -33,11 +33,4 @@
         </None>
     </ItemGroup>
 
-    <!-- Optional: cross-platform hints for IDEs -->
-    <!--
-      - On Windows: WinForms assemblies are included
-      - On Linux/macOS: GTKSharp package is included
-      - Assets folder is always copied
-      - IDEs will no longer show warnings for missing Windows-only properties on Linux
-    -->
 </Project>

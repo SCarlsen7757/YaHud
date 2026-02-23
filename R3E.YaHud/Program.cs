@@ -8,9 +8,9 @@ using R3E.Features.Image;
 using R3E.Features.Radar;
 using R3E.Features.Sector;
 using R3E.Features.TimeGap;
+using R3E.Tray;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
-using R3E.Tray;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,44 +77,10 @@ builder.Services.AddSingleton<DriverService>();
 builder.Services.AddSingleton<SectorService>();
 builder.Services.AddSingleton<RadarService>();
 
+// System tray service
+builder.Services.AddTrayService();
+
 var app = builder.Build();
-
-// ---------------------------------------------------------
-// Start system tray in a background thread
-// ---------------------------------------------------------
-if (OperatingSystem.IsLinux())
-{
-    try
-    {
-        Thread trayThread = new Thread(() =>
-        {
-            Console.WriteLine("Tray thread started"); // should always print
-            try
-            {
-                // Call R3E.Tray's Program.Main(), which already handles OS
-                TrayProgram.Main(app);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Tray initialization failed: {ex}");
-            }
-        })
-        {
-            IsBackground = true // ensures the tray exits with the app
-        };
-
-        Console.WriteLine("Tray icon startup initiated.");
-        trayThread.Start();
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Failed to start tray thread: {ex}");
-    }
-}
-else
-{
-    Console.WriteLine("System tray is not supported on this OS. Tray icon will not be started.");
-}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
