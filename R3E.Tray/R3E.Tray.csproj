@@ -20,7 +20,7 @@
     </PropertyGroup>
     
     <ItemGroup Condition="'$(OS)' == 'Unix'">
-        <PackageReference Include="GtkSharp" Version="3.24.24.32" />
+        <PackageReference Include="Tmds.DBus.Protocol" Version="0.90.3" />
     </ItemGroup>
 
 

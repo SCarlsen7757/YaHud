@@ -3,13 +3,13 @@ namespace R3E.Tray.Linux;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Gtk;
+using Tmds.DBus.Protocol;
 
 public class TrayService : IHostedService, IDisposable
 {
     private readonly IHostApplicationLifetime lifetime;
     private readonly ILogger<TrayService> logger;
-    private Thread? gtkThread;
+    private DBusConnection? connection;
     private bool disposed;
 
     public TrayService(IHostApplicationLifetime lifetime, ILogger<TrayService> logger)
@@ -18,71 +18,63 @@ public class TrayService : IHostedService, IDisposable
         this.logger = logger;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        gtkThread = new Thread(RunGtkMainLoop)
-        {
-            IsBackground = true,
-            Name = "GTK-Tray-Thread"
-        };
-        gtkThread.Start();
-
-        logger.LogInformation("Linux tray service started.");
-        return Task.CompletedTask;
-    }
-
-    private void RunGtkMainLoop()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
         {
-            Application.Init();
+            var (iconWidth, iconHeight, iconArgbData) = LoadIconPixelData();
+            var sniHandler = new StatusNotifierItemHandler(iconWidth, iconHeight, iconArgbData);
+            var menuHandler = new DbusTrayMenuHandler(() => lifetime.StopApplication());
 
-            var assembly = typeof(TrayService).Assembly;
-            const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
+            connection = new DBusConnection(DBusAddress.Session!);
+            await connection.ConnectAsync().ConfigureAwait(false);
 
-            using var iconStream = assembly.GetManifestResourceStream(iconResourceName);
-            if (iconStream == null)
-            {
-                logger.LogWarning("Tray icon resource not found: {ResourceName}", iconResourceName);
-                return;
-            }
+            connection.AddMethodHandler(sniHandler);
+            connection.AddMethodHandler(menuHandler);
 
-            var trayPixbuf = new Gdk.Pixbuf(iconStream);
-            var tray = new StatusIcon(trayPixbuf)
-            {
-                Visible = true,
-                TooltipText = "YaHud"
-            };
+            await RegisterWithWatcher().ConfigureAwait(false);
 
-            var menu = new Menu();
-            var quit = new MenuItem("Quit");
-
-            quit.Activated += (_, _) =>
-            {
-                lifetime.StopApplication();
-            };
-            menu.Append(quit);
-            menu.ShowAll();
-
-            tray.PopupMenu += (_, _) => menu.Popup();
-
-            // When the host signals stopping, quit the GTK loop from the GTK thread
-            lifetime.ApplicationStopping.Register(() =>
-            {
-                Application.Invoke((_, _) => Application.Quit());
-            });
-
-            Application.Run();
+            logger.LogInformation("Linux tray service started via D-Bus StatusNotifierItem.");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Linux tray initialization failed.");
+            logger.LogError(ex, "Linux tray initialization failed. The system tray icon will not be available.");
         }
+    }
+
+    private (int Width, int Height, byte[] ArgbData) LoadIconPixelData()
+    {
+        var assembly = typeof(TrayService).Assembly;
+        const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
+
+        using var iconStream = assembly.GetManifestResourceStream(iconResourceName)
+            ?? throw new FileNotFoundException($"Tray icon resource not found: {iconResourceName}");
+
+        return PngPixelReader.ReadPng(iconStream);
+    }
+
+    private async Task RegisterWithWatcher()
+    {
+        var lowLevelConnection = connection!.AsConnection();
+        using var writer = lowLevelConnection.GetMessageWriter();
+        writer.WriteMethodCallHeader(
+            destination: "org.kde.StatusNotifierWatcher",
+            path: "/StatusNotifierWatcher",
+            @interface: "org.kde.StatusNotifierWatcher",
+            member: "RegisterStatusNotifierItem",
+            signature: "s",
+            flags: MessageFlags.None);
+        writer.WriteString(lowLevelConnection.UniqueName!);
+
+        await lowLevelConnection.CallMethodAsync(writer.CreateMessage()).ConfigureAwait(false);
+        logger.LogInformation("Registered with StatusNotifierWatcher as {BusName}.", lowLevelConnection.UniqueName);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("Linux tray service stopping.");
+        connection?.Dispose();
+        connection = null;
         return Task.CompletedTask;
     }
 
@@ -90,6 +82,8 @@ public class TrayService : IHostedService, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        connection?.Dispose();
+        connection = null;
         GC.SuppressFinalize(this);
     }
 }
