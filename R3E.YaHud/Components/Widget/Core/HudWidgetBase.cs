@@ -42,6 +42,7 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private DateTime lastUpdate = DateTime.MinValue;
         private bool initializedTransformations = false;
+        private bool registeredTransformations = false;
 
         protected abstract void Update();
 
@@ -69,8 +70,35 @@ namespace R3E.YaHud.Components.Widget.Core
                 return;
             }
 
+
             if (!(Settings?.Visible ?? false))
+            {
+                initializedTransformations = false;
+                await JS.InvokeVoidAsync("HudHelper.disableTransformation", ElementId);
                 return;
+            }
+
+            if (!registeredTransformations)
+            {
+                registeredTransformations = true;
+                try
+                {
+                    objRef ??= DotNetObjectReference.Create(this);
+
+                    await JS.InvokeVoidAsync(
+                        "HudHelper.registerTransformable",
+                        ElementId,
+                        objRef,
+                        Locked,
+                        Collidable
+                    );
+
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected if component is disposed mid-render
+                }
+            }
 
             if (ElementRef.Context is not null && !initializedTransformations)
             {
@@ -87,24 +115,8 @@ namespace R3E.YaHud.Components.Widget.Core
                     Settings.XPercent,
                     Settings.YPercent
                 );
-            }
 
-            try
-            {
-                objRef ??= DotNetObjectReference.Create(this);
-
-                await JS.InvokeVoidAsync(
-                    "HudHelper.registerTransformable",
-                    ElementId,
-                    objRef,
-                    Locked,
-                    Collidable
-                );
-
-            }
-            catch (TaskCanceledException)
-            {
-                // Expected if component is disposed mid-render
+                await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
             }
         }
 

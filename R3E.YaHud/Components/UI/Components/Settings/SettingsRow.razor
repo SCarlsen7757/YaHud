@@ -1,0 +1,230 @@
+﻿@using Microsoft.AspNetCore.Components.Rendering
+@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Services.Settings
+@using System.Reflection
+@using System.Globalization
+@inject IJSRuntime JS
+@implements IDisposable
+
+<p class="setting-row-label">@SettingsInfo.Attr!.DisplayName</p>
+<div class="setting-row-input">
+    @if (SettingsInfo.Attr!.Type == SettingsTypes.Checkbox)
+    {
+        <label class="checkbox">
+            <input type="checkbox" checked="@SettingsInfo.Prop.GetValue(Widget.Settings)" @onchange="(e) => SettingsInfo.Prop.SetValue(Widget.Settings, e.Value)" />
+            <span class="checkbox-box"></span>
+        </label>
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Number)
+    {
+        <input type="number"
+               min=@SettingsInfo.Attr.Min.ToString(System.Globalization.CultureInfo.InvariantCulture) 
+               max=@SettingsInfo.Attr.Max.ToString(System.Globalization.CultureInfo.InvariantCulture)
+               step=@SettingsInfo.Attr.Step.ToString(System.Globalization.CultureInfo.InvariantCulture)
+               value=@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))
+               class="text-input dark"
+               placeholder="Enter value..." 
+               @onchange="e =>
+               {
+                   var val = double.Parse(e.Value.ToString(), System.Globalization.CultureInfo.InvariantCulture);
+                   SettingsInfo.Prop.SetValue(Widget.Settings, Convert.ChangeType(val, SettingsInfo.Prop.PropertyType, System.Globalization.CultureInfo.InvariantCulture));
+               }" />
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Enum)
+    {
+        @RenderEnumSelect();
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.ColorPicker)
+    {
+        <div class="text-input dark color-field">
+            <input id="@ColorInputId" type="text" value="@SettingsInfo.Prop.GetValue(Widget.Settings)" />
+        </div>
+    }
+    else if (SettingsInfo.Attr!.Type == SettingsTypes.Slider)
+    {
+        <div id="@SliderWrapperId" class="slider-wrapper">
+            <input type="range" 
+                class="slider" 
+                   min=@SettingsInfo.Attr.Min.ToString(CultureInfo.InvariantCulture)
+                   max=@SettingsInfo.Attr.Max.ToString(CultureInfo.InvariantCulture)
+                   step=@SettingsInfo.Attr.Step.ToString(CultureInfo.InvariantCulture)
+                   value="@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                @onchange="e =>
+                {
+                    var val = double.Parse(e.Value.ToString(), System.Globalization.CultureInfo.InvariantCulture);
+                   SettingsInfo.Prop.SetValue(Widget.Settings, Convert.ChangeType(val, SettingsInfo.Prop.PropertyType, System.Globalization.CultureInfo.InvariantCulture));
+                }" />
+            <div class="slider-handle">@(Convert.ToDouble(SettingsInfo.Prop.GetValue(Widget.Settings)).ToString(System.Globalization.CultureInfo.InvariantCulture))</div>
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public required IWidget Widget { get; set; }
+    [Parameter] public required SettingInfo SettingsInfo { get; set; }
+
+    private string SliderWrapperId => $"slider_wrapper__{SettingsInfo.Prop.Name}";
+    private string ColorInputId => $"color_input__{SettingsInfo.Prop.Name}";
+
+    private string? registeredSliderId;
+    private bool sliderRegistrationPending;
+    private string? registeredColorPickerId;
+    private bool colorPickerRegistrationPending;
+
+    private DotNetObjectReference<SettingsRow>? objRef;
+
+    private RenderFragment RenderEnumSelect() => builder =>
+    {
+        var enumType = SettingsInfo.Prop.PropertyType;
+        if (!enumType.IsEnum) return;
+
+        // Use reflection to call the generic method
+        var method = typeof(SettingsRow)
+            .GetMethod(nameof(RenderEnumDropdownGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .MakeGenericMethod(enumType);
+
+        var args = new object?[] { builder, SettingsInfo.Prop };
+        method.Invoke(this, args);
+    };
+
+    private void RenderEnumDropdownGeneric<TEnum>(RenderTreeBuilder builder, PropertyInfo prop) where TEnum : struct, Enum
+    {
+        var instance = SettingsInfo.Prop.GetValue(Widget.Settings) ?? Activator.CreateInstance(typeof(TEnum)) ?? default(TEnum);
+        var enumValue = (TEnum)instance;
+
+        int seq = 0;
+
+        // Create a generic EnumSelect component
+        var componentType = typeof(EnumSelect<>).MakeGenericType(typeof(TEnum));
+        builder.OpenComponent(seq++, componentType);
+        builder.AddAttribute(seq++, "Value", enumValue);
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<TEnum>(this, newValue => SettingsInfo.Prop.SetValue(Widget.Settings, newValue)));
+        builder.AddAttribute(seq++, "LabelProvider", new Func<TEnum, string>(v => GetEnumDisplayName(v)));
+        builder.CloseComponent();
+    }
+
+    private string GetEnumDisplayName<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        var type = typeof(TEnum);
+        var name = Enum.GetName(type, value) ?? value.ToString();
+        var field = type.GetField(name);
+        var displayAttr = field?.GetCustomAttribute<System.ComponentModel.DataAnnotations.DisplayAttribute>();
+        return displayAttr?.Name ?? name;
+    }
+
+    // Ensure we react to parameter changes: unregister any previously-registered JS resources
+    protected override Task OnParametersSetAsync()
+    {
+        // If a slider was previously registered but this parameter set no longer represents that same slider -> unregister immediately
+        if (registeredSliderId is not null &&
+            (SettingsInfo.Attr is null || SettingsInfo.Attr.Type != SettingsTypes.Slider || registeredSliderId != SliderWrapperId))
+        {
+            // fire-and-forget; DOM not required for unregister
+            _ = JS.InvokeVoidAsync("customSlider.unregister", registeredSliderId);
+            registeredSliderId = null;
+        }
+
+        // If a color picker was previously registered but the parameters now changed -> unregister
+        if (registeredColorPickerId is not null &&
+            (SettingsInfo.Attr is null || SettingsInfo.Attr.Type != SettingsTypes.ColorPicker || registeredColorPickerId != ColorInputId))
+        {
+            _ = JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
+            registeredColorPickerId = null;
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (objRef == null)
+        {
+            objRef = DotNetObjectReference.Create(this);
+        }
+
+        // If the current SettingsInfo is a slider we want to ensure it is registered.
+        if (SettingsInfo.Attr!.Type == SettingsTypes.Slider)
+        {
+            // If another slider was registered earlier and the id changed, unregister it first.
+            if (registeredSliderId is not null && registeredSliderId != SliderWrapperId)
+            {
+                await JS.InvokeVoidAsync("customSlider.unregister", registeredSliderId);
+                registeredSliderId = null;
+            }
+
+            if (registeredSliderId is null)
+            {
+                // Register the slider in JS now that the element exists.
+                await JS.InvokeVoidAsync("customSlider.register", SliderWrapperId);
+                registeredSliderId = SliderWrapperId;
+            }
+        }
+        else if (SettingsInfo.Attr!.Type == SettingsTypes.ColorPicker)
+        {
+            // If another slider was registered earlier and the id changed, unregister it first.
+            if (registeredColorPickerId is not null && registeredColorPickerId != ColorInputId)
+            {
+                await JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
+                registeredColorPickerId = null;
+            }
+
+            if (registeredColorPickerId is null)
+            {
+                // Register the slider in JS now that the element exists.
+                await JS.InvokeVoidAsync("colorisHelper.register", ColorInputId, @SettingsInfo.Prop.GetValue(Widget.Settings), objRef);
+                registeredColorPickerId = ColorInputId;
+            }
+        }
+        else
+        {
+            // If component switched away from slider type, unregister any previously registered slider.
+            if (registeredSliderId is not null)
+            {
+                await JS.InvokeVoidAsync("customSlider.unregister", registeredSliderId);
+                registeredSliderId = null;
+            }
+
+            if (registeredColorPickerId is not null)
+            {
+                await JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
+                registeredColorPickerId = null;
+            }
+        }
+    }
+
+    [JSInvokable]
+    public Task NotifyColorChanged(string hex)
+    {
+        var targetType = SettingsInfo.Prop.PropertyType;
+        object? converted = targetType == typeof(string) ? hex : Convert.ChangeType(hex, targetType);
+        SettingsInfo.Prop.SetValue(Widget.Settings, converted);
+
+        // update UI
+        _ = InvokeAsync(StateHasChanged);
+
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        // Best-effort unregister on dispose. Fire-and-forget is fine here.
+        if (registeredSliderId is not null)
+        {
+            _ = JS.InvokeVoidAsync("customSlider.unregister", registeredSliderId);
+            registeredSliderId = null;
+        }
+
+        if (registeredColorPickerId is not null)
+        {
+            _ = JS.InvokeVoidAsync("colorisHelper.unregister", registeredColorPickerId);
+            registeredColorPickerId = null;
+        }
+
+        if (objRef is not null)
+        {
+            objRef.Dispose();
+            objRef = null;
+        }
+    }
+}
