@@ -7,9 +7,9 @@ public static class TrayServiceExtensions
     public static IServiceCollection AddTrayService(this IServiceCollection services)
     {
 #if WINDOWS
-        services.AddHostedService<Windows.WindowsTrayService>();
+        services.AddHostedService<Windows.TrayService>();
 #elif LINUX
-        services.AddHostedService<Linux.LinuxTrayService>();
+        services.AddHostedService<Linux.TrayService>();
 #endif
         return services;
     }
