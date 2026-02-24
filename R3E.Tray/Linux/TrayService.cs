@@ -5,14 +5,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Gtk;
 
-public class LinuxTrayService : IHostedService, IDisposable
+public class TrayService : IHostedService, IDisposable
 {
     private readonly IHostApplicationLifetime lifetime;
-    private readonly ILogger<LinuxTrayService> logger;
+    private readonly ILogger<TrayService> logger;
     private Thread? gtkThread;
     private bool disposed;
 
-    public LinuxTrayService(IHostApplicationLifetime lifetime, ILogger<LinuxTrayService> logger)
+    public TrayService(IHostApplicationLifetime lifetime, ILogger<TrayService> logger)
     {
         this.lifetime = lifetime;
         this.logger = logger;
@@ -37,7 +37,7 @@ public class LinuxTrayService : IHostedService, IDisposable
         {
             Application.Init();
 
-            var assembly = typeof(LinuxTrayService).Assembly;
+            var assembly = typeof(TrayService).Assembly;
             const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
 
             using var iconStream = assembly.GetManifestResourceStream(iconResourceName);

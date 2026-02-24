@@ -6,14 +6,14 @@ using Microsoft.Extensions.Logging;
 using System.Drawing;
 using System.Windows.Forms;
 
-public class WindowsTrayService : IHostedService, IDisposable
+public class TrayService : IHostedService, IDisposable
 {
     private readonly IHostApplicationLifetime lifetime;
-    private readonly ILogger<WindowsTrayService> logger;
+    private readonly ILogger<TrayService> logger;
     private Thread? winFormsThread;
     private bool disposed;
 
-    public WindowsTrayService(IHostApplicationLifetime lifetime, ILogger<WindowsTrayService> logger)
+    public TrayService(IHostApplicationLifetime lifetime, ILogger<TrayService> logger)
     {
         this.lifetime = lifetime;
         this.logger = logger;
@@ -41,7 +41,7 @@ public class WindowsTrayService : IHostedService, IDisposable
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
-            var assembly = typeof(WindowsTrayService).Assembly;
+            var assembly = typeof(TrayService).Assembly;
             const string iconResourceName = "R3E.Tray.Assets.trayfavicon.png";
 
             using var iconStream = assembly.GetManifestResourceStream(iconResourceName);
