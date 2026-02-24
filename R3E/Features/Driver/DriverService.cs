@@ -85,6 +85,8 @@ namespace R3E.Features.Driver
             int maxAheadSlots = slotsForOthers / 2;
             const double timeGapThresholdSeconds = 10.0d;
 
+            Dictionary<int, float> timeGapCache = [];
+
             // Count how many cars immediately ahead are within the time threshold
             int foundAheadCount = 0;
 
@@ -92,12 +94,13 @@ namespace R3E.Features.Driver
             for (int i = 1; i <= maxAheadSlots; i++)
             {
                 int idx = playerIndex - i;
-                if (idx < 0) break; // End of list
+                if (idx < 0) break;
 
                 var item = relativeDrivers[idx];
+                int slotId = item.Driver.DriverInfo.SlotId;
 
-                // Calculate relative time gap
-                float gap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                float gap = timeGapService.GetTimeGapRelative(playerSlotId, slotId);
+                timeGapCache[slotId] = gap;
 
                 // Gap > 0 means subject (Player) is behind target (Item). This confirms valid "Ahead" car.
                 if (gap > 0 && gap <= timeGapThresholdSeconds)
@@ -106,7 +109,6 @@ namespace R3E.Features.Driver
                 }
                 else
                 {
-                    // Stop scanning if we hit a large gap (>10s) so we can allocate more slots to cars behind
                     break;
                 }
             }
@@ -144,15 +146,17 @@ namespace R3E.Features.Driver
                 bool isPlayer = (i == playerIndex);
                 TimeSpan timeGap = TimeSpan.Zero;
 
-
                 if (!isPlayer)
                 {
-                    float relGap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                    int slotId = item.Driver.DriverInfo.SlotId;
 
-                    // Convert to TimeSpan.
-                    // If relGap > 0 (Player is Behind, Car is Ahead), we typically show negative time (e.g. -1.2s)
-                    // If relGap < 0 (Player is Ahead, Car is Behind), we typically show positive time (e.g. +1.2s)
-                    timeGap = TimeSpan.FromSeconds(-relGap);
+                    // Use cached time gap if available, otherwise calculate
+                    float relGap = timeGapCache.TryGetValue(slotId, out float cachedGap)
+                        ? cachedGap
+                        : timeGapService.GetTimeGapRelative(playerSlotId, slotId);
+
+                    // Negative values = cars ahead (in front), Positive values = cars behind
+                    timeGap = TimeSpan.FromSeconds(relGap);
                 }
 
                 float distanceGap = (float)item.RelativeDiff * trackLength;
@@ -193,7 +197,7 @@ namespace R3E.Features.Driver
                 if (!isPlayer)
                 {
                     float relGap = timeGapService.GetTimeGapRelative(playerSlotId, driver.DriverInfo.SlotId);
-                    timeGap = TimeSpan.FromSeconds(-relGap);
+                    timeGap = TimeSpan.FromSeconds(relGap);
                 }
 
                 result.Add(BuildDriverInfo(driver, isPlayer, 0, timeGap));
