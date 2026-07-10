@@ -38,10 +38,11 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 1. Download the latest release from the [Releases](../../releases) page
 
    - `R3E.YaHud-win-x64-v{version}.zip` - HUD application for Windows
-   - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux
+   - `YaHud-v{version}-x86_64.AppImage` - HUD application for Linux (recommended, no installation required)
+   - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux (plain binary)
    - `R3E.Relay-win-x64-v{version}.zip` - Relay service (required for Linux support)
 
-2. Extract the files to your preferred location
+2. Extract the files to your preferred location (the AppImage needs no extraction)
 
 ### Configuration
 
@@ -70,55 +71,20 @@ The HUD will automatically connect to RaceRoom's shared memory.
 #### Linux (via Relay) 
 ---
 
-Before the HUD will work you will need to install the following:
-
-   - `.NET 10` - For the HUD application dependency
-   - `GTK libraries` - For the tray application on Linux
-
-### Only for Debian / Ubuntu / Linux Mint based distros:
+The HUD application is fully self-contained — no .NET runtime, GTK, or other
+libraries need to be installed. The easiest way to run it is the AppImage:
 
 ```bash
-# 1. Add Microsoft package repository
-wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-sudo apt update
-
-# 2. Install .NET 10 SDK
-sudo apt install dotnet-sdk-10.0
-
-# 3. Verify that .NET has been installed correctly
-dotnet --version
-
-# 4. Install GTK 3 libraries
-sudo apt install libgtk-3-dev
+chmod +x YaHud-v{version}-x86_64.AppImage
+./YaHud-v{version}-x86_64.AppImage
 ```
 
----
-### Only for Fedora / RHEL / CentOS based distros:
-```bash
-# 1. Install .NET 10 SDK
-sudo dnf install dotnet-sdk-10.0
-
-# 2. Verify that .NET has been installed correctly
-dotnet --version
-
-# 3. Install GTK 3 libraries
-sudo dnf install gtk3-devel
-```
-
----
-### Only for Arch Linux / Manjaro based distros:
-```bash
-# 1. Install .NET 10 SDK (runtime included)
-sudo pacman -S dotnet-sdk
-
-# 2. Verify that .NET has been installed correctly
-dotnet --version
-
-# 3. Install GTK 3 libraries
-sudo pacman -S gtk3
-```
----
+**Tray icon support**: the tray icon uses the freedesktop StatusNotifierItem
+D-Bus protocol. It works out of the box on KDE Plasma, Linux Mint (Cinnamon),
+Xfce, LXQt, and Ubuntu's GNOME. On vanilla GNOME you need the
+[AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/)
+to see tray icons. If no tray is available, the HUD still runs normally —
+only the icon is missing.
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
@@ -138,9 +104,8 @@ STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
 
 > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
-3. On your Linux machine download `R3E.YaHud-linux-x64-v{version}.zip` from the release page. <br>
-Extract the zip somewhere, and change directory in your `terminal` to the folder, you have extracted the HUD application. <br>
-To run the HUD application run the following command in the terminal:
+3. On your Linux machine, run the HUD application — either the AppImage (see
+above) or the plain binary from `R3E.YaHud-linux-x64-v{version}.zip`:
 ```bash
 ./YaHud
 ```
@@ -249,7 +214,7 @@ R3E/
 ├── R3E.Relay/              # UDP relay service
 └── R3E.Tray/               # Tray service
     ├── Assets              # Contains icon for tray service
-    ├── Linux               # GTK code for tray Applet for Linux
+    ├── Linux               # D-Bus StatusNotifierItem tray icon for Linux
     └── Windows             # Windows Forms code for tray app for Windows
 ```
 
@@ -324,7 +289,7 @@ Example:
 - Bootstrap 5
 - Font Awesome (icons)
 - Coloris (color picker)
-- GTK Libraries (Linux icon applet)
+- Tmds.DBus.Protocol (Linux tray icon via D-Bus StatusNotifierItem)
 
 ### Platform Support
 

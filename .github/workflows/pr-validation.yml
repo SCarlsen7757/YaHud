@@ -19,9 +19,14 @@ jobs:
     uses: ./.github/workflows/calculate-version.yml
 
   # Build validation (runs in parallel with version)
+  # Matrix covers Windows and Linux: the Linux-only tray code (#if LINUX in
+  # R3E.Tray) is excluded from Windows builds, so it must compile on ubuntu.
   build:
-    name: Build Validation
-    runs-on: windows-latest
+    name: Build Validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
 
     steps:
       - name: Checkout code
@@ -41,10 +46,11 @@ jobs:
         run: dotnet build R3E.sln --configuration Release --no-restore
 
       - name: Build Summary
+        shell: bash
         run: |
-          echo "### Build Validation Passed" >> $env:GITHUB_STEP_SUMMARY
-          echo "" >> $env:GITHUB_STEP_SUMMARY
-          echo "All projects compiled successfully." >> $env:GITHUB_STEP_SUMMARY
+          echo "### Build Validation Passed (${{ matrix.os }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "All projects compiled successfully." >> "$GITHUB_STEP_SUMMARY"
 
   # Post version comment on PR (depends on version job)
   comment:

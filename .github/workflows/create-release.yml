@@ -48,7 +48,7 @@ jobs:
       - name: List artifacts
         run: |
           echo "Downloaded artifacts:"
-          find ./artifacts -type f -name "*.zip"
+          find ./artifacts -type f \( -name "*.zip" -o -name "*.AppImage" \)
 
       - name: Generate Release Notes
         id: release_notes
@@ -74,6 +74,7 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
           files: |
             ./artifacts/**/*.zip
+            ./artifacts/**/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,5 +88,6 @@ jobs:
           echo "- R3E.Relay (Windows x64)" >> $GITHUB_STEP_SUMMARY
           echo "- R3E.YaHud (Windows x64)" >> $GITHUB_STEP_SUMMARY
           echo "- R3E.YaHud (Linux x64)" >> $GITHUB_STEP_SUMMARY
+          echo "- R3E.YaHud (Linux AppImage)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Release](${{ steps.create_release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
