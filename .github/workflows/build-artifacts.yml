@@ -108,3 +108,45 @@ jobs:
           name: R3E.YaHud-linux-x64
           path: ./R3E.YaHud-linux-x64-v${{ inputs.version }}.zip
           retention-days: 7
+
+  build-yahud-appimage:
+    name: Build R3E.YaHud (Linux AppImage)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.x.x"
+
+      - name: Restore dependencies
+        run: dotnet restore R3E.YaHud/R3E.YaHud.csproj
+
+      - name: Publish R3E.YaHud into AppDir
+        run: |
+          dotnet publish ./R3E.YaHud/R3E.YaHud.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./AppDir/usr/bin
+
+      - name: Assemble AppDir
+        run: |
+          install -m 755 packaging/appimage/AppRun ./AppDir/AppRun
+          cp packaging/appimage/YaHud.desktop ./AppDir/
+          cp packaging/appimage/yahud.png ./AppDir/
+          cp packaging/appimage/yahud.png ./AppDir/.DirIcon
+
+      - name: Build AppImage
+        run: |
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage --appimage-extract-and-run ./AppDir ./YaHud-v${{ inputs.version }}-x86_64.AppImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: R3E.YaHud-appimage
+          path: ./YaHud-v${{ inputs.version }}-x86_64.AppImage
+          retention-days: 7
