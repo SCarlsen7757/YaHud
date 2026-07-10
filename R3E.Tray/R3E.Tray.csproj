@@ -20,7 +20,7 @@
     </PropertyGroup>
     
     <ItemGroup Condition="'$(OS)' == 'Unix'">
-        <PackageReference Include="Tmds.DBus.Protocol" Version="0.90.3" />
+        <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
     </ItemGroup>
 
 
