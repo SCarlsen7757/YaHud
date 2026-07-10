@@ -55,8 +55,17 @@ public class TrayService : IHostedService, IDisposable
 
     private async Task RegisterWithWatcher()
     {
-        var lowLevelConnection = connection!.AsConnection();
-        using var writer = lowLevelConnection.GetMessageWriter();
+        // MessageWriter is a ref struct: build the message and dispose the writer
+        // before awaiting the call.
+        MessageBuffer message = CreateRegisterMessage();
+
+        await connection!.CallMethodAsync(message).ConfigureAwait(false);
+        logger.LogInformation("Registered with StatusNotifierWatcher as {BusName}.", connection.UniqueName);
+    }
+
+    private MessageBuffer CreateRegisterMessage()
+    {
+        using var writer = connection!.GetMessageWriter();
         writer.WriteMethodCallHeader(
             destination: "org.kde.StatusNotifierWatcher",
             path: "/StatusNotifierWatcher",
@@ -64,10 +73,8 @@ public class TrayService : IHostedService, IDisposable
             member: "RegisterStatusNotifierItem",
             signature: "s",
             flags: MessageFlags.None);
-        writer.WriteString(lowLevelConnection.UniqueName!);
-
-        await lowLevelConnection.CallMethodAsync(writer.CreateMessage()).ConfigureAwait(false);
-        logger.LogInformation("Registered with StatusNotifierWatcher as {BusName}.", lowLevelConnection.UniqueName);
+        writer.WriteString(connection.UniqueName!);
+        return writer.CreateMessage();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

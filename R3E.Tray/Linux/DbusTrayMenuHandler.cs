@@ -8,7 +8,7 @@ using Tmds.DBus.Protocol;
 /// D-Bus method handler for the com.canonical.dbusmenu interface.
 /// Provides a simple context menu with a single "Quit" item at /MenuBar.
 /// </summary>
-internal sealed class DbusTrayMenuHandler : IMethodHandler
+internal sealed class DbusTrayMenuHandler : IPathMethodHandler
 {
     private const int RootId = 0;
     private const int QuitId = 1;
@@ -72,7 +72,7 @@ internal sealed class DbusTrayMenuHandler : IMethodHandler
         this.quitCallback = quitCallback;
     }
 
-    public bool RunMethodHandlerSynchronously(Message message) => true;
+    public bool HandlesChildPaths => false;
 
     public ValueTask HandleMethodAsync(MethodContext context)
     {
@@ -139,24 +139,33 @@ internal sealed class DbusTrayMenuHandler : IMethodHandler
         reader.ReadArrayOfString(); // propertyNames (ignored, return all)
 
         // Response signature: u(ia{sv}av)
-        using var writer = context.CreateReplyWriter("u(ia{sv}av)");
-        writer.WriteUInt32(1); // revision
+        // MessageWriter is a ref struct: a 'using' local cannot be passed by ref,
+        // so dispose manually via try/finally.
+        var writer = context.CreateReplyWriter("u(ia{sv}av)");
+        try
+        {
+            writer.WriteUInt32(1); // revision
 
-        if (parentId == RootId)
-        {
-            WriteRootLayout(ref writer);
-        }
-        else if (parentId == QuitId)
-        {
-            WriteQuitItemLayout(ref writer);
-        }
-        else
-        {
-            // Unknown item, return empty
-            WriteEmptyItemLayout(ref writer, parentId);
-        }
+            if (parentId == RootId)
+            {
+                WriteRootLayout(ref writer);
+            }
+            else if (parentId == QuitId)
+            {
+                WriteQuitItemLayout(ref writer);
+            }
+            else
+            {
+                // Unknown item, return empty
+                WriteEmptyItemLayout(ref writer, parentId);
+            }
 
-        context.Reply(writer.CreateMessage());
+            context.Reply(writer.CreateMessage());
+        }
+        finally
+        {
+            writer.Dispose();
+        }
     }
 
     private static void WriteRootLayout(ref MessageWriter writer)
@@ -332,9 +341,16 @@ internal sealed class DbusTrayMenuHandler : IMethodHandler
         reader.ReadString(); // interface
         var propertyName = reader.ReadString();
 
-        using var writer = context.CreateReplyWriter("v");
-        WriteMenuPropertyAsVariant(ref writer, propertyName);
-        context.Reply(writer.CreateMessage());
+        var writer = context.CreateReplyWriter("v");
+        try
+        {
+            WriteMenuPropertyAsVariant(ref writer, propertyName);
+            context.Reply(writer.CreateMessage());
+        }
+        finally
+        {
+            writer.Dispose();
+        }
     }
 
     private static void HandlePropertyGetAll(MethodContext context)
@@ -342,18 +358,25 @@ internal sealed class DbusTrayMenuHandler : IMethodHandler
         var reader = context.Request.GetBodyReader();
         reader.ReadString(); // interface
 
-        using var writer = context.CreateReplyWriter("a{sv}");
-        var dictStart = writer.WriteDictionaryStart();
-
-        foreach (var prop in (ReadOnlySpan<string>)["Version", "TextDirection", "Status", "IconThemePath"])
+        var writer = context.CreateReplyWriter("a{sv}");
+        try
         {
-            writer.WriteDictionaryEntryStart();
-            writer.WriteString(prop);
-            WriteMenuPropertyAsVariant(ref writer, prop);
-        }
+            var dictStart = writer.WriteDictionaryStart();
 
-        writer.WriteDictionaryEnd(dictStart);
-        context.Reply(writer.CreateMessage());
+            foreach (var prop in (ReadOnlySpan<string>)["Version", "TextDirection", "Status", "IconThemePath"])
+            {
+                writer.WriteDictionaryEntryStart();
+                writer.WriteString(prop);
+                WriteMenuPropertyAsVariant(ref writer, prop);
+            }
+
+            writer.WriteDictionaryEnd(dictStart);
+            context.Reply(writer.CreateMessage());
+        }
+        finally
+        {
+            writer.Dispose();
+        }
     }
 
     private static void WriteMenuPropertyAsVariant(ref MessageWriter writer, string propertyName)

@@ -8,7 +8,7 @@ using Tmds.DBus.Protocol;
 /// D-Bus method handler for the org.kde.StatusNotifierItem interface.
 /// Exposes tray icon properties and handles introspection at /StatusNotifierItem.
 /// </summary>
-internal sealed class StatusNotifierItemHandler : IMethodHandler
+internal sealed class StatusNotifierItemHandler : IPathMethodHandler
 {
     private static readonly string[] PropertyNames =
     [
@@ -72,21 +72,23 @@ internal sealed class StatusNotifierItemHandler : IMethodHandler
 
     public StatusNotifierItemHandler(int iconWidth, int iconHeight, byte[] iconArgbData)
     {
-        var pixmapArray = new Array<Struct<int, int, byte[]>>
+        // The variant type model only accepts D-Bus types as generic arguments,
+        // so pixel data must be wrapped in Array<byte> rather than byte[].
+        var pixmapArray = new Array<Struct<int, int, Array<byte>>>
         {
-            new(iconWidth, iconHeight, iconArgbData)
+            new(iconWidth, iconHeight, new Array<byte>(new List<byte>(iconArgbData)))
         };
         iconPixmapVariant = pixmapArray;
 
-        var emptyPixmapArray = new Array<Struct<int, int, byte[]>>();
+        var emptyPixmapArray = new Array<Struct<int, int, Array<byte>>>();
         emptyPixmapArrayVariant = emptyPixmapArray;
 
-        var tooltip = new Struct<string, Array<Struct<int, int, byte[]>>, string, string>(
-            "", new Array<Struct<int, int, byte[]>>(), "YaHud", "");
+        var tooltip = new Struct<string, Array<Struct<int, int, Array<byte>>>, string, string>(
+            "", new Array<Struct<int, int, Array<byte>>>(), "YaHud", "");
         tooltipVariant = tooltip;
     }
 
-    public bool RunMethodHandlerSynchronously(Message message) => true;
+    public bool HandlesChildPaths => false;
 
     public ValueTask HandleMethodAsync(MethodContext context)
     {
@@ -139,9 +141,18 @@ internal sealed class StatusNotifierItemHandler : IMethodHandler
         reader.ReadString(); // interface name
         var propertyName = reader.ReadString();
 
-        using var writer = context.CreateReplyWriter("v");
-        WritePropertyAsVariant(ref writer, propertyName);
-        context.Reply(writer.CreateMessage());
+        // MessageWriter is a ref struct: a 'using' local cannot be passed by ref,
+        // so dispose manually via try/finally.
+        var writer = context.CreateReplyWriter("v");
+        try
+        {
+            WritePropertyAsVariant(ref writer, propertyName);
+            context.Reply(writer.CreateMessage());
+        }
+        finally
+        {
+            writer.Dispose();
+        }
     }
 
     private void HandlePropertyGetAll(MethodContext context)
@@ -149,18 +160,25 @@ internal sealed class StatusNotifierItemHandler : IMethodHandler
         var reader = context.Request.GetBodyReader();
         reader.ReadString(); // interface name
 
-        using var writer = context.CreateReplyWriter("a{sv}");
-        var dictStart = writer.WriteDictionaryStart();
-
-        foreach (var prop in PropertyNames)
+        var writer = context.CreateReplyWriter("a{sv}");
+        try
         {
-            writer.WriteDictionaryEntryStart();
-            writer.WriteString(prop);
-            WritePropertyAsVariant(ref writer, prop);
-        }
+            var dictStart = writer.WriteDictionaryStart();
 
-        writer.WriteDictionaryEnd(dictStart);
-        context.Reply(writer.CreateMessage());
+            foreach (var prop in PropertyNames)
+            {
+                writer.WriteDictionaryEntryStart();
+                writer.WriteString(prop);
+                WritePropertyAsVariant(ref writer, prop);
+            }
+
+            writer.WriteDictionaryEnd(dictStart);
+            context.Reply(writer.CreateMessage());
+        }
+        finally
+        {
+            writer.Dispose();
+        }
     }
 
     private void WritePropertyAsVariant(ref MessageWriter writer, string propertyName)
