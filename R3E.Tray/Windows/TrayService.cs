@@ -4,6 +4,7 @@ namespace R3E.Tray.Windows;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 public class TrayService : IHostedService, IDisposable
@@ -33,9 +34,13 @@ public class TrayService : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr handle);
+
     private void RunWinFormsMessageLoop()
     {
         NotifyIcon? trayIcon = null;
+        Icon? icon = null;
         try
         {
             System.Windows.Forms.Application.EnableVisualStyles();
@@ -51,8 +56,21 @@ public class TrayService : IHostedService, IDisposable
                 return;
             }
 
-            using var bitmap = new Bitmap(iconStream);
-            var icon = Icon.FromHandle(bitmap.GetHicon());
+            using (var bitmap = new Bitmap(iconStream))
+            {
+                // Icon.FromHandle does not own the HICON, so clone the icon and
+                // destroy the native handle to avoid leaking it.
+                var hIcon = bitmap.GetHicon();
+                try
+                {
+                    using var handleIcon = Icon.FromHandle(hIcon);
+                    icon = (Icon)handleIcon.Clone();
+                }
+                finally
+                {
+                    DestroyIcon(hIcon);
+                }
+            }
 
             trayIcon = new NotifyIcon
             {
@@ -88,6 +106,7 @@ public class TrayService : IHostedService, IDisposable
                 trayIcon.Visible = false;
                 trayIcon.Dispose();
             }
+            icon?.Dispose();
         }
     }
 

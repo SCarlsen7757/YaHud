@@ -139,10 +139,18 @@ jobs:
           cp packaging/appimage/yahud.png ./AppDir/.DirIcon
 
       - name: Build AppImage
+        env:
+          APPIMAGETOOL_VERSION: "1.9.1"
+          APPIMAGETOOL_SHA256: "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0"
+          RUNTIME_VERSION: "20251108"
+          RUNTIME_SHA256: "2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d"
         run: |
-          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          wget -q "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage"
+          wget -q "https://github.com/AppImage/type2-runtime/releases/download/${RUNTIME_VERSION}/runtime-x86_64"
+          echo "${APPIMAGETOOL_SHA256}  appimagetool-x86_64.AppImage" | sha256sum -c -
+          echo "${RUNTIME_SHA256}  runtime-x86_64" | sha256sum -c -
           chmod +x appimagetool-x86_64.AppImage
-          ARCH=x86_64 ./appimagetool-x86_64.AppImage --appimage-extract-and-run ./AppDir ./YaHud-v${{ inputs.version }}-x86_64.AppImage
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage --appimage-extract-and-run --runtime-file runtime-x86_64 ./AppDir ./YaHud-v${{ inputs.version }}-x86_64.AppImage
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
