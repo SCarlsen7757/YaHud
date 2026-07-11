@@ -10,6 +10,13 @@ set -euo pipefail
 
 APP=${1:?usage: $0 <path to YaHud executable or .dll>}
 
+for dep in dbus-run-session busctl python3; do
+    command -v "$dep" >/dev/null 2>&1 \
+        || { echo "missing dependency: $dep" >&2; exit 1; }
+done
+python3 -c 'import dbus, dbus.mainloop.glib, gi' 2>/dev/null \
+    || { echo "missing python modules: install python3-dbus and python3-gi" >&2; exit 1; }
+
 # Re-exec inside a private session bus.
 if [ -z "${TRAY_TEST_IN_SESSION:-}" ]; then
     exec dbus-run-session -- env TRAY_TEST_IN_SESSION=1 bash "$0" "$APP"
@@ -17,7 +24,16 @@ fi
 
 BUS="--address=${DBUS_SESSION_BUS_ADDRESS}"
 WORKDIR=$(mktemp -d)
-trap 'kill $(jobs -p) 2>/dev/null; rm -rf "$WORKDIR"' EXIT
+
+cleanup() {
+    local pids
+    pids=$(jobs -p)
+    if [ -n "$pids" ]; then
+        kill $pids 2>/dev/null || true
+    fi
+    rm -rf "$WORKDIR"
+}
+trap cleanup EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 pass() { echo "PASS: $*"; }

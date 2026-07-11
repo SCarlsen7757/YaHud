@@ -11,12 +11,12 @@
     <!-- Windows-specific: enable WinForms for NotifyIcon tray support -->
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
         <UseWindowsForms>true</UseWindowsForms>
-        <DefineConstants>WINDOWS</DefineConstants>
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
     </PropertyGroup>
 
     <!-- Linux/Unix-specific packages -->
     <PropertyGroup Condition="'$(OS)' == 'Unix'">
-        <DefineConstants>LINUX</DefineConstants>
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
     </PropertyGroup>
     
     <ItemGroup Condition="'$(OS)' == 'Unix'">
