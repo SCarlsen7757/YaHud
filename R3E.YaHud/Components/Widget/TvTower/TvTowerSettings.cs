@@ -5,50 +5,36 @@ namespace R3E.YaHud.Components.Widget.TvTower
 {
     public class TvTowerSettings : BasicSettings
     {
+        private const string ColorsCategory = "Colors";
+        private const string PitStopCategory = "Pit Stop";
+        private const string DriverRowsCategory = "Driver Rows";
+
         private bool showPitWindow = true;
         private bool colorHeaderBySessionFlag = false;
         private int topDriverCount = 3;
         private int contextDriverCount = 2;
 
-        [SettingType("Text Color", SettingsTypes.ColorPicker, 10,
-            ViewMode = SettingsViewMode.Intermediate)]
+        [SettingType("Text Color", SettingsTypes.ColorPicker, 1,
+            ViewMode = SettingsViewMode.Intermediate,
+            Category = ColorsCategory)]
         public string TextColor { get; set; } = "#ffffff";
 
-        [SettingType("Pit Stop Served Color", SettingsTypes.ColorPicker, 20,
-            ViewMode = SettingsViewMode.Expert)]
-        public string PitStopServedColor { get; set; } = "#007000";
-
-        [SettingType("Pit Stop Not Served Color", SettingsTypes.ColorPicker, 21,
-            ViewMode = SettingsViewMode.Expert)]
-        public string PitStopNotServedColor { get; set; } = "#ad5c00";
-
-        [SettingType("Header Color", SettingsTypes.ColorPicker, 30,
+        [SettingType("Header Color", SettingsTypes.ColorPicker, 2,
             Description = "Table header background color",
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Intermediate,
+            Category = ColorsCategory)]
         public string HeaderColor { get; set; } = "#1E1E1E";
 
-        [SettingType("Player Row Color", SettingsTypes.ColorPicker, 40,
+        [SettingType("Player Row Color", SettingsTypes.ColorPicker, 3,
             Description = "Highlight color for player's row",
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Intermediate,
+            Category = ColorsCategory)]
         public string PlayerRowColor { get; set; } = "#FF4CAF";
 
-        [SettingType("Show Pit Window", SettingsTypes.Checkbox, 50,
-            Description = "Show mandatory pit window status above the table",
-            ViewMode = SettingsViewMode.Beginner)]
-        public bool ShowPitWindow
-        {
-            get => showPitWindow;
-            set
-            {
-                if (value == showPitWindow) return;
-                showPitWindow = value;
-                NotifyPropertyChanged();
-            }
-        }
-
-        [SettingType("Color Header By Session Flag", SettingsTypes.Checkbox, 60,
+        [SettingType("Color Header By Session Flag", SettingsTypes.Checkbox, 4,
             Description = "Color the table header by the current session flag (yellow, green, checkered)",
-            ViewMode = SettingsViewMode.Intermediate)]
+            ViewMode = SettingsViewMode.Intermediate,
+            Category = ColorsCategory)]
         public bool ColorHeaderBySessionFlag
         {
             get => colorHeaderBySessionFlag;
@@ -60,10 +46,40 @@ namespace R3E.YaHud.Components.Widget.TvTower
             }
         }
 
-        [SettingType("Top Driver Count", SettingsTypes.Number, 70,
+
+
+        [SettingType("Show Pit Window", SettingsTypes.Checkbox, 1,
+            Description = "Show mandatory pit window status above the table",
+            ViewMode = SettingsViewMode.Beginner,
+            Category = PitStopCategory)]
+        public bool ShowPitWindow
+        {
+            get => showPitWindow;
+            set
+            {
+                if (value == showPitWindow) return;
+                showPitWindow = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        [SettingType("Pit Stop Served Color", SettingsTypes.ColorPicker, 2,
+            ViewMode = SettingsViewMode.Expert,
+            Category = PitStopCategory)]
+        public string PitStopServedColor { get; set; } = "#007000";
+
+        [SettingType("Pit Stop Not Served Color", SettingsTypes.ColorPicker, 3,
+            ViewMode = SettingsViewMode.Expert,
+            Category = PitStopCategory)]
+        public string PitStopNotServedColor { get; set; } = "#ad5c00";
+
+
+
+        [SettingType("Top Driver Count", SettingsTypes.Number, 1,
             Min = 1, Max = 10, Step = 1,
             Description = "Number of top drivers always shown before the split",
-            ViewMode = SettingsViewMode.Expert)]
+            ViewMode = SettingsViewMode.Expert,
+            Category = DriverRowsCategory)]
         public int TopDriverCount
         {
             get => topDriverCount;
@@ -75,10 +91,11 @@ namespace R3E.YaHud.Components.Widget.TvTower
             }
         }
 
-        [SettingType("Context Driver Count", SettingsTypes.Number, 71,
+        [SettingType("Context Driver Count", SettingsTypes.Number, 2,
             Min = 1, Max = 5, Step = 1,
             Description = "Number of drivers shown ahead and behind the player when the table is split",
-            ViewMode = SettingsViewMode.Expert)]
+            ViewMode = SettingsViewMode.Expert,
+            Category = DriverRowsCategory)]
         public int ContextDriverCount
         {
             get => contextDriverCount;
