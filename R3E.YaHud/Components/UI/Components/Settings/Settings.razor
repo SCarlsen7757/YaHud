@@ -1,0 +1,47 @@
+@using R3E.YaHud.Services.Settings
+@using R3E.YaHud.Components.UI.Components
+@using R3E.YaHud.Components.Widget
+@using R3E.YaHud.Components.Widget.Core
+@using System.ComponentModel
+@inject IJSRuntime JS
+
+<div class="overlay" @onclick="OnClose">
+    <div class="settings-overlay-layout">
+        <CascadingValue Value="events">
+            <CascadingValue Value="SettingsContext">
+                <SettingsMasterPanel OnClose="OnClose" Widgets="Widgets" />
+            </CascadingValue>
+
+            @if (SettingsContext.SelectedWidget is not null) {
+                <SettingsDetailPanel Widget="SettingsContext.SelectedWidget" />
+            }
+        </CascadingValue>
+    </div>
+                    </div>
+
+@code {
+    [Parameter] public List<IWidget> Widgets { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] public SettingsService SettingsService { get; set; } = default!;
+
+    private SettingsContext SettingsContext = null!;
+    private readonly SettingPanelEvents events = new SettingPanelEvents();
+
+    private void OpenDetailsForWidget(IWidget widget)
+    {
+        SettingsContext.SelectedWidget = widget;
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        SettingsContext = new()
+            {
+                OpenDetails = OpenDetailsForWidget
+            };
+    }
+
+}

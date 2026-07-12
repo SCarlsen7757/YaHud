@@ -13,9 +13,9 @@ namespace R3E.YaHud.Components.Widget.CarDamage
 
         [SettingType("Worn Threshold", SettingsTypes.Slider, 10,
             Description = "The threshold at which the car is considered worn.",
-            Max = 1.0f,
-            Min = 0.0f,
-            Step = 0.01f,
+            Max = 1.0,
+            Min = 0.0,
+            Step = 0.01,
             ViewMode = SettingsViewMode.Intermediate)]
         public float WornThreshold { get; set; } = 0.75f;
 
@@ -26,9 +26,9 @@ namespace R3E.YaHud.Components.Widget.CarDamage
 
         [SettingType("Damaged Threshold", SettingsTypes.Slider, 10,
             Description = "The threshold at which the car is considered damaged.",
-            Max = 1.0f,
-            Min = 0.0f,
-            Step = 0.01f,
+            Max = 1.0,
+            Min = 0.0,
+            Step = 0.01,
             ViewMode = SettingsViewMode.Intermediate)]
         public float DamagedThreshold { get; set; } = 0.35f;
 

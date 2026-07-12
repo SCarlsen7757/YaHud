@@ -1,0 +1,36 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+<div class="category-container">
+    <h3 class="category-title">@Name</h3>
+    <ul class="category-widgets">
+        @foreach (var widget in AlphabeticallySortedWidgets)
+        {
+            <li class="widget-item @(SettingsContext.SelectedWidget?.ElementId == widget.ElementId ? "selected" : "")" @onclick="() => SettingsContext.OpenDetails!(widget)">
+                <div class="select-effect"></div>
+                <h4 class="widget-name">@widget.Name</h4>
+                <div class="widget-actions">
+                    <button class="btn dark no-focus @(widget.Settings!.Visible ? "" : "not-visible")" aria-label="Toggle visibility" @onclick="() => ToggleWidgetVisibility(widget)" @onclick:stopPropagation> 
+                        <Icon Name=@(widget.Settings!.Visible ? "eye" : "eye-slash") />
+                    </button>
+
+                    <SettingsWidgetMenu Widget="widget" />
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter] public required string Name { get; set; }
+    [Parameter] public required IEnumerable<IWidget> Widgets { get; set; }
+    [CascadingParameter] public SettingsContext SettingsContext { get; set; } = null!;
+
+    private IEnumerable<IWidget> AlphabeticallySortedWidgets => Widgets.OrderBy(w => w.Name);
+
+    private void ToggleWidgetVisibility(IWidget widget)
+    {
+        if (widget.Settings != null)
+        {
+            widget.Settings.Visible = !widget.Settings.Visible;
+        }
+    }
+}
