@@ -2,7 +2,6 @@
     z-index: 5000;
     text-align: left;
     width: 380px;
-    height: 500px;
     background: rgba(0, 0, 0, 0.25);
     border-radius: 4px;
     white-space: nowrap;
@@ -20,7 +19,7 @@
 }
 
     .tv-table thead {
-        background: rgb(0, 0, 0, 0,80);
+        background: rgba(0, 0, 0, 0.80);
         font-size: 0.8rem;
         text-align: left;
     }
@@ -65,16 +64,30 @@
             text-align: center;
         }
 
-.tv-row:nth-child(odd) {
+.tv-row {
     background: rgba(0, 0, 0, 0.25);
 }
 
-.tv-row:nth-child(even) {
+.tv-row-alt {
     background: rgba(255, 255, 255, 0.06);
 }
 
 .tv-row-player {
     font-weight: 600;
+}
+
+.tv-separator td {
+    padding: 0;
+    height: 6px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.45);
+    background: transparent;
+}
+
+.tv-pit-window {
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 2px 4px;
+    border-radius: 4px 4px 0 0;
 }
 
 .tv-manu-img {
