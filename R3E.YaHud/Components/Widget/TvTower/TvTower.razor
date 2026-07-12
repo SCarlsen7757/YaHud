@@ -1,15 +1,21 @@
-﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Components.Widget.Core
 @using R3E.Features.Driver
 @inherits HudWidgetBase<TvTowerSettings>
-@implements IDisposable
 @inject DriverService DriverService
 
 
 <WidgetHost Owner="this">
-    <div id="@ElementId" class="tv-tower-widget">
+    @{
+        var (drivers, separatorIndex) = BuildDisplayList();
+    }
+    <div class="tv-tower-widget" style="color:@Settings!.TextColor">
+        @if (Settings.ShowPitWindow && GetPitWindowDisplay() is (string pitWindowText, string pitWindowColor))
+        {
+            <div class="tv-pit-window" style="background-color:@pitWindowColor">@pitWindowText</div>
+        }
         <table class="tv-table">
             <thead>
-                <tr>
+                <tr style="background-color:@GetHeaderColor()">
                     <th class="col-pos"></th>
                     <th class="col-manu"></th>
                     <th class="col-car"></th>
@@ -20,15 +26,21 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var d in drivers)
+                @for (var i = 0; i < drivers.Count; i++)
                 {
-                    var rowClasses = "tv-row";
+                    if (i == separatorIndex)
+                    {
+                        <tr class="tv-separator"><td colspan="7"></td></tr>
+                    }
+
+                    var d = drivers[i];
+                    var rowClasses = d.Position % 2 == 0 ? "tv-row tv-row-alt" : "tv-row";
                     if (d.IsPlayer)
                     {
                         rowClasses += " tv-row-player";
                     }
 
-                    <tr class="@rowClasses">
+                    <tr class="@rowClasses" style="@GetRowStyle(d)">
                         <td class="col-pos">@d.Position</td>
 
                         <td class="col-manu">
@@ -52,6 +64,9 @@
 
 @code {
 
+    private const string PitWindowClosedColor = "#505050";
+    private const string PitWindowStoppedColor = "#154ADB";
+
     public override string ElementId => "tvTowerWidget";
     public override string Name => "TV Tower";
     public override string Category => "Utility";
@@ -61,35 +76,167 @@
 
     public override bool Collidable => true;
 
-    private List<Features.Driver.DriverInfo> drivers = new();
+    private List<DriverInfo> allDrivers = new();
+
+    private Constant.PitWindow pitWindowStatus = Constant.PitWindow.Unavailable;
+    private int pitWindowStart = -1;
+    private int pitWindowEnd = -1;
+    private Constant.SessionLengthFormat sessionLengthFormat = Constant.SessionLengthFormat.Unavailable;
+    private int currentLap = -1;
+    private double elapsedMinutes = -1;
+    private Data.Flags flags;
 
     public TvTower()
     {
         UseR3EData = true;
     }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
     protected override void Update()
     {
-        drivers = DriverService.GetAllDriversByPosition().ToList();
+        Data.Shared data = TelemetryService.Data.Raw;
+
+        pitWindowStatus = (Constant.PitWindow)data.PitWindowStatus;
+        pitWindowStart = data.PitWindowStart;
+        pitWindowEnd = data.PitWindowEnd;
+        sessionLengthFormat = (Constant.SessionLengthFormat)data.SessionLengthFormat;
+        currentLap = data.CompletedLaps >= 0 ? data.CompletedLaps + 1 : -1;
+        elapsedMinutes = data.SessionTimeDuration > 0 && data.SessionTimeRemaining >= 0
+            ? (data.SessionTimeDuration - data.SessionTimeRemaining) / 60.0
+            : -1;
+        flags = data.Flags;
+
+        allDrivers = DriverService.GetAllDriversByPosition().ToList();
     }
 
     protected override void UpdateWithTestData()
     {
-        drivers = new List<Features.Driver.DriverInfo>
+        pitWindowStatus = Constant.PitWindow.Open;
+        pitWindowStart = 10;
+        pitWindowEnd = 25;
+        sessionLengthFormat = Constant.SessionLengthFormat.TimeBased;
+        currentLap = 12;
+        elapsedMinutes = 15;
+        flags = new Data.Flags { SectorYellow = new Data.Sectors<int> { Sector2 = 1 } };
+
+        allDrivers = new List<DriverInfo>
         {
             new() { Name = "K. Magnussen", Position = 1, CarNumber = 15, BestLapTime = TimeSpan.FromSeconds(82.532), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Served}  },
-            new() { Name = "M. Bortolotti", Position = 2, CarNumber = 63, TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp", NumPitStops = 0 },
-            new() { Name = "K. Estre", Position = 3, CarNumber = 6, BestLapTime = TimeSpan.FromSeconds(80.713), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
-            new() { Name = "You", Position = 4, CarNumber = 7, TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, BestLapTime = TimeSpan.FromSeconds(85.790), IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp", NumPitStops = 1, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
-            new() { Name = "M. Engel", Position = 5, CarNumber = 5, TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, BestLapTime = TimeSpan.FromSeconds(88.715), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp", NumPitStops = 1 },
-            new() { Name = "O. Jarvis", Position = 6, CarNumber = 77, BestLapTime = TimeSpan.FromSeconds(95.391), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Hard, TireSubtypeRear = R3E.Constant.TireSubtype.Hard, NumPitStops = 1 },
-            new() { Name = "N. Cassidy", Position = 7, CarNumber = 37, BestLapTime = new TimeSpan(0, 1, 29, 191), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable, FinishStatus = (int)Constant.FinishStatus.DNQ} },
+            new() { Name = "M. Bortolotti", Position = 2, CarNumber = 63, BestLapTime = TimeSpan.FromSeconds(82.897), TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp", NumPitStops = 0 },
+            new() { Name = "K. Estre", Position = 3, CarNumber = 6, BestLapTime = TimeSpan.FromSeconds(83.113), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
+            new() { Name = "M. Engel", Position = 4, CarNumber = 5, BestLapTime = TimeSpan.FromSeconds(83.715), TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp", NumPitStops = 1 },
+            new() { Name = "O. Jarvis", Position = 5, CarNumber = 77, BestLapTime = TimeSpan.FromSeconds(84.391), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Hard, TireSubtypeRear = R3E.Constant.TireSubtype.Hard, NumPitStops = 1 },
+            new() { Name = "N. Cassidy", Position = 6, CarNumber = 37, BestLapTime = TimeSpan.FromSeconds(84.812), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
+            new() { Name = "L. Vanthoor", Position = 7, CarNumber = 32, BestLapTime = TimeSpan.FromSeconds(85.042), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/porsche-3013-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0 },
+            new() { Name = "R. Rast", Position = 8, CarNumber = 33, BestLapTime = TimeSpan.FromSeconds(85.277), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/bmw-2550-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Served} },
+            new() { Name = "F. Rosenqvist", Position = 9, CarNumber = 51, BestLapTime = TimeSpan.FromSeconds(85.463), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0 },
+            new() { Name = "You", Position = 10, CarNumber = 7, BestLapTime = TimeSpan.FromSeconds(85.790), IsPlayer = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/ferrari-10395-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, NumPitStops = 1, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable} },
+            new() { Name = "T. Blomqvist", Position = 11, CarNumber = 20, BestLapTime = TimeSpan.FromSeconds(86.114), IsInPitLane = true, ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/lamborghini-9930-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Hard, TireSubtypeRear = R3E.Constant.TireSubtype.Hard, NumPitStops = 0 },
+            new() { Name = "D. Juncadella", Position = 12, CarNumber = 4, BestLapTime = TimeSpan.FromSeconds(86.502), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mercedes-2552-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Soft, TireSubtypeRear = R3E.Constant.TireSubtype.Soft, NumPitStops = 0 },
+            new() { Name = "A. Simonsen", Position = 13, CarNumber = 95, BestLapTime = TimeSpan.FromSeconds(87.239), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/mazda-10978-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0 },
+            new() { Name = "J. Green", Position = 14, CarNumber = 53, BestLapTime = TimeSpan.FromSeconds(89.191), ManufacturerImageUrl = "https://prod.r3eassets.com/assets/content/carmanufactor/nsu-4814-image-small.webp", TireSubtypeFront = R3E.Constant.TireSubtype.Medium, TireSubtypeRear = R3E.Constant.TireSubtype.Medium, NumPitStops = 0, DriverData = new(){PitStopStatus = (int)Constant.PitStopStatus.Unavailable, FinishStatus = (int)Constant.FinishStatus.DNQ} },
         };
+    }
+
+    // Computed at render time so TopDriverCount/ContextDriverCount changes apply
+    // immediately, without waiting for the next telemetry/test data update.
+    private (List<DriverInfo> Drivers, int SeparatorIndex) BuildDisplayList()
+    {
+        var all = allDrivers;
+        var topCount = Math.Max(1, Settings!.TopDriverCount);
+        var contextCount = Math.Max(0, Settings.ContextDriverCount);
+        var targetCount = topCount + (2 * contextCount) + 1;
+
+        if (all.Count <= targetCount)
+        {
+            return (all, -1);
+        }
+
+        var playerIndex = all.FindIndex(d => d.IsPlayer);
+        if (playerIndex < 0)
+        {
+            return (all.Take(targetCount).ToList(), -1);
+        }
+
+        var windowStart = playerIndex - contextCount;
+        var windowEnd = playerIndex + contextCount;
+        if (windowEnd > all.Count - 1)
+        {
+            windowStart -= windowEnd - (all.Count - 1);
+            windowEnd = all.Count - 1;
+        }
+
+        if (windowStart <= topCount)
+        {
+            return (all.Take(targetCount).ToList(), -1);
+        }
+
+        var display = all.Take(topCount).Concat(all.GetRange(windowStart, windowEnd - windowStart + 1)).ToList();
+        return (display, topCount);
+    }
+
+    private string GetHeaderColor()
+    {
+        if (Settings!.ColorHeaderBySessionFlag)
+        {
+            if (flags.Checkered == 1)
+            {
+                return "#C0C0C0";
+            }
+            if (flags.Yellow == 1 || flags.SectorYellow.Sector1 == 1 || flags.SectorYellow.Sector2 == 1 || flags.SectorYellow.Sector3 == 1)
+            {
+                return "#C8A000";
+            }
+            if (flags.Green == 1)
+            {
+                return "#1B7A1B";
+            }
+        }
+
+        return Settings.HeaderColor;
+    }
+
+    private string GetRowStyle(DriverInfo driver)
+    {
+        return driver.IsPlayer ? $"background-color:{Settings!.PlayerRowColor}" : string.Empty;
+    }
+
+    private (string Text, string Color)? GetPitWindowDisplay()
+    {
+        var now = sessionLengthFormat == Constant.SessionLengthFormat.LapBased ? currentLap : elapsedMinutes;
+
+        switch (pitWindowStatus)
+        {
+            case Constant.PitWindow.Closed:
+                if (pitWindowStart >= 0 && now >= 0 && now < pitWindowStart)
+                {
+                    return ($"Pit window opens in {FormatWindowDistance(pitWindowStart - now)}", PitWindowClosedColor);
+                }
+                return ("Pit window closed", PitWindowClosedColor);
+            case Constant.PitWindow.Open:
+                if (pitWindowEnd >= 0 && now >= 0 && now <= pitWindowEnd)
+                {
+                    return ($"Pit window open, closes in {FormatWindowDistance(pitWindowEnd - now)}", Settings!.PitStopServedColor);
+                }
+                return ("Pit window open", Settings!.PitStopServedColor);
+            case Constant.PitWindow.Stopped:
+                return ("Mandatory stop in progress", PitWindowStoppedColor);
+            case Constant.PitWindow.Completed:
+                return ("Mandatory stop served", Settings!.PitStopServedColor);
+            default:
+                // Unavailable or Disabled: no mandatory pit stop this session
+                return null;
+        }
+    }
+
+    private string FormatWindowDistance(double amount)
+    {
+        if (sessionLengthFormat == Constant.SessionLengthFormat.LapBased)
+        {
+            var laps = (int)amount;
+            return laps == 1 ? "1 lap" : $"{laps} laps";
+        }
+
+        return $"{(int)Math.Ceiling(amount)} min";
     }
 
     private static string FormatLap(TimeSpan time)
@@ -127,7 +274,7 @@
         };
     }
 
-    private string GetPitStopColor(Features.Driver.DriverInfo driver)
+    private string GetPitStopColor(DriverInfo driver)
     {
         var finishStatus = (Constant.FinishStatus)driver.DriverData.FinishStatus;
 
@@ -150,7 +297,7 @@
         };
     }
 
-    private string GetPitStatus(Features.Driver.DriverInfo driver)
+    private string GetPitStatus(DriverInfo driver)
     {
         var finishStatus = (Constant.FinishStatus)driver.DriverData.FinishStatus;
 
@@ -166,10 +313,4 @@
 
         return driver.IsInPitLane ? "PIT" : string.Empty;
     }
-
-    public override void Dispose()
-    {
-        base.Dispose();
-    }
 }
-
