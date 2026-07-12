@@ -8,6 +8,7 @@
 @using R3E.YaHud.Services
 @using R3E.YaHud.Services.Settings
 @using R3E.YaHud.Components.UI.Components
+@using R3E.YaHud.Components.UI.Components.Settings
 
 @if (!locked)
 {
@@ -38,11 +39,6 @@
     </div>
 }
 
-@if (showSettings)
-{
-    <SettingsPanel Widgets="SettingsService.Widgets" OnClose="HideSettings" />
-}
-
 @if (showAbout)
 {
     <About OnClose="HideAbout" />
@@ -62,6 +58,11 @@
     <R3E.YaHud.Components.Widget.Radar.Radar />
     <R3E.YaHud.Components.Widget.TvTower.TvTower/>
 </div>
+
+@if (showSettings)
+{
+    <Settings Widgets="SettingsService.Widgets" OnClose="HideSettings" />
+}
 
 @code {
     private bool showSettings = false;
