@@ -311,12 +311,38 @@ internal sealed class DbusTrayMenuHandler : IPathMethodHandler
         }
     }
 
-    private static void HandleEventGroup(MethodContext context)
+    private void HandleEventGroup(MethodContext context)
     {
+        // Some desktops (e.g. Cinnamon/Xfce) deliver menu clicks in a batch through
+        // EventGroup instead of the single Event method. Parse the events and honour a
+        // Quit click, otherwise the tray Quit item would silently do nothing on them.
+        var reader = context.Request.GetBodyReader();
+        var quit = false;
+
+        // events: a(isvu) - array of (id, eventId, data, timestamp)
+        var arrayEnd = reader.ReadArrayStart(DBusType.Struct);
+        while (reader.HasNext(arrayEnd))
+        {
+            var id = reader.ReadInt32();
+            var eventId = reader.ReadString();
+            reader.ReadVariantValue(); // data (unused)
+            reader.ReadUInt32();       // timestamp (unused)
+
+            if (id == QuitId && eventId == "clicked")
+            {
+                quit = true;
+            }
+        }
+
         // Response: ai (idErrors - empty, no errors)
         using var writer = context.CreateReplyWriter("ai");
         writer.WriteArray(System.Array.Empty<int>());
         context.Reply(writer.CreateMessage());
+
+        if (quit)
+        {
+            quitCallback();
+        }
     }
 
     private static void HandleProperties(MethodContext context, string? member)

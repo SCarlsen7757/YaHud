@@ -82,6 +82,19 @@ builder.Services.AddTrayService();
 
 var app = builder.Build();
 
+// Last-resort safety net: a fault in a background task (e.g. a widget update or a telemetry
+// callback) must never tear down the process, since the Blazor UI and the UDP telemetry
+// receiver are co-hosted here. Log and swallow instead of crashing.
+TaskScheduler.UnobservedTaskException += (_, e) =>
+{
+    app.Logger.LogError(e.Exception, "Unobserved task exception");
+    e.SetObserved();
+};
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    app.Logger.LogError(e.ExceptionObject as Exception, "Unhandled AppDomain exception (terminating: {IsTerminating})", e.IsTerminating);
+};
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

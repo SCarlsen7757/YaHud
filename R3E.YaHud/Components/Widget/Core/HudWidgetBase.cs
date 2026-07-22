@@ -44,7 +44,18 @@ namespace R3E.YaHud.Components.Widget.Core
         private bool initializedTransformations = false;
         private bool registeredTransformations = false;
 
-        protected abstract void Update();
+        protected virtual void Update() { }
+
+        /// <summary>
+        /// Async update hook. Runs on the Blazor dispatcher via <see cref="InvokeUpdate"/>.
+        /// The default implementation calls the synchronous <see cref="Update"/>; widgets that
+        /// need to await work (e.g. HTTP lookups) should override this instead of using async void.
+        /// </summary>
+        protected virtual Task UpdateAsync()
+        {
+            Update();
+            return Task.CompletedTask;
+        }
 
         protected abstract void UpdateWithTestData();
 
@@ -177,16 +188,31 @@ namespace R3E.YaHud.Components.Widget.Core
         {
             if (Settings == null || !Settings.Visible) return;
 
-            if (TestMode)
+            // Telemetry updates arrive on the UDP receive thread. Marshal the state mutation,
+            // any async work, and the render onto the Blazor dispatcher so the renderer never
+            // diffs a tree that is being mutated on another thread (the "insertBefore/parentNode
+            // is null" circuit crash), and so a fault stays contained to this widget instead of
+            // taking down the host (and the co-hosted UDP receiver) via an unhandled exception.
+            _ = InvokeAsync(async () =>
             {
-                UpdateWithTestData();
-            }
-            else
-            {
-                Update();
-            }
+                try
+                {
+                    if (TestMode)
+                    {
+                        UpdateWithTestData();
+                    }
+                    else
+                    {
+                        await UpdateAsync();
+                    }
 
-            InvokeAsync(StateHasChanged);
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error updating widget {ElementId}", ElementId);
+                }
+            });
         }
 
         public async Task ResetPosition()
