@@ -71,19 +71,35 @@ busctl "$BUS" list --no-legend | grep -q org.kde.StatusNotifierWatcher \
     || fail "StatusNotifierWatcher stub did not come up"
 
 # --- Start YaHud --------------------------------------------------------------
-case "$APP" in
-    *.dll) dotnet "$APP" --urls http://127.0.0.1:0 >"$WORKDIR/app.log" 2>&1 & ;;
-    *)     "$APP" --urls http://127.0.0.1:0 >"$WORKDIR/app.log" 2>&1 & ;;
-esac
-APP_PID=$!
+# Launches the app, waits until it registers as a StatusNotifierItem, and sets
+# APP_PID and NAME. Can be called again to test a fresh instance.
+start_app() {
+    : > "$WORKDIR/registered"
+    case "$APP" in
+        *.dll) dotnet "$APP" --urls http://127.0.0.1:0 >"$WORKDIR/app.log" 2>&1 & ;;
+        *)     "$APP" --urls http://127.0.0.1:0 >"$WORKDIR/app.log" 2>&1 & ;;
+    esac
+    APP_PID=$!
 
-for _ in $(seq 1 100); do
-    [ -s "$WORKDIR/registered" ] && break
-    kill -0 "$APP_PID" 2>/dev/null || { cat "$WORKDIR/app.log"; fail "app exited early"; }
-    sleep 0.1
-done
-[ -s "$WORKDIR/registered" ] || { cat "$WORKDIR/app.log"; fail "app never called RegisterStatusNotifierItem"; }
-NAME=$(cat "$WORKDIR/registered")
+    for _ in $(seq 1 100); do
+        [ -s "$WORKDIR/registered" ] && break
+        kill -0 "$APP_PID" 2>/dev/null || { cat "$WORKDIR/app.log"; fail "app exited early"; }
+        sleep 0.1
+    done
+    [ -s "$WORKDIR/registered" ] || { cat "$WORKDIR/app.log"; fail "app never called RegisterStatusNotifierItem"; }
+    NAME=$(cat "$WORKDIR/registered")
+}
+
+# Waits for the current app to exit; fails with the given message if it stays up.
+assert_stopped() {
+    for _ in $(seq 1 100); do
+        kill -0 "$APP_PID" 2>/dev/null || return 0
+        sleep 0.1
+    done
+    fail "$1"
+}
+
+start_app
 pass "RegisterStatusNotifierItem called with '$NAME'"
 
 # --- Assertions ----------------------------------------------------------------
@@ -102,16 +118,17 @@ LAYOUT=$(busctl "$BUS" -- call "$NAME" /MenuBar com.canonical.dbusmenu GetLayout
 echo "$LAYOUT" | grep -q 'Quit' || fail "GetLayout reply is missing the Quit item: $LAYOUT"
 pass "dbusmenu GetLayout returns the Quit menu"
 
+# Quit via EventGroup (a(isvu)) - the batched-click path some desktops use.
+busctl "$BUS" -- call "$NAME" /MenuBar com.canonical.dbusmenu EventGroup "a(isvu)" 1 1 clicked s "" 0 \
+    || fail "dbusmenu EventGroup(clicked)"
+assert_stopped "app did not stop after Quit was clicked via EventGroup"
+pass "Quit EventGroup event stopped the application"
+
+# Quit via the single Event (isvu) path against a fresh instance.
+start_app
 busctl "$BUS" call "$NAME" /MenuBar com.canonical.dbusmenu Event isvu 1 clicked s "" 0 \
     || fail "dbusmenu Event(clicked)"
-
-for _ in $(seq 1 100); do
-    kill -0 "$APP_PID" 2>/dev/null || break
-    sleep 0.1
-done
-if kill -0 "$APP_PID" 2>/dev/null; then
-    fail "app did not stop after Quit was clicked"
-fi
-pass "Quit menu event stopped the application"
+assert_stopped "app did not stop after Quit was clicked via Event"
+pass "Quit Event event stopped the application"
 
 echo "ALL TRAY D-BUS TESTS PASSED"
