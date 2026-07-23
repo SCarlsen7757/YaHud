@@ -15,8 +15,19 @@ namespace R3E.Features.TireWidget
         private int lastNumPitstopsPerformedFront = 0;
         private int lastNumPitstopsPerformedRear = 0;
 
-        private double tireSetStartTimeFront = 0;
-        private double tireSetStartTimeRear = 0;
+        // Latches PitAction's tire-change bits (16/32) as soon as they're seen active during a
+        // stop. NumPitstopsPerformed appears to increment once the stop completes, by which point
+        // PitAction may have already cleared back to 0, so the bits can't reliably be read only at
+        // the increment tick - they must be latched while the stop is in progress and consumed
+        // (checked + cleared) when the counter increments.
+        private bool frontTireChangeLatched;
+        private bool rearTireChangeLatched;
+
+        // These only ever track whether the front/rear tire set has been initialized at least
+        // once; no time-based tire age is computed from them. GameSimulationTime can be -1 in
+        // menus, so it must not be used as a sentinel/initialization value here.
+        private bool isFrontTireSetInitialized;
+        private bool isRearTireSetInitialized;
 
         private int tireSetStartLapFront = 0;
         private int tireSetStartLapRear = 0;
@@ -53,8 +64,11 @@ namespace R3E.Features.TireWidget
             lastNumPitstopsPerformedFront = 0;
             lastNumPitstopsPerformedRear = 0;
 
-            tireSetStartTimeFront = 0;
-            tireSetStartTimeRear = 0;
+            isFrontTireSetInitialized = false;
+            isRearTireSetInitialized = false;
+
+            frontTireChangeLatched = false;
+            rearTireChangeLatched = false;
 
             tireSetStartLapFront = 0;
             tireSetStartLapRear = 0;
@@ -76,34 +90,43 @@ namespace R3E.Features.TireWidget
 
         private void UpdateTireAge(TelemetryData data)
         {
-            if (data.Raw.NumPitstopsPerformed > lastNumPitstopsPerformedFront)
+            // PitAction is -1 when not applicable; -1 is all-bits-set in two's complement, so a
+            // raw bitmask check against it would spuriously match every bit. Only latch while it's
+            // a valid (non-negative) bitmask.
+            if (data.Raw.PitAction >= 0)
             {
                 // PitAction bit 4 (16) indicates front tires were changed
-                bool tiresChanged = (data.Raw.PitAction & 16) != 0;
-                if (tiresChanged)
+                if ((data.Raw.PitAction & 16) != 0) frontTireChangeLatched = true;
+                // PitAction bit 5 (32) indicates rear tires were changed
+                if ((data.Raw.PitAction & 32) != 0) rearTireChangeLatched = true;
+            }
+
+            if (data.Raw.NumPitstopsPerformed > lastNumPitstopsPerformedFront)
+            {
+                if (frontTireChangeLatched)
                 {
                     ResetFrontTireAge();
                 }
+                frontTireChangeLatched = false;
                 lastNumPitstopsPerformedFront = data.Raw.NumPitstopsPerformed;
             }
 
             if (data.Raw.NumPitstopsPerformed > lastNumPitstopsPerformedRear)
             {
-                // PitAction bit 5 (32) indicates rear tires were changed
-                bool tiresChanged = (data.Raw.PitAction & 32) != 0;
-                if (tiresChanged)
+                if (rearTireChangeLatched)
                 {
                     ResetRearTireAge();
                 }
+                rearTireChangeLatched = false;
                 lastNumPitstopsPerformedRear = data.Raw.NumPitstopsPerformed;
             }
 
-            if (System.Math.Abs(tireSetStartTimeFront) < System.Double.Epsilon)
+            if (!isFrontTireSetInitialized)
             {
                 ResetFrontTireAge();
             }
 
-            if (System.Math.Abs(tireSetStartTimeRear) < System.Double.Epsilon)
+            if (!isRearTireSetInitialized)
             {
                 ResetRearTireAge();
             }
@@ -120,13 +143,13 @@ namespace R3E.Features.TireWidget
         private void ResetFrontTireAge()
         {
             tireSetStartLapFront = telemetryService.Data.Raw.CompletedLaps;
-            tireSetStartTimeFront = telemetryService.Data.Raw.Player.GameSimulationTime;
+            isFrontTireSetInitialized = true;
         }
 
         private void ResetRearTireAge()
         {
             tireSetStartLapRear = telemetryService.Data.Raw.CompletedLaps;
-            tireSetStartTimeRear = telemetryService.Data.Raw.Player.GameSimulationTime;
+            isRearTireSetInitialized = true;
         }
 
         private void UpdateTireTemperatures(TelemetryData data)
