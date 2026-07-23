@@ -69,5 +69,27 @@
                 _ => throw new InvalidOperationException($"Unsupported temperature unit: {to}")
             };
         }
+
+        public static float Convert(float value, PressureUnit from, PressureUnit to)
+        {
+            if (from == to) return value;
+
+            if (value < 0)
+                return value;
+
+            float baseValue = from switch
+            {
+                PressureUnit.Kpa => value,
+                PressureUnit.Psi => value / 0.1450377377f,
+                _ => throw new InvalidOperationException($"Unsupported pressure unit: {from}")
+            };
+
+            return to switch
+            {
+                PressureUnit.Kpa => baseValue,
+                PressureUnit.Psi => baseValue * 0.1450377377f,
+                _ => throw new InvalidOperationException($"Unsupported pressure unit: {to}")
+            };
+        }
     }
 }
