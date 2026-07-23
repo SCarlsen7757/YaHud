@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework Condition="'$(OS)' == 'Windows_NT'">net10.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <!-- Windows-specific: enable WinForms for NotifyIcon tray support -->
+    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+        <UseWindowsForms>true</UseWindowsForms>
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    </PropertyGroup>
+
+    <!-- Linux/Unix-specific packages -->
+    <PropertyGroup Condition="'$(OS)' == 'Unix'">
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+    </PropertyGroup>
+    
+    <ItemGroup Condition="'$(OS)' == 'Unix'">
+        <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
+    </ItemGroup>
+
+
+    <ItemGroup> 
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <EmbeddedResource Include="Assets\**\*.*" />
+    </ItemGroup>
+
+</Project>
