@@ -274,18 +274,15 @@
         };
     }
 
+    private static bool IsSessionOver(Constant.FinishStatus status) =>
+        status is Constant.FinishStatus.DNF or Constant.FinishStatus.DNQ or Constant.FinishStatus.DQ or Constant.FinishStatus.Finished;
+
     private string GetPitStopColor(DriverInfo driver)
     {
         var finishStatus = (Constant.FinishStatus)driver.DriverData.FinishStatus;
 
-        switch (finishStatus)
-        {
-            case Constant.FinishStatus.DNF:
-            case Constant.FinishStatus.DNQ:
-            case Constant.FinishStatus.DQ:
-            case Constant.FinishStatus.Finished:
-                return string.Empty;
-        }
+        if (IsSessionOver(finishStatus))
+            return string.Empty;
 
         var pitStopStatus = (Constant.PitStopStatus)driver.DriverData.PitStopStatus;
 
@@ -301,14 +298,9 @@
     {
         var finishStatus = (Constant.FinishStatus)driver.DriverData.FinishStatus;
 
-        switch (finishStatus)
+        if (IsSessionOver(finishStatus))
         {
-            case Constant.FinishStatus.DNF:
-            case Constant.FinishStatus.DNQ:
-            case Constant.FinishStatus.DQ:
-                return finishStatus.ToString().ToUpper();
-            case Constant.FinishStatus.Finished:
-                return "FIN";
+            return finishStatus == Constant.FinishStatus.Finished ? "FIN" : finishStatus.ToString().ToUpper();
         }
 
         return driver.IsInPitLane ? "PIT" : string.Empty;
