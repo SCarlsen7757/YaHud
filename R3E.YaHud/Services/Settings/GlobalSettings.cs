@@ -8,6 +8,7 @@ namespace R3E.YaHud.Services.Settings
         public SpeedUnit SpeedUnit { get; set; } = SpeedUnit.KilometersPerHour;
         public AngularUnit AngularUnit { get; set; } = AngularUnit.RevolutionsPerMinute;
         public TemperatureUnit TemperatureUnit { get; set; } = TemperatureUnit.Celsius;
+        public PressureUnit PressureUnit { get; set; } = PressureUnit.Psi;
 
     }
 }

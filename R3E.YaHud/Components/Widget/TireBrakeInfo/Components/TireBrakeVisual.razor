@@ -1,0 +1,26 @@
+﻿<div class="tire-brake">
+    <div class="wrapper">
+        @if (LeftSideTire)
+        {
+            <div class="tire left" style="background-color:@TireLeftColor"></div>
+            <div class="tire" style="background-color:@TireMiddleColor"></div>
+            <div class="tire right" style="background-color:@TireRightColor"></div>
+            <div class="brake" style="background-color:@BrakeColor"></div>
+        } else
+        {
+            <div class="brake" style="background-color:@BrakeColor"></div>
+            <div class="tire left" style="background-color:@TireLeftColor"></div>
+            <div class="tire" style="background-color:@TireMiddleColor"></div>
+            <div class="tire right" style="background-color:@TireRightColor"></div>
+        }
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public string TireLeftColor { get; set; } = "darkgray";
+    [Parameter] public string TireMiddleColor { get; set; } = "darkgray";
+    [Parameter] public string TireRightColor { get; set; } = "darkgray";
+    [Parameter] public string BrakeColor { get; set; } = "yellow";
+    [Parameter] public bool LeftSideTire { get; set; } = true;
+}
