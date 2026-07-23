@@ -1,0 +1,104 @@
+﻿@using R3E.YaHud.Components.Widget.Core
+@using R3E.YaHud.Services.Settings
+@using System.Reflection
+
+<div class="settings-panel settings-detail" @onclick="() => Events.RaiseBodyClick()" @onclick:stopPropagation>
+    <div class="panel-header">
+        <h2>@Widget.Name</h2>
+
+        <EnumSelect TEnum="SettingsViewMode"
+                    Value="@CurrentViewMode"
+                    ValueChanged="OnViewModeChanged"
+                    LabelProvider="@(v => v.GetDisplayName())" />
+    </div>
+
+    <div class="panel-body">
+        <div class="widget-preview no-preview">
+
+        </div>
+        <div class="scrollable-area">
+            <div class="settings-columns">
+                <div class="column">
+                    @if (SettingCategories.Count() == 0)
+                    {
+                        <p class="no-settings">No Settings for current view mode.</p>
+                    }
+
+                    @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 0))
+                    {
+                        <div class="Settings-card">
+                            <h4 class="settings-category-title">@category.Key</h4>
+                            <div class="settings-list">
+                                @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
+                                {
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo.Attr!)) { continue; }
+
+                                    <SettingsRow @key=@(Widget.GetType().Name + "." + settingInfo.Prop.Name) Widget="Widget" SettingsInfo="settingInfo" />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="column">
+                    @foreach (var category in SettingCategories.Where((cat, index) => index % 2 == 1))
+                    {
+                        <div class="Settings-card">
+                            <h4 class="settings-category-title">@category.Key</h4>
+                            <div class="settings-list">
+                                @foreach (var settingInfo in category.OrderBy(si => si.Attr!.Order))
+                                {
+                                    @if (!Widget.Settings!.IsPropertyVisible(settingInfo.Attr!)) { continue; }
+
+                                    <SettingsRow @key=@(Widget.GetType().Name + "." + settingInfo.Prop.Name) Widget="Widget" SettingsInfo="settingInfo" />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="panel-footer">
+        <button class="btn dark" @onclick="() => Widget.ResetProperties()" aria-label="Clear widget settings">Clear Settings</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public required IWidget Widget { get; set; }
+
+    [CascadingParameter] public SettingPanelEvents Events { get; set; } = default!;
+
+    [Inject] public SettingsService SettingsService { get; set; } = default!;
+
+    private SettingsViewMode CurrentViewMode
+    {
+        get => SettingsService.GlobalSettings.ViewMode;
+        set
+        {
+            if (SettingsService.GlobalSettings.ViewMode != value)
+            {
+                SettingsService.GlobalSettings.ViewMode = value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private Task OnViewModeChanged(SettingsViewMode v)
+    {
+        CurrentViewMode = v;
+        return Task.CompletedTask;
+    }
+
+    public IEnumerable<IGrouping<string, SettingInfo>> SettingCategories {
+        get {
+            return Widget.Settings!.GetType()
+                .GetProperties()
+                .Select(prop => new SettingInfo { Prop = prop, Attr = prop.GetCustomAttribute<SettingTypeAttribute>()})
+                .Where(x => x.Attr != null)
+                .Where(x => x.Attr!.ViewMode <= CurrentViewMode)
+                .GroupBy(x => x.Attr!.Category);
+        }
+    }
+}

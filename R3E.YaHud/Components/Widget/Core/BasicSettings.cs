@@ -1,4 +1,5 @@
-﻿using R3E.YaHud.Services.Settings;
+﻿using R3E.YaHud.Components.UI.Components.Settings;
+using R3E.YaHud.Services.Settings;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,8 +13,8 @@ namespace R3E.YaHud.Components.Widget.Core
 
         private bool visible = true;
 
-        [SettingType("Visible", SettingsTypes.Checkbox, 0,
-            Description = "Show or hide this widget")]
+        //[SettingType("Visible", SettingsTypes.Checkbox, 0,
+        //    Description = "Show or hide this widget")]
         public bool Visible
         {
             get => visible;
@@ -25,6 +26,8 @@ namespace R3E.YaHud.Components.Widget.Core
             }
         }
 
+        public double Scale { get; set; } = 1.0;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
 
@@ -33,19 +36,12 @@ namespace R3E.YaHud.Components.Widget.Core
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public bool IsPropertyVisible(string propertyName)
+        public bool IsPropertyVisible(SettingTypeAttribute attr)
         {
-            if (string.IsNullOrEmpty(propertyName)) return true;
-
-            var propInfo = this.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (propInfo == null) return true;
-
-            var attr = propInfo.GetCustomAttribute<SettingTypeAttribute>();
-            if (attr == null) return true;
-
+            
             if (string.IsNullOrEmpty(attr.VisibilityPredicateName)) return true;
 
-            var method = this.GetType().GetMethod(attr.VisibilityPredicateName,
+            var method = this.GetType().GetMethod(attr!.VisibilityPredicateName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null || method.ReturnType != typeof(bool) || method.GetParameters().Length != 0) return true;
 

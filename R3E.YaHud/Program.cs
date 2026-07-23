@@ -1,7 +1,15 @@
 using Microsoft.AspNetCore.Components.Server;
-using R3E.API;
-using R3E.API.Image;
-using R3E.API.TimeGap;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
+using R3E.Core.SharedMemory;
+using R3E.Features.Driver;
+using R3E.Features.Fuel;
+using R3E.Features.Image;
+using R3E.Features.Radar;
+using R3E.Features.Sector;
+using R3E.Features.TimeGap;
+using R3E.Tray;
+using R3E.Features.TireWidget;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -59,11 +67,35 @@ else
     builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<RemoteSharedMemoryService>());
 }
 
-builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+// Core services
+builder.Services.AddSingleton<ITelemetryEventBus, TelemetryEventBus>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
 
+// Feature services - register independently
+builder.Services.AddSingleton<ITimeGapService, SimpleTimeGapService>();
+builder.Services.AddSingleton<FuelService>();
+builder.Services.AddSingleton<DriverService>();
+builder.Services.AddSingleton<SectorService>();
+builder.Services.AddSingleton<RadarService>();
+builder.Services.AddSingleton<TireWidgetService>();
+
+// System tray service
+builder.Services.AddTrayService();
 
 var app = builder.Build();
+
+// Last-resort safety net: a fault in a background task (e.g. a widget update or a telemetry
+// callback) must never tear down the process, since the Blazor UI and the UDP telemetry
+// receiver are co-hosted here. Log and swallow instead of crashing.
+TaskScheduler.UnobservedTaskException += (_, e) =>
+{
+    app.Logger.LogError(e.Exception, "Unobserved task exception");
+    e.SetObserved();
+};
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    app.Logger.LogError(e.ExceptionObject as Exception, "Unhandled AppDomain exception (terminating: {IsTerminating})", e.IsTerminating);
+};
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

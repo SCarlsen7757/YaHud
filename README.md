@@ -1,10 +1,12 @@
+![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-orange.svg)
+
 # YaHud - Yet Another HUD for RaceRoom Racing Experience
 
 A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experience, built with Blazor and .NET 10.
 
-![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)
+![YaHud Logo](./images/logo512x512.png)
 
 ## 🎮 Features
 
@@ -36,10 +38,11 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 1. Download the latest release from the [Releases](../../releases) page
 
    - `R3E.YaHud-win-x64-v{version}.zip` - HUD application for Windows
-   - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux
+   - `YaHud-v{version}-x86_64.AppImage` - HUD application for Linux (recommended, no installation required)
+   - `R3E.YaHud-linux-x64-v{version}.zip` - HUD application for Linux (plain binary)
    - `R3E.Relay-win-x64-v{version}.zip` - Relay service (required for Linux support)
 
-1. 2. Extract the files to your preferred location
+2. Extract the files to your preferred location (the AppImage needs no extraction)
 
 ### Configuration
 
@@ -51,7 +54,7 @@ Add the following launch option to RaceRoom (required for all platforms):
 
 To add launch options in Steam:
 
-1. 1. Right-click RaceRoom Racing Experience in your library
+1. Right-click RaceRoom Racing Experience in your library
 2. Select "Properties"
 3. In the "General" tab, add the launch option to the "Launch Options" field
 
@@ -65,34 +68,27 @@ YaHud.exe
 
 The HUD will automatically connect to RaceRoom's shared memory.
 
-#### Linux (via Relay)
+#### Linux (via Relay) 
+---
 
-To install .NET 10 on Linux write the following commands in the terminal:
-
-```bash
-wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-sudo apt update
-```
-
-After you have done this, install the app by writing this command in the terminal:
+The HUD application is fully self-contained — no .NET runtime, GTK, or other
+libraries need to be installed. The easiest way to run it is the AppImage:
 
 ```bash
-sudo apt install dotnet-sdk-10.0
+chmod +x YaHud-v{version}-x86_64.AppImage
+./YaHud-v{version}-x86_64.AppImage
 ```
 
-Wait for the installation to complete.
-When finished you can run this command to verify that you have installed .NET 10 correctly:
-
-```bash
-dotnet --version
-```
-
-It should show something like this: `10.0.100`
+**Tray icon support**: the tray icon uses the freedesktop StatusNotifierItem
+D-Bus protocol. It works out of the box on KDE Plasma, Linux Mint (Cinnamon),
+Xfce, LXQt, and Ubuntu's GNOME. On vanilla GNOME you need the
+[AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/)
+to see tray icons. If no tray is available, the HUD still runs normally —
+only the icon is missing.
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
-1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix
+1. Extract `R3E.Relay-win-x64-v{version}.zip` (e.g., `R3E.Relay-win-x64-v1.0.0.zip`) to a location accessible from your Steam Proton prefix. <br>
    An example for a path: `/.steam/steam/steamapps/compatdata/211500/pfx/drive_c/Program Files/R3ERelay` so it is already located inside your proton env.
 
 2. Start the relay service in the Proton environment using the `Terminal` command:
@@ -108,8 +104,8 @@ STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
 
 > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
-3. On your Linux machine, run the HUD application:
-
+3. On your Linux machine, run the HUD application — either the AppImage (see
+above) or the plain binary from `R3E.YaHud-linux-x64-v{version}.zip`:
 ```bash
 ./YaHud
 ```
@@ -215,7 +211,11 @@ R3E/
 │   └── wwwroot/            # Static assets
 ├── R3E/                    # Core library
 │   └── API/                # RaceRoom API and telemetry
-└── R3E.Relay/              # UDP relay service
+├── R3E.Relay/              # UDP relay service
+└── R3E.Tray/               # Tray service
+    ├── Assets              # Contains icon for tray service
+    ├── Linux               # D-Bus StatusNotifierItem tray icon for Linux
+    └── Windows             # Windows Forms code for tray app for Windows
 ```
 
 ### Creating Custom Widgets
@@ -230,16 +230,53 @@ Widgets inherit from `HudWidgetBase<TSettings>` and implement:
 Example:
 
 ```csharp
-public class MyWidget : HudWidgetBase<MyWidgetSettings>
-{
-    public override string ElementId => "myWidget";
-    public override string Name => "My Widget";
-    public override string Category => "Custom";
-    
+@using R3E.YaHud.Components.Widget.Core
+@inherits HudWidgetBase<ExampleSettings>
+@implements IDisposable
+
+<WidgetHost Owner="this">
+    <div class="example-widget">
+        <p>Widget Content</p>
+    </div>
+</WidgetHost>
+
+@code {
+    public override string ElementId { get => "exampleWidget"; }
+    public override string Name => "Example";
+    public override string Category => "ExampleCategory";
+
+    // Default placement on screen in %
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 20;
+
+    //Optional
+    public override bool Collidable => false;
+    protected override bool UseR3EData => false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        // OBS. Can't use settings here
+    }
+
+    protected override Task OnSettingsLoadedAsync()
+    {
+        // Read default settings here into widget
+    }
+
     protected override void Update()
     {
-        // Access telemetry data via TelemetryService.Data.Raw
-        // Update widget state
+        // Access data using injected services
+    }
+
+    protected override void UpdateWithTestData()
+    {
+        // Update with test values to display state of widget
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
     }
 }
 ```
@@ -252,6 +289,7 @@ public class MyWidget : HudWidgetBase<MyWidgetSettings>
 - Bootstrap 5
 - Font Awesome (icons)
 - Coloris (color picker)
+- Tmds.DBus.Protocol (Linux tray icon via D-Bus StatusNotifierItem)
 
 ### Platform Support
 

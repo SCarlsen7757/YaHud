@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=YaHud
+Comment=Yet another HUD for RaceRoom Racing Experience
+Exec=AppRun
+Icon=yahud
+Categories=Game;
+Terminal=false
+X-AppImage-Name=YaHud

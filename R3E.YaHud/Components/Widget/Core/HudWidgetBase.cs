@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using R3E.API;
+using R3E.Core.Interfaces;
+using R3E.Core.Services;
 using R3E.YaHud.Services;
 using R3E.YaHud.Services.Settings;
 
@@ -20,11 +21,11 @@ namespace R3E.YaHud.Components.Widget.Core
         protected bool TestMode => TestModeService.TestMode;
         private DotNetObjectReference<HudWidgetBase<TSettings>>? objRef;
 
+        public ElementReference ElementRef { get; set; }
         public abstract string ElementId { get; }
         public abstract string Name { get; }
         public abstract string Category { get; }
 
-        private bool visibleInitialized = false;
 
         public abstract double DefaultXPercent { get; }
         public abstract double DefaultYPercent { get; }
@@ -36,12 +37,25 @@ namespace R3E.YaHud.Components.Widget.Core
         public TSettings? Settings { get; set; }
         public Type GetSettingsType() => typeof(TSettings);
 
-        protected bool UseR3EData { get; set; } = true;
+        protected virtual bool UseR3EData { get; set; } = true;
         protected TimeSpan UpdateInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 
         private DateTime lastUpdate = DateTime.MinValue;
+        private bool initializedTransformations = false;
+        private bool registeredTransformations = false;
 
-        protected abstract void Update();
+        protected virtual void Update() { }
+
+        /// <summary>
+        /// Async update hook. Runs on the Blazor dispatcher via <see cref="InvokeUpdate"/>.
+        /// The default implementation calls the synchronous <see cref="Update"/>; widgets that
+        /// need to await work (e.g. HTTP lookups) should override this instead of using async void.
+        /// </summary>
+        protected virtual Task UpdateAsync()
+        {
+            Update();
+            return Task.CompletedTask;
+        }
 
         protected abstract void UpdateWithTestData();
 
@@ -62,32 +76,63 @@ namespace R3E.YaHud.Components.Widget.Core
                 Settings = await SettingsService.Load<TSettings>(this) ?? new() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
                 Settings.PropertyChanged += Settings_PropertyChanged;
                 await OnSettingsLoadedAsync();
-                await InvokeAsync(StateHasChanged);
+
+                StateHasChanged();
+                return;
             }
 
-            if (Settings?.Visible ?? false && (firstRender || !visibleInitialized))
+
+            if (!(Settings?.Visible ?? false))
             {
-                // Wait a bit for the DOM to be fully rendered and visible
-                await Task.Delay(100);
+                initializedTransformations = false;
+                await JS.InvokeVoidAsync("HudHelper.disableTransformation", ElementId);
+                return;
+            }
 
-                await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
+            if (!registeredTransformations)
+            {
+                registeredTransformations = true;
+                try
+                {
+                    objRef ??= DotNetObjectReference.Create(this);
 
-                visibleInitialized = true;
-                objRef ??= DotNetObjectReference.Create(this);
-                // Register draggable and pass current lock state to decide if handlers are attached
-                await JS.InvokeVoidAsync("HudHelper.registerDraggable", ElementId, objRef, Locked, Collidable);
+                    await JS.InvokeVoidAsync(
+                        "HudHelper.registerTransformable",
+                        ElementId,
+                        objRef,
+                        Locked,
+                        Collidable
+                    );
+
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected if component is disposed mid-render
+                }
+            }
+
+            if (ElementRef.Context is not null && !initializedTransformations)
+            {
+                initializedTransformations = true;
+                await JS.InvokeVoidAsync(
+                    "HudHelper.setScale",
+                    ElementId,
+                    Settings.Scale
+                );
+
+                await JS.InvokeVoidAsync(
+                    "HudHelper.setPosition",
+                    ElementId,
+                    Settings.XPercent,
+                    Settings.YPercent
+                );
+
+                await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
             }
         }
 
         private void Settings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(BasicSettings.Visible))
-            {
-                if (Settings?.Visible ?? false)
-                {
-                    visibleInitialized = false;
-                }
-            }
             InvokeAsync(StateHasChanged);
         }
 
@@ -103,9 +148,9 @@ namespace R3E.YaHud.Components.Widget.Core
                 try
                 {
                     if (newState)
-                        await JS.InvokeVoidAsync("HudHelper.disableDragging", ElementId);
+                        await JS.InvokeVoidAsync("HudHelper.disableTransformation", ElementId);
                     else
-                        await JS.InvokeVoidAsync("HudHelper.enableDragging", ElementId);
+                        await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
 
                     StateHasChanged();
                 }
@@ -143,21 +188,55 @@ namespace R3E.YaHud.Components.Widget.Core
         {
             if (Settings == null || !Settings.Visible) return;
 
-            if (TestMode)
+            // Telemetry updates arrive on the UDP receive thread. Marshal the state mutation,
+            // any async work, and the render onto the Blazor dispatcher so the renderer never
+            // diffs a tree that is being mutated on another thread (the "insertBefore/parentNode
+            // is null" circuit crash), and so a fault stays contained to this widget instead of
+            // taking down the host (and the co-hosted UDP receiver) via an unhandled exception.
+            _ = InvokeAsync(async () =>
             {
-                UpdateWithTestData();
-            }
-            else
-            {
-                Update();
-            }
+                try
+                {
+                    if (TestMode)
+                    {
+                        UpdateWithTestData();
+                    }
+                    else
+                    {
+                        await UpdateAsync();
+                    }
 
-            InvokeAsync(StateHasChanged);
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error updating widget {ElementId}", ElementId);
+                }
+            });
         }
 
         public async Task ResetPosition()
         {
-            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, DefaultXPercent, DefaultYPercent);
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, objRef, DefaultXPercent, DefaultYPercent);
+        }
+
+        public async Task ResetScale()
+        {
+            objRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("HudHelper.resetScale", ElementId, objRef);
+        }
+
+        public async Task ResetProperties()
+        {
+            if (Settings != null)
+                Settings.PropertyChanged -= Settings_PropertyChanged;
+
+            Settings = new TSettings() { XPercent = Settings!.XPercent, YPercent = Settings!.YPercent, Scale = Settings!.Scale };
+            Settings.PropertyChanged += Settings_PropertyChanged;
+
+            await SettingsService.Clear(this);
+            await InvokeAsync(StateHasChanged);
         }
 
         public async Task ClearSettings()
@@ -167,7 +246,6 @@ namespace R3E.YaHud.Components.Widget.Core
 
             Settings = new TSettings() { XPercent = DefaultXPercent, YPercent = DefaultYPercent };
             Settings.PropertyChanged += Settings_PropertyChanged;
-            visibleInitialized = false;
 
             await SettingsService.Clear(this);
             await InvokeAsync(StateHasChanged);
@@ -211,6 +289,46 @@ namespace R3E.YaHud.Components.Widget.Core
             catch (Exception ex)
             {
                 Logger?.LogError(ex, "Unexpected error in UpdateWidgetPosition for widget {ElementId}", ElementId);
+            }
+        }
+
+        [JSInvokable]
+        public async Task UpdateWidgetScale(double scale)
+        {
+            try
+            {
+                // Guard against being called after component is disposed
+                if (disposed)
+                {
+                    Logger?.LogDebug("UpdateWidgetScale called on disposed component (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                if (Settings == null)
+                {
+                    Logger?.LogWarning("UpdateWidgetScale called with null Settings (ElementId: {ElementId})", ElementId);
+                    return;
+                }
+
+                Logger?.LogDebug("UpdateWidgetScale called: {ElementId} scale={scale}",
+                    ElementId, scale);
+
+                Settings.Scale = scale;
+                await SettingsService.Save(this);
+
+                Logger?.LogDebug("UpdateWidgetScale saved successfully for {ElementId}", ElementId);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                Logger?.LogDebug(ex, "Component disposed during UpdateWidgetScale for {ElementId}", ElementId);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("disconnected") || ex.Message.Contains("disposed"))
+            {
+                Logger?.LogDebug(ex, "Widget {ElementId} is no longer available", ElementId);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Unexpected error in UpdateWidgetScale for widget {ElementId}", ElementId);
             }
         }
 
