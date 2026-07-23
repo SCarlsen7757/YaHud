@@ -68,12 +68,3 @@ hr.solid {
     border-top: 2px solid #fff;
     margin: 8px 0;
 }
-
-p.brake-temp {
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    margin-bottom: 0;
-    margin-block-start: 0;
-    margin-block-end: 0;
-    width: 15px;
-}
