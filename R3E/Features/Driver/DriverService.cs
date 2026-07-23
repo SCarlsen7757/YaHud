@@ -18,6 +18,10 @@ namespace R3E.Features.Driver
         private readonly ILogger<DriverService> logger;
         private readonly TelemetryData telemetryData;
 
+        private readonly HashSet<int> pendingManufacturerImageFetches = [];
+        private readonly HashSet<int> pendingClassImageFetches = [];
+        private readonly Lock imageFetchLock = new();
+
         /// <summary>
         /// Simple relative driver data (car ahead/behind lookups).
         /// </summary>
@@ -43,7 +47,10 @@ namespace R3E.Features.Driver
         /// Gets drivers relative to the player based on physical track position (circular logic).
         /// Dynamically allocates display slots based on time gaps.
         /// </summary>
-        /// <param name="maxDrivers">Maximum total number of drivers to display</param>
+        /// <param name="maxDrivers">
+        /// Maximum total number of drivers to display, including the player. A value of 1 returns
+        /// just the player's row. Values of 0 or less return an empty list.
+        /// </param>
         /// <returns>List of drivers sorted by track position (leader first)</returns>
         public IList<DriverInfo> GetRelativeDrivers(int maxDrivers = 7)
         {
@@ -51,7 +58,7 @@ namespace R3E.Features.Driver
 
             var raw = telemetryData.Raw;
 
-            if (raw.NumCars <= 0 || raw.DriverData == null || maxDrivers <= 1)
+            if (raw.NumCars <= 0 || raw.DriverData == null || maxDrivers <= 0)
                 return result;
 
             var playerSlotId = raw.VehicleInfo.SlotId;
@@ -192,15 +199,10 @@ namespace R3E.Features.Driver
             foreach (var driver in allDrivers)
             {
                 bool isPlayer = driver.DriverInfo.SlotId == playerSlotId;
-                TimeSpan timeGap = TimeSpan.Zero;
 
-                if (!isPlayer)
-                {
-                    float relGap = timeGapService.GetTimeGapRelative(playerSlotId, driver.DriverInfo.SlotId);
-                    timeGap = TimeSpan.FromSeconds(relGap);
-                }
-
-                result.Add(BuildDriverInfo(driver, isPlayer, 0, timeGap));
+                // Position-ordered standings don't display gaps, so skip the per-driver
+                // time-gap lookup (avoids a lock + calculation for every car every tick).
+                result.Add(BuildDriverInfo(driver, isPlayer, 0, TimeSpan.Zero));
             }
 
             return result;
@@ -238,11 +240,50 @@ namespace R3E.Features.Driver
                 IsInPitLane = driver.InPitlane == 1,
                 NumPitStops = driver.NumPitstops,
                 IsCurrentLapValid = driver.CurrentLapValid == 1,
-                ManufacturerImageUrl = imageService.GetManufacturerImageCached(driver.DriverInfo.ManufacturerId, ImageSize.Small),
-                ClassImageUrl = imageService.GetClassImageCached(driver.DriverInfo.ClassId, ImageSize.Small),
+                ManufacturerImageUrl = GetOrFetchImage(driver.DriverInfo.ManufacturerId, pendingManufacturerImageFetches, imageService.GetManufacturerImageCached, imageService.GetManufacturerImageAsync),
+                ClassImageUrl = GetOrFetchImage(driver.DriverInfo.ClassId, pendingClassImageFetches, imageService.GetClassImageCached, imageService.GetClassImageAsync),
                 ManufacturerId = driver.DriverInfo.ManufacturerId,
                 ClassId = driver.DriverInfo.ClassId
             };
+        }
+
+        /// <summary>
+        /// Returns the cached image URL if present; otherwise kicks off a background fetch
+        /// (deduplicated per ID) to warm the cache for the next update, and returns empty for now.
+        /// </summary>
+        private string GetOrFetchImage(
+            int id,
+            HashSet<int> pendingFetches,
+            Func<int, ImageSize, string> getCached,
+            Func<int, ImageSize, Task<string>> fetchAsync)
+        {
+            var cached = getCached(id, ImageSize.Small);
+            if (!string.IsNullOrEmpty(cached))
+                return cached;
+
+            lock (imageFetchLock)
+            {
+                if (!pendingFetches.Add(id))
+                    return cached;
+            }
+
+            _ = FetchImageAsync(id, pendingFetches, fetchAsync);
+            return cached;
+        }
+
+        private async Task FetchImageAsync(int id, HashSet<int> pendingFetches, Func<int, ImageSize, Task<string>> fetchAsync)
+        {
+            try
+            {
+                await fetchAsync(id, ImageSize.Small);
+            }
+            finally
+            {
+                lock (imageFetchLock)
+                {
+                    pendingFetches.Remove(id);
+                }
+            }
         }
 
         private static string GetDriverName(byte[] nameBytes)
