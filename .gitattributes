@@ -1,0 +1,5 @@
+# Shell scripts and Linux packaging files must keep LF endings,
+# even when checked out on Windows.
+*.sh text eol=lf
+packaging/appimage/AppRun text eol=lf
+packaging/appimage/*.desktop text eol=lf
