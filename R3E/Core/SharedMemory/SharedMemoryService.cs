@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using R3E.Core.Interfaces;
 using R3E.Data;
+using R3E.Utilities;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -67,7 +68,8 @@ namespace R3E.Core.SharedMemory
             // allocate read buffers once
             readBuffer = new byte[expected];
 
-            logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Starting shared memory poll loop (expected {Size} bytes)", expected);
 
             // Run both polling tasks concurrently
             var normalTask = NormalPollingLoopAsync(stoppingToken);
@@ -83,7 +85,7 @@ namespace R3E.Core.SharedMemory
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (Utilities.IsRrreRunning() && file == null)
+                if (Game.IsRrreRunning() && file == null)
                 {
                     bool lockAcquired = false;
                     try
@@ -91,7 +93,8 @@ namespace R3E.Core.SharedMemory
                         await fileLock.WaitAsync(stoppingToken).ConfigureAwait(false);
                         lockAcquired = true;
                         file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
-                        logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
+                        if (logger.IsEnabled(LogLevel.Information))
+                            logger.LogInformation("Opened shared memory '{Name}'", Constant.SharedMemoryName);
                         currentDelay = normalInterval;
 
                     }
@@ -126,7 +129,8 @@ namespace R3E.Core.SharedMemory
 
                         if (bytesRead != expected)
                         {
-                            logger.LogCritical("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
+                            if (logger.IsEnabled(LogLevel.Critical))
+                                logger.LogCritical("Incomplete shared memory read: {BytesRead}/{Expected}", bytesRead, expected);
                             await Task.Delay(currentDelay, stoppingToken).ConfigureAwait(false);
                             continue;
                         }
@@ -146,7 +150,8 @@ namespace R3E.Core.SharedMemory
                             noUpdate++;
                             if (noUpdate > 327)
                             {
-                                logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks})", simTicks);
+                                if (logger.IsEnabled(LogLevel.Information))
+                                    logger.LogInformation("No shared memory updates detected for a while (simTicks={SimTicks})", simTicks);
                                 noUpdate = 0;
                             }
                         }
@@ -269,7 +274,8 @@ namespace R3E.Core.SharedMemory
                     {
                         lastStartLights = currentStartLights;
                         StartLightsChanged?.Invoke(currentStartLights);
-                        logger.LogDebug("StartLights changed to: {StartLights}", currentStartLights);
+                        if (logger.IsEnabled(LogLevel.Debug))
+                            logger.LogDebug("StartLights changed to: {StartLights}", currentStartLights);
                     }
                 }
                 catch (OperationCanceledException)
@@ -313,7 +319,8 @@ namespace R3E.Core.SharedMemory
             if (shouldBeActive != fastStartLightPollingActive)
             {
                 fastStartLightPollingActive = shouldBeActive;
-                logger.LogInformation("Fast polling {State}", fastStartLightPollingActive ? "activated" : "deactivated");
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("Fast polling {State}", fastStartLightPollingActive ? "activated" : "deactivated");
 
                 // Reset lastStartLights when transitioning to active
                 if (fastStartLightPollingActive)

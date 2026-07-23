@@ -1,6 +1,8 @@
 ﻿using R3E.Core.Interfaces;
 using R3E.Core.Services;
+using R3E.Features.Image;
 using R3E.Features.TimeGap;
+using R3E.Utilities;
 
 namespace R3E.Features.Driver
 {
@@ -12,8 +14,13 @@ namespace R3E.Features.Driver
     {
         private readonly ITelemetryService telemetry;
         private readonly ITimeGapService timeGapService;
+        private readonly IImageService imageService;
         private readonly ILogger<DriverService> logger;
         private readonly TelemetryData telemetryData;
+
+        private readonly HashSet<int> pendingManufacturerImageFetches = [];
+        private readonly HashSet<int> pendingClassImageFetches = [];
+        private readonly Lock imageFetchLock = new();
 
         /// <summary>
         /// Simple relative driver data (car ahead/behind lookups).
@@ -23,10 +30,12 @@ namespace R3E.Features.Driver
         public DriverService(
             ITelemetryService telemetry,
             ITimeGapService timeGapService,
+            IImageService imageService,
             ILogger<DriverService> logger)
         {
             this.telemetry = telemetry;
             this.timeGapService = timeGapService;
+            this.imageService = imageService;
             this.logger = logger;
 
             // Store reference to TelemetryData once
@@ -38,7 +47,10 @@ namespace R3E.Features.Driver
         /// Gets drivers relative to the player based on physical track position (circular logic).
         /// Dynamically allocates display slots based on time gaps.
         /// </summary>
-        /// <param name="maxDrivers">Maximum total number of drivers to display</param>
+        /// <param name="maxDrivers">
+        /// Maximum total number of drivers to display, including the player. A value of 1 returns
+        /// just the player's row. Values of 0 or less return an empty list.
+        /// </param>
         /// <returns>List of drivers sorted by track position (leader first)</returns>
         public IList<DriverInfo> GetRelativeDrivers(int maxDrivers = 7)
         {
@@ -80,6 +92,8 @@ namespace R3E.Features.Driver
             int maxAheadSlots = slotsForOthers / 2;
             const double timeGapThresholdSeconds = 10.0d;
 
+            Dictionary<int, float> timeGapCache = [];
+
             // Count how many cars immediately ahead are within the time threshold
             int foundAheadCount = 0;
 
@@ -87,12 +101,13 @@ namespace R3E.Features.Driver
             for (int i = 1; i <= maxAheadSlots; i++)
             {
                 int idx = playerIndex - i;
-                if (idx < 0) break; // End of list
+                if (idx < 0) break;
 
                 var item = relativeDrivers[idx];
+                int slotId = item.Driver.DriverInfo.SlotId;
 
-                // Calculate relative time gap
-                float gap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                float gap = timeGapService.GetTimeGapRelative(playerSlotId, slotId);
+                timeGapCache[slotId] = gap;
 
                 // Gap > 0 means subject (Player) is behind target (Item). This confirms valid "Ahead" car.
                 if (gap > 0 && gap <= timeGapThresholdSeconds)
@@ -101,7 +116,6 @@ namespace R3E.Features.Driver
                 }
                 else
                 {
-                    // Stop scanning if we hit a large gap (>10s) so we can allocate more slots to cars behind
                     break;
                 }
             }
@@ -141,27 +155,154 @@ namespace R3E.Features.Driver
 
                 if (!isPlayer)
                 {
-                    float relGap = timeGapService.GetTimeGapRelative(playerSlotId, item.Driver.DriverInfo.SlotId);
+                    int slotId = item.Driver.DriverInfo.SlotId;
 
-                    // Convert to TimeSpan.
-                    // If relGap > 0 (Player is Behind, Car is Ahead), we typically show negative time (e.g. -1.2s)
-                    // If relGap < 0 (Player is Ahead, Car is Behind), we typically show positive time (e.g. +1.2s)
+                    // Use cached time gap if available, otherwise calculate
+                    float relGap = timeGapCache.TryGetValue(slotId, out float cachedGap)
+                        ? cachedGap
+                        : timeGapService.GetTimeGapRelative(playerSlotId, slotId);
+
+                    // relGap > 0 means the target is ahead; negate so ahead = negative,
+                    // behind = positive (matches RelativeDriverSettings' Gap*Color naming).
                     timeGap = TimeSpan.FromSeconds(-relGap);
                 }
 
-                float distanceGap = (float)item.RelativeDiff * trackLength;
+                // RelativeDiff is positive for cars ahead (see sort comment above); negate
+                // to match the same ahead = negative, behind = positive convention.
+                float distanceGap = -(float)item.RelativeDiff * trackLength;
 
-                result.Add(new DriverInfo
-                {
-                    DriverData = item.Driver,
-                    IsPlayer = isPlayer,
-                    LapDifference = item.Driver.CompletedLaps - raw.CompletedLaps,
-                    DistanceGap = distanceGap,
-                    TimeGap = timeGap
-                });
+                result.Add(BuildDriverInfo(item.Driver, isPlayer, distanceGap, timeGap, raw.CompletedLaps));
             }
 
             return result;
         }
+
+        /// <summary>
+        /// Gets all drivers sorted by their position in the race/session.
+        /// Useful for standings/tower displays.
+        /// </summary>
+        /// <returns>List of all drivers sorted by position (1st place first)</returns>
+        public IList<DriverInfo> GetAllDriversByPosition()
+        {
+            List<DriverInfo> result = [];
+
+            var raw = telemetryData.Raw;
+
+            if (raw.NumCars <= 0 || raw.DriverData == null)
+                return result;
+
+            var playerSlotId = raw.VehicleInfo.SlotId;
+
+            var allDrivers = raw.DriverData
+                .Take(raw.NumCars)
+                .Where(d => d.DriverInfo.SlotId >= 0)
+                .OrderBy(d => d.Place)
+                .ToList();
+
+            foreach (var driver in allDrivers)
+            {
+                bool isPlayer = driver.DriverInfo.SlotId == playerSlotId;
+
+                // Position-ordered standings don't display gaps, so skip the per-driver
+                // time-gap lookup (avoids a lock + calculation for every car every tick).
+                result.Add(BuildDriverInfo(driver, isPlayer, 0, TimeSpan.Zero, raw.CompletedLaps));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a DriverInfo object from raw driver data with all enriched fields.
+        /// </summary>
+        private DriverInfo BuildDriverInfo(
+            Data.DriverData driver,
+            bool isPlayer,
+            float distanceGap,
+            TimeSpan timeGap,
+            int playerCompletedLaps)
+        {
+            return new DriverInfo
+            {
+                DriverData = driver,
+                IsPlayer = isPlayer,
+                LapDifference = driver.CompletedLaps - playerCompletedLaps,
+                DistanceGap = distanceGap,
+                TimeGap = timeGap,
+                Name = GetDriverName(driver.DriverInfo.Name),
+                CarNumber = driver.DriverInfo.CarNumber,
+                Position = driver.Place,
+                ClassPosition = driver.PlaceClass,
+                Rating = driver.DriverInfo.Rating,
+                Reputation = driver.DriverInfo.Reputation,
+                BestLapTime = GetBestLapTime(driver.SectorTimeBestSelf),
+                TireTypeFront = (Constant.TireType)driver.TireTypeFront,
+                TireTypeRear = (Constant.TireType)driver.TireTypeRear,
+                TireSubtypeFront = (Constant.TireSubtype)driver.TireSubtypeFront,
+                TireSubtypeRear = (Constant.TireSubtype)driver.TireSubtypeRear,
+                IsInPitLane = driver.InPitlane == 1,
+                NumPitStops = driver.NumPitstops,
+                IsCurrentLapValid = driver.CurrentLapValid == 1,
+                ManufacturerImageUrl = GetOrFetchImage(driver.DriverInfo.ManufacturerId, pendingManufacturerImageFetches, imageService.GetManufacturerImageCached, imageService.GetManufacturerImageAsync),
+                ClassImageUrl = GetOrFetchImage(driver.DriverInfo.ClassId, pendingClassImageFetches, imageService.GetClassImageCached, imageService.GetClassImageAsync),
+                ManufacturerId = driver.DriverInfo.ManufacturerId,
+                ClassId = driver.DriverInfo.ClassId
+            };
+        }
+
+        /// <summary>
+        /// Returns the cached image URL if present; otherwise kicks off a background fetch
+        /// (deduplicated per ID) to warm the cache for the next update, and returns empty for now.
+        /// </summary>
+        private string GetOrFetchImage(
+            int id,
+            HashSet<int> pendingFetches,
+            Func<int, ImageSize, string> getCached,
+            Func<int, ImageSize, Task<string>> fetchAsync)
+        {
+            var cached = getCached(id, ImageSize.Small);
+            if (!string.IsNullOrEmpty(cached))
+                return cached;
+
+            lock (imageFetchLock)
+            {
+                if (!pendingFetches.Add(id))
+                    return cached;
+            }
+
+            _ = FetchImageAsync(id, pendingFetches, fetchAsync);
+            return cached;
+        }
+
+        private async Task FetchImageAsync(int id, HashSet<int> pendingFetches, Func<int, ImageSize, Task<string>> fetchAsync)
+        {
+            try
+            {
+                await fetchAsync(id, ImageSize.Small);
+            }
+            finally
+            {
+                lock (imageFetchLock)
+                {
+                    pendingFetches.Remove(id);
+                }
+            }
+        }
+
+        private static string GetDriverName(byte[] nameBytes)
+        {
+            var fullName = TelemetryData.GetDriverName(nameBytes);
+            return string.IsNullOrWhiteSpace(fullName) ? string.Empty : Name.ShortenDriverName(fullName);
+        }
+
+        private static TimeSpan GetBestLapTime(Data.Sectors<float> sectors)
+        {
+            var total = sectors.Sector1 + sectors.Sector2 + sectors.Sector3;
+
+            if (total <= 0f || total >= 10000f)
+                return TimeSpan.Zero;
+
+            return TimeSpan.FromSeconds(total);
+        }
     }
 }
+
