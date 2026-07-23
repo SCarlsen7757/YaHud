@@ -14,7 +14,7 @@ namespace R3E.YaHud.Components.Widget.RelativeDriver
 
     public class RelativeDriverSettings : BasicSettings
     {
-        private GapDisplayMode gapMode = GapDisplayMode.Time;
+        private GapDisplayMode gapMode = GapDisplayMode.Distance;
 
         [SettingType("Gap Display Mode", SettingsTypes.Enum, 10,
             ViewMode = SettingsViewMode.Intermediate,
