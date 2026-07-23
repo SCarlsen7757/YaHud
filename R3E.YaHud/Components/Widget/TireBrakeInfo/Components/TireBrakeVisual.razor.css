@@ -1,0 +1,48 @@
+﻿.tire-brake {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.tire {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin: 1px;
+}
+.left {
+    border-top-left-radius: 7px;
+    border-bottom-left-radius: 7px;
+}
+
+.right {
+    border-top-right-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+
+.brake {
+    width: 100%;
+    height: 50%;
+    box-sizing: border-box;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+}
