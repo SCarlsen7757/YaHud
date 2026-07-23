@@ -81,7 +81,7 @@
         UpdateInterval = TimeSpan.FromMilliseconds(100);
     }
 
-    protected override async Task UpdateAsync()
+    protected override void Update()
     {
         R3E.Data.Shared data = TelemetryService.Data.Raw;
 

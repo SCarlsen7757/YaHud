@@ -162,13 +162,16 @@ namespace R3E.Features.Driver
                         ? cachedGap
                         : timeGapService.GetTimeGapRelative(playerSlotId, slotId);
 
-                    // Negative values = cars ahead (in front), Positive values = cars behind
-                    timeGap = TimeSpan.FromSeconds(relGap);
+                    // relGap > 0 means the target is ahead; negate so ahead = negative,
+                    // behind = positive (matches RelativeDriverSettings' Gap*Color naming).
+                    timeGap = TimeSpan.FromSeconds(-relGap);
                 }
 
-                float distanceGap = (float)item.RelativeDiff * trackLength;
+                // RelativeDiff is positive for cars ahead (see sort comment above); negate
+                // to match the same ahead = negative, behind = positive convention.
+                float distanceGap = -(float)item.RelativeDiff * trackLength;
 
-                result.Add(BuildDriverInfo(item.Driver, isPlayer, distanceGap, timeGap));
+                result.Add(BuildDriverInfo(item.Driver, isPlayer, distanceGap, timeGap, raw.CompletedLaps));
             }
 
             return result;
@@ -202,7 +205,7 @@ namespace R3E.Features.Driver
 
                 // Position-ordered standings don't display gaps, so skip the per-driver
                 // time-gap lookup (avoids a lock + calculation for every car every tick).
-                result.Add(BuildDriverInfo(driver, isPlayer, 0, TimeSpan.Zero));
+                result.Add(BuildDriverInfo(driver, isPlayer, 0, TimeSpan.Zero, raw.CompletedLaps));
             }
 
             return result;
@@ -215,15 +218,14 @@ namespace R3E.Features.Driver
             Data.DriverData driver,
             bool isPlayer,
             float distanceGap,
-            TimeSpan timeGap)
+            TimeSpan timeGap,
+            int playerCompletedLaps)
         {
-            var raw = telemetryData.Raw;
-
             return new DriverInfo
             {
                 DriverData = driver,
                 IsPlayer = isPlayer,
-                LapDifference = driver.CompletedLaps - raw.CompletedLaps,
+                LapDifference = driver.CompletedLaps - playerCompletedLaps,
                 DistanceGap = distanceGap,
                 TimeGap = timeGap,
                 Name = GetDriverName(driver.DriverInfo.Name),
