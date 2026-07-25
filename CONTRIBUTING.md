@@ -635,6 +635,43 @@ gitGraph
 - **Purpose:** Create production release
 - **Produces:** GitHub release with artifacts
 
+## 🏷️ Pull Request Labels
+
+Every PR should carry at least one **type** label. Labels are not decorative —
+[`.github/release.yml`](.github/release.yml) uses them to group the
+auto-generated release notes, so an unlabelled PR ends up under *Other Changes*.
+
+### Type labels (pick one)
+
+| Label | Use for |
+|-------|---------|
+| `enhancement` | New user-facing functionality |
+| `widget` | New HUD widget, or changes to an existing one (usually with `enhancement`) |
+| `bug` | Fixing broken behaviour |
+| `documentation` | README, CONTRIBUTING, or `docs/` changes |
+| `refactor` | Restructuring working code with no behaviour change |
+| `chore` | Housekeeping: cleanup, tooling, config, dead-code removal |
+| `ci` | GitHub Actions workflows, build, or versioning setup |
+| `packaging` | Distribution: AppImage, archives, release artifacts |
+| `dependencies` | Dependency bumps (Dependabot applies this automatically) |
+| `.NET` | Runtime, SDK, or target framework upgrades |
+| `release` | The `develop` → `main` release PR (excluded from release notes) |
+
+`chore` vs `refactor`: if you moved or rewrote production code, it's `refactor`;
+if you deleted something unused or touched only tooling and config, it's `chore`.
+
+### Platform labels (add when relevant)
+
+`linux` and `windows` mark changes that only affect one platform — for example
+the D-Bus tray code or the WinForms `NotifyIcon`. Add them alongside a type
+label, never instead of one.
+
+### Ordering caveat
+
+Release-note categories are matched top to bottom and **the first match wins**.
+A PR labelled both `documentation` and `packaging` appears under Documentation.
+If you add or reorder labels, update `.github/release.yml` to match.
+
 ## 📝 Commit Message Guidelines
 
 While not enforced, we recommend clear commit messages:
