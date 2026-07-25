@@ -49,7 +49,7 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 Add the following launch option to RaceRoom (required for all platforms):
 
 ```
--webHudUrl=http://localhost:5019/
+-webHudUrl=http://localhost:5000/
 ```
 
 To add launch options in Steam:
@@ -57,6 +57,47 @@ To add launch options in Steam:
 1. Right-click RaceRoom Racing Experience in your library
 2. Select "Properties"
 3. In the "General" tab, add the launch option to the "Launch Options" field
+
+If you change the HUD's port with `--web-port` (see below), change this launch
+option to match.
+
+#### Launch arguments
+
+Both executables accept launch arguments; run either with `--help` for the full list.
+
+| Argument | Applies to | Default | Purpose |
+| --- | --- | --- | --- |
+| `--web-port=<port>` | YaHud | `5000` | Port the web HUD listens on |
+| `--udp-port=<port>` | YaHud, R3ERelay | `10101` | Telemetry UDP port — **must match on both** |
+| `--udp-host=<ip>` | R3ERelay | `127.0.0.1` | IP address the relay sends telemetry to |
+| `--force-udp` | YaHud | off | Receive telemetry over UDP from the relay instead of reading shared memory directly (Windows only — it is already the default elsewhere) |
+
+Examples:
+
+```bash
+# Serve the HUD on port 8080 instead (remember to update -webHudUrl to match)
+YaHud.exe --web-port=8080
+
+# Use a different telemetry port - both sides must agree
+R3ERelay.exe --udp-port=10200
+./YaHud --udp-port=10200
+
+# Run the relay on the gaming PC and the HUD on another machine
+R3ERelay.exe --udp-port=10200 --udp-host=192.168.1.50
+```
+
+YaHud also reads these values from the `appsettings.json` next to its executable,
+under the `YaHud` section, if you would rather not edit a shortcut. A launch
+argument always wins over the file:
+
+```json
+"YaHud": {
+  "WebPort": 5000,
+  "Udp": { "Port": 10101, "ForceUdp": false }
+}
+```
+
+The relay has no configuration file — it takes launch arguments only.
 
 #### Windows (Native)
 
@@ -106,10 +147,16 @@ STEAM_COMPAT_DATA_PATH="/$HOME/.local/share/Steam/steamapps/compatdata/211500" \
 
 > **Note**: Adjust the Proton version (e.g., `GE-Proton10-4`) to match the version you're using for RaceRoom.
 
+> **Note**: Launch arguments go after the executable, e.g.
+> `"C:\Program Files\R3ERelay\R3ERelay.exe" --udp-port=10200`.
+
 3. On your Linux machine, run the HUD application — either the AppImage (see
 above) or the plain binary from `R3E.YaHud-linux-x64-v{version}.zip`:
 ```bash
 ./YaHud
+
+# ...or with a different telemetry port, matching the relay's --udp-port
+./YaHud --udp-port=10200
 ```
 
 The relay service forwards RaceRoom's shared memory data over UDP, allowing the HUD to run natively on Linux.

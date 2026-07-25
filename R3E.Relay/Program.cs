@@ -2,6 +2,8 @@
 using R3E.Core.SharedMemory;
 using R3E.Data;
 using R3E.Relay.Service;
+using R3E.Utilities;
+using System.CommandLine;
 using System.Net;
 using System.Runtime.InteropServices;
 
@@ -17,7 +19,7 @@ internal class Program : IDisposable
     private readonly byte[] sendBuffer;
     private readonly int bufferSize;
 
-    public Program()
+    public Program(string targetHost, int targetPort)
     {
         // keep logger factory alive for the lifetime of the program
         loggerFactory = LoggerFactory.Create(lb => lb.AddConsole());
@@ -27,7 +29,7 @@ internal class Program : IDisposable
 
         sharedMemoryService = new SharedMemoryService(shmLogger);
         int sourcePort = GetAvailablePort();
-        udpRelayService = new UdpRelayService(sourcePort, "127.0.0.1", 10101, udpLogger);
+        udpRelayService = new UdpRelayService(sourcePort, targetHost, targetPort, udpLogger);
 
         // Allocate buffer once for the lifetime of the program
         bufferSize = Marshal.SizeOf<Shared>();
@@ -125,11 +127,45 @@ internal class Program : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    static async Task Main()
+    static async Task<int> Main(string[] args)
     {
+        var udpPortOption = LaunchOptions.CreatePortOption(
+            "--udp-port", "UDP port to send telemetry to. Must match the HUD's --udp-port.",
+            RemoteSharedMemoryService.DefaultUdpPort);
+        var udpHostOption = new Option<string>("--udp-host")
+        {
+            Description = "IP address to send telemetry to. Use the HUD machine's address when it is not on this machine.",
+            DefaultValueFactory = _ => "127.0.0.1",
+            HelpName = "ip",
+        };
+        udpHostOption.Validators.Add(result =>
+        {
+            // UdpRelayService parses this with IPAddress.Parse, which would throw on a hostname.
+            var value = result.GetValueOrDefault<string>();
+            if (!IPAddress.TryParse(value, out _))
+            {
+                result.AddError($"--udp-host must be an IP address (hostnames are not supported), but was '{value}'.");
+            }
+        });
+
+        var rootCommand = new RootCommand("R3E relay - forwards RaceRoom shared memory to YaHud over UDP.");
+        rootCommand.Options.Add(udpPortOption);
+        rootCommand.Options.Add(udpHostOption);
+
+        var parsed = rootCommand.Parse(args);
+        if (parsed.Errors.Count > 0 || parsed.Action is not null)
+        {
+            // Invalid input, --help or --version: print the parser's own output and exit.
+            return parsed.Invoke();
+        }
+
+        var targetHost = parsed.GetValue(udpHostOption)!;
+        var targetPort = parsed.GetValue(udpPortOption);
+
         Console.WriteLine("Starting R3E API UDP relay service");
+        Console.WriteLine($"Relaying R3E shared memory to {targetHost}:{targetPort}");
         Console.WriteLine("Waiting for R3E to start");
-        using var program = new Program();
+        using var program = new Program(targetHost, targetPort);
 
         // Use a CancellationTokenSource to allow graceful shutdown
         using var cts = new CancellationTokenSource();
@@ -156,5 +192,7 @@ internal class Program : IDisposable
             // Stop the background service gracefully
             await program.sharedMemoryService.StopAsync(CancellationToken.None);
         }
+
+        return 0;
     }
 }
