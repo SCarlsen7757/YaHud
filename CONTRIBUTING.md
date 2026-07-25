@@ -528,24 +528,30 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
 
 ## 📦 Release Process
 
-Releases are **fully automated** when PRs are merged to `main`.
+Releases are **built automatically** when commits land on `main`, then published
+manually — see the note on drafts below.
 
 ### What Happens on Merge to Main
 
 1. **Version Calculation** - GitVersion determines the version number
 2. **Build** - All projects are built for Windows and Linux
-3. **Package** - Creates ZIP archives of the artifacts
-4. **Release** - Creates GitHub release with:
+3. **Package** - Creates ZIP archives, plus the Linux AppImage
+4. **Release** - Creates a GitHub release with:
    - Auto-generated release notes
    - Tagged version (e.g., `v1.0.0`)
    - Build artifacts attached
+
+> **The release is created as a draft.** `release-on-merge.yml` calls
+> `create-release.yml` with `draft: true`, so the release and its tag are not
+> public until you review and publish them from the Releases page.
 
 ### Artifacts Published
 
 Each release includes:
 - `R3E.Relay-win-x64-v{version}.zip` - Windows relay service
 - `R3E.YaHud-win-x64-v{version}.zip` - Windows HUD application
-- `R3E.YaHud-linux-x64-v{version}.zip` - Linux HUD application
+- `R3E.YaHud-linux-x64-v{version}.zip` - Linux HUD application (plain binary)
+- `YaHud-v{version}-x86_64.AppImage` - Linux HUD application (AppImage, recommended)
 
 ## 🏷️ Version Numbering
 
