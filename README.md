@@ -232,6 +232,7 @@ YaHud/
 │   ├── Assets/             # Tray icon
 │   ├── Linux/              # D-Bus StatusNotifierItem tray icon for Linux
 │   └── Windows/            # Windows Forms NotifyIcon tray for Windows
+├── docs/                   # AppImage packaging and Linux D-Bus tray internals
 ├── packaging/appimage/     # AppRun, desktop entry and icon for the Linux AppImage
 ├── scripts/                # Developer scripts (headless tray D-Bus test)
 ├── git/hooks/              # Pre-push hooks
