@@ -14,6 +14,14 @@ namespace R3E.Core.Services
         public event Action<int>? StartLightsChanged;
         public event Action<TelemetryData>? NewLap;
         public event Action<TelemetryData>? SessionTypeChanged;
+
+        // Declaration only — the reset semantics (raising this instead of overloading
+        // SessionTypeChanged, and clearing the remaining accumulated fields) are implemented by
+        // agent B4.
+#pragma warning disable CS0067 // Event is never used - raised by agent B4
+        public event Action<TelemetryData>? TelemetryReset;
+#pragma warning restore CS0067
+
         public event Action<TelemetryData>? SessionPhaseChanged;
         public event Action<TelemetryData>? CarPositionChanged;
         public event Action<TelemetryData>? TrackChanged;
