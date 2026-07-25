@@ -553,6 +553,10 @@ Each release includes:
 - `R3E.YaHud-linux-x64-v{version}.zip` - Linux HUD application (plain binary)
 - `YaHud-v{version}-x86_64.AppImage` - Linux HUD application (AppImage, recommended)
 
+The AppImage is assembled by CI rather than produced by a single `dotnet publish`
+— see [How the YaHud AppImage Is Built](docs/appimage.md) for the AppDir layout,
+the pinned `appimagetool`/runtime versions and how to build one locally.
+
 ## 🏷️ Version Numbering
 
 Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`
