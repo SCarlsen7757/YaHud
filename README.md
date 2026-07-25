@@ -198,6 +198,11 @@ dotnet publish R3E.Relay/R3E.Relay.csproj -c Release -r win-x64 --self-contained
 
 **Note:** Versions are automatically injected by GitVersion.MsBuild during the build process.
 
+The Linux AppImage is assembled by CI rather than a single `dotnet` command — see
+[How the YaHud AppImage Is Built](docs/appimage.md) for the AppDir layout, the
+pinned `appimagetool`/runtime versions, and instructions for building one
+locally.
+
 ### Project Structure
 
 ```
