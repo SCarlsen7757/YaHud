@@ -42,16 +42,16 @@ namespace R3E.Features.TireWidget
             TireWidgetData = new TireWidgetData(telemetryService.Data);
 
             telemetryService.DataUpdated += OnDataUpdated;
-            telemetryService.SessionTypeChanged += OnSessionTypeChanged;
+            telemetryService.TelemetryReset += OnTelemetryReset;
 
             logger.LogInformation("TireWidgetService initialized");
         }
 
-        private void OnSessionTypeChanged(TelemetryData data)
+        private void OnTelemetryReset(TelemetryData data)
         {
             lock (sync)
             {
-                logger.LogInformation("TireWidgetService: session changed - clearing state.");
+                logger.LogInformation("TireWidgetService: telemetry reset - clearing state.");
                 TireWidgetData.FrontTireAge = 0;
                 TireWidgetData.RearTireAge = 0;
                 TireWidgetData.FrontLeftTireTemp = 0;
@@ -84,7 +84,7 @@ namespace R3E.Features.TireWidget
         public void Dispose()
         {
             telemetryService.DataUpdated -= OnDataUpdated;
-            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
+            telemetryService.TelemetryReset -= OnTelemetryReset;
             GC.SuppressFinalize(this);
         }
 
