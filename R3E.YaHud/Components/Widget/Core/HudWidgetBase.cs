@@ -32,6 +32,24 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public abstract bool Collidable { get; }
 
+        /// <summary>
+        /// Whether the widget is pinned in place by its own CSS instead of by
+        /// <see cref="BasicSettings.XPercent"/>/<see cref="BasicSettings.YPercent"/>.
+        /// </summary>
+        /// <remarks>
+        /// A docked widget gets no drag listener, which is the point: with nothing native listening
+        /// for <c>mousedown</c> on the host, controls inside the widget keep working while the HUD
+        /// is unlocked. It also takes no part in collision or snapping, and its position settings are
+        /// meaningless. Scale is unaffected. Derived from the settings so it can flip at runtime.
+        /// </remarks>
+        public bool Docked => Settings?.Docked ?? false;
+
+        /// <summary>
+        /// Transform origin a docked widget is scaled about, so growing the scale never pushes the
+        /// widget off the edge it is pinned to. Defaults to the free-widget origin.
+        /// </summary>
+        protected virtual string DockedTransformOrigin => "top left";
+
         BasicSettings? IWidget.Settings => Settings;
 
         public TSettings? Settings { get; set; }
@@ -43,6 +61,7 @@ namespace R3E.YaHud.Components.Widget.Core
         private DateTime lastUpdate = DateTime.MinValue;
         private bool initializedTransformations = false;
         private bool registeredTransformations = false;
+        private bool? appliedDocked;
 
         protected virtual void Update() { }
 
@@ -115,6 +134,16 @@ namespace R3E.YaHud.Components.Widget.Core
                 return;
             }
 
+            // Docking can be switched from the settings panel, so both the registration (which
+            // decides whether a drag listener exists) and the placement have to be redone when it
+            // changes - not just once on first render.
+            var docked = Docked;
+            if (appliedDocked != docked)
+            {
+                registeredTransformations = false;
+                initializedTransformations = false;
+            }
+
             if (!registeredTransformations)
             {
                 registeredTransformations = true;
@@ -127,7 +156,10 @@ namespace R3E.YaHud.Components.Widget.Core
                         ElementId,
                         objRef,
                         Locked,
-                        Collidable
+                        // Docked widgets are placed by CSS and never move, so they cannot collide
+                        // with anything or be snapped away from their edge.
+                        Collidable && !docked,
+                        !docked
                     );
 
                 }
@@ -140,18 +172,29 @@ namespace R3E.YaHud.Components.Widget.Core
             if (ElementRef.Context is not null && !initializedTransformations)
             {
                 initializedTransformations = true;
+                appliedDocked = docked;
+
                 await JS.InvokeVoidAsync(
                     "HudHelper.setScale",
                     ElementId,
                     Settings.Scale
                 );
 
-                await JS.InvokeVoidAsync(
-                    "HudHelper.setPosition",
-                    ElementId,
-                    Settings.XPercent,
-                    Settings.YPercent
-                );
+                if (docked)
+                {
+                    // Drops whatever inline placement a previous free position (or drag) left on the
+                    // element, so the docking rules in the stylesheet are what actually applies.
+                    await JS.InvokeVoidAsync("HudHelper.dockElement", ElementId, DockedTransformOrigin);
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync(
+                        "HudHelper.setPosition",
+                        ElementId,
+                        Settings.XPercent,
+                        Settings.YPercent
+                    );
+                }
 
                 await JS.InvokeVoidAsync("HudHelper.enableTransformation", ElementId);
             }
@@ -243,6 +286,10 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public async Task ResetPosition()
         {
+            // The menu hides this for docked widgets; the guard keeps a stray call from stamping an
+            // inline position onto an element the stylesheet is placing.
+            if (Docked) return;
+
             objRef ??= DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("HudHelper.resetPosition", ElementId, objRef, DefaultXPercent, DefaultYPercent);
         }
@@ -369,6 +416,10 @@ namespace R3E.YaHud.Components.Widget.Core
                     Logger?.LogDebug("OnWindowResize called on disposed component or with null settings");
                     return;
                 }
+
+                // A docked widget follows the viewport through CSS; re-stamping a percentage
+                // position would tear it off its edge.
+                if (Docked) return;
 
                 await JS.InvokeVoidAsync("HudHelper.setPosition", ElementId, Settings.XPercent, Settings.YPercent);
             }
