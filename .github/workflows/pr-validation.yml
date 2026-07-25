@@ -40,10 +40,10 @@ jobs:
           dotnet-version: "10.x.x"
 
       - name: Restore dependencies
-        run: dotnet restore R3E.sln
+        run: dotnet restore R3E.slnx
 
       - name: Build Solution
-        run: dotnet build R3E.sln --configuration Release --no-restore
+        run: dotnet build R3E.slnx --configuration Release --no-restore
 
       - name: Build Summary
         shell: bash

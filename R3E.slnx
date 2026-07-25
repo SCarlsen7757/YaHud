@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="R3E.Relay/R3E.Relay.csproj" />
+  <Project Path="R3E.Tray/R3E.Tray.csproj" />
+  <Project Path="R3E.YaHud/R3E.YaHud.csproj" />
+  <Project Path="R3E/R3E.csproj" />
+</Solution>
