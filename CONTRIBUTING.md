@@ -462,7 +462,11 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
 | `main` | `main` | Production releases | `1.0.0` |
 | `develop` | `develop` | Integration/staging branch | `1.1.0-beta.1` |
 | `feature/*` | `feature/name` or `features/name` | New features or improvements | `1.1.0-alpha.1` |
+| `bugfix/*` | `bugfix/name` or `bugfixes/name` | Non-critical bug fixes | `1.0.1` |
 | `hotfix/*` | `hotfix/name` or `hotfixes/name` | Critical production bug fixes | `1.0.1` |
+
+All three prefixes also accept a hyphen instead of a slash (`feature-name`,
+`bugfix-name`, `hotfix-name`), per the regexes in `GitVersion.yml`.
 
 ### Branch Naming Examples
 
@@ -584,6 +588,7 @@ Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 - **`main`**: No pre-release tag (stable: `1.0.0`)
 - **`develop`**: Beta tag (`1.1.0-beta.1`)
 - **`feature/*`**: Alpha tag (`1.1.0-alpha.1`)
+- **`bugfix/*`**: No pre-release tag (`1.0.1`)
 - **`hotfix/*`**: No pre-release tag (`1.0.1`)
 
 ## 🛡️ Branch Protection Rules
@@ -774,7 +779,7 @@ A: Create a new feature branch from develop, make your fix, and PR back to devel
 A: No. Versions are calculated by GitVersion based on Git history and tags. To set an initial version, create a Git tag.
 
 **Q: What happens if I name my branch incorrectly?**  
-A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `hotfix/`.
+A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `bugfix/`, `hotfix/`.
 
 **Q: Should I create a new data instance on every telemetry update?**  
 A: No! Create data instances **once** and reuse them. Only update mutable fields as needed. Recreating objects @ 60Hz causes excessive GC pressure.
