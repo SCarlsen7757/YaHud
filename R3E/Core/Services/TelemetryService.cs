@@ -15,12 +15,7 @@ namespace R3E.Core.Services
         public event Action<TelemetryData>? NewLap;
         public event Action<TelemetryData>? SessionTypeChanged;
 
-        // Declaration only — the reset semantics (raising this instead of overloading
-        // SessionTypeChanged, and clearing the remaining accumulated fields) are implemented by
-        // agent B4.
-#pragma warning disable CS0067 // Event is never used - raised by agent B4
         public event Action<TelemetryData>? TelemetryReset;
-#pragma warning restore CS0067
 
         public event Action<TelemetryData>? SessionPhaseChanged;
         public event Action<TelemetryData>? CarPositionChanged;
@@ -58,12 +53,36 @@ namespace R3E.Core.Services
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;
-            if (sessionType != lastSessionType || tick < lastTick)
+            var sessionTypeChanged = sessionType != lastSessionType;
+
+            // Ticks going backwards means the sim restarted, RaceRoom entered its own replay, or a
+            // rewound telemetry stream is being fed in. Everything accumulated downstream is stale,
+            // which is exactly what a session change means too - hence one reset signal for both.
+            if (sessionTypeChanged || tick < lastTick)
             {
                 lastSessionType = sessionType;
                 lastLapNumber = -1;
-                logger.LogInformation("Session changed: {SessionType}", lastSessionType);
-                SessionTypeChanged?.Invoke(Data);
+
+                // This service's own edge-detection state has to go as well, or the events that
+                // re-establish derived data never fire again when the underlying value happens to
+                // be unchanged across the reset - leaving PlayerStartPosition and RollingStart
+                // stuck at whatever the previous session left behind.
+                this.sessionPhase = Constant.SessionPhase.Unavailable;
+                this.trackId = 0;
+                this.carId = 0;
+
+                // Seeded from the current frame rather than zeroed: a reset is not a position
+                // change, so clearing it would fire a spurious CarPositionChanged on this frame.
+                playerPosition = raw.Position;
+
+                logger.LogInformation("Telemetry reset. Session: {SessionType}", lastSessionType);
+                TelemetryReset?.Invoke(Data);
+
+                if (sessionTypeChanged)
+                {
+                    logger.LogInformation("Session changed: {SessionType}", lastSessionType);
+                    SessionTypeChanged?.Invoke(Data);
+                }
             }
             lastTick = tick;
 

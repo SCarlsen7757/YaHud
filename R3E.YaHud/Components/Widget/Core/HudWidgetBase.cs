@@ -66,7 +66,33 @@ namespace R3E.YaHud.Components.Widget.Core
             SettingsService.RegisterWidget(this);
             LockService.OnLockChanged += OnLockChanged;
             TestModeService.OnTestModeChanged += OnTestModeChanged;
-            if (UseR3EData) TelemetryService.DataUpdated += OnTelemetryDataUpdated;
+            if (UseR3EData)
+            {
+                TelemetryService.DataUpdated += OnTelemetryDataUpdated;
+                TelemetryService.TelemetryReset += OnTelemetryResetRaised;
+            }
+        }
+
+        /// <summary>
+        /// Called when accumulated telemetry state becomes invalid - session change, session
+        /// restart, RaceRoom replay, or a rewound stream. Only widgets that keep their own history
+        /// across frames need to override; everything derived from a feature service is reset by
+        /// that service. Raised on the telemetry thread, so marshal any render onto the dispatcher.
+        /// </summary>
+        protected virtual void OnTelemetryReset() { }
+
+        private void OnTelemetryResetRaised(TelemetryData data)
+        {
+            try
+            {
+                OnTelemetryReset();
+            }
+            catch (Exception ex)
+            {
+                // A throwing widget must not break the reset for the widgets after it in the
+                // invocation list, nor fault the telemetry thread.
+                Logger.LogError(ex, "Error resetting widget {ElementId}", ElementId);
+            }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -379,6 +405,7 @@ namespace R3E.YaHud.Components.Widget.Core
             LockService.OnLockChanged -= OnLockChanged;
             TestModeService.OnTestModeChanged -= OnTestModeChanged;
             TelemetryService.DataUpdated -= OnTelemetryDataUpdated;
+            TelemetryService.TelemetryReset -= OnTelemetryResetRaised;
             objRef?.Dispose();
             GC.SuppressFinalize(this);
         }

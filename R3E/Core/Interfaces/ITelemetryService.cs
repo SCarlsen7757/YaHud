@@ -13,7 +13,8 @@ namespace R3E.Core.Interfaces
         /// Raised when accumulated telemetry state must be discarded: the session type changed, or
         /// simulation ticks went backwards (a session restart, RaceRoom's own replay, or a replay
         /// rewind). Consumers that carry state across frames should reset on this rather than on
-        /// <see cref="SessionTypeChanged"/>.
+        /// <see cref="SessionTypeChanged"/>, which means only what its name says. It is raised
+        /// before the other per-frame events for that frame.
         /// </summary>
         event Action<TelemetryData>? TelemetryReset;
 
