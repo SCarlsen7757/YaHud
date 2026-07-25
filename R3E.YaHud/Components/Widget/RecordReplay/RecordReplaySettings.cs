@@ -13,6 +13,30 @@ namespace R3E.YaHud.Components.Widget.RecordReplay
         private const string Amber = "#FFB020";
         private const string Grey = "#B5B5B5";
 
+        private WidgetDockSide dockSide = WidgetDockSide.Right;
+
+        /// <summary>
+        /// Where the widget lives. Docked to an edge it collapses to a slim rail that expands on
+        /// hover, and - because a docked widget takes no drag handler - its transport controls work
+        /// whether the HUD is locked or not. <see cref="WidgetDockSide.Free"/> keeps the original
+        /// draggable behaviour for anyone who would rather place it themselves.
+        /// </summary>
+        [SettingType("Dock Side", SettingsTypes.Enum, 0,
+            Description = "Dock to a screen edge as a hover-expanding rail, or leave free to position by hand")]
+        public WidgetDockSide DockSide
+        {
+            get => dockSide;
+            set
+            {
+                if (value == dockSide) return;
+                dockSide = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool Docked => DockSide != WidgetDockSide.Free;
+
         [SettingType("Show Recording File", SettingsTypes.Checkbox, 1,
             Description = "Show the file the recorder is currently writing")]
         public bool ShowFileName { get; set; } = true;

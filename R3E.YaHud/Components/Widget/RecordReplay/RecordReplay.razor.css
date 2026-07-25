@@ -1,10 +1,144 @@
 .record-replay {
     display: flex;
     flex-direction: column;
-    gap: 0.5vmin;
     min-width: 26vmin;
     max-width: fit-content;
     box-sizing: border-box;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5vmin;
+    box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Docked layout: a slim rail on the screen edge, with the full panel parked out of sight behind
+   it and slid in on hover.
+
+   The panel stays in normal flow (it is what gives the container its height, so the rail can be
+   centred against it) and is moved with transform: translateX. Animating transform rather than
+   width keeps the transition off the layout path - animating width would reflow the whole panel,
+   sliders and selects included, on every frame.
+
+   The container is wider than the rail even while collapsed, so it is pointer-events: none and
+   only the rail and panel take the pointer. Otherwise an invisible strip down the edge of the
+   screen would swallow clicks and expand the panel from nowhere. overflow: hidden keeps the
+   parked panel from spilling past the viewport edge.
+   --------------------------------------------------------------------------------------------- */
+.record-replay.docked {
+    --rail-width: 2.4vmin;
+    --panel-width: 30vmin;
+    display: block;
+    position: relative;
+    width: calc(var(--panel-width) + var(--rail-width));
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    pointer-events: none;
+    /* Centres the widget on the host's 50% line. It lives here rather than on the host because the
+       host's transform is owned by HudHelper.setScale. */
+    transform: translateY(-50%);
+}
+
+.record-replay.docked > .panel {
+    width: var(--panel-width);
+    pointer-events: auto;
+    background-color: rgba(0, 0, 0, 0.85);
+    border-radius: 0.5vmin;
+    padding: 0.4vmin;
+    transition: transform 180ms ease;
+}
+
+.record-replay.docked > .rail {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--rail-width);
+    z-index: 2;
+    pointer-events: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6vmin;
+    padding: 0.7vmin 0.2vmin;
+    background-color: rgba(0, 0, 0, 0.8);
+    border: 0.1vmin solid #111;
+    box-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.rail-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: clamp(0.4rem, 0.45vw, 0.7rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rail-glyph {
+    font-size: clamp(0.45rem, 0.5vw, 0.75rem);
+    line-height: 1;
+}
+
+.rail-dot {
+    width: 0.8vmin;
+    height: 0.8vmin;
+    border-radius: 50%;
+    flex: none;
+}
+
+/* Only the live recording dot pulses; the idle one is a static hint that this is the rail. */
+.rail-dot:not(.idle) {
+    animation: rail-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rail-dot-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.25;
+    }
+}
+
+/* Right dock: rail hugs the right edge, panel parks off to the right behind it. */
+.record-replay.dock-right > .rail {
+    right: 0;
+    border-radius: 0.5vmin 0 0 0.5vmin;
+}
+
+.record-replay.dock-right > .panel {
+    margin-right: var(--rail-width);
+    transform: translateX(calc(100% + var(--rail-width)));
+}
+
+/* Left dock is the mirror image. */
+.record-replay.dock-left > .rail {
+    left: 0;
+    border-radius: 0 0.5vmin 0.5vmin 0;
+}
+
+.record-replay.dock-left > .panel {
+    margin-left: var(--rail-width);
+    transform: translateX(calc(-100% - var(--rail-width)));
+}
+
+/* :focus-within is not decoration here, it is what makes the scrubber usable. Dragging a slider
+   takes the pointer outside the panel constantly, and a :hover-only rule would collapse the panel
+   mid-drag and strand the drag. Clicking the slider focuses it, so focus-within holds the panel
+   open for the whole gesture and until the user clicks away - which is also the only keyboard
+   affordance available, since widget markup carries no aria/role attributes. */
+.record-replay.docked > .rail:hover ~ .panel,
+.record-replay.docked > .panel:hover,
+.record-replay.docked > .panel:focus-within {
+    transform: translateX(0);
 }
 
 /* Recording disabled and nothing loaded: the widget stays in the DOM so drag registration and

@@ -11,12 +11,36 @@
 
 @* This is the first widget carrying real controls, so it is the first to meet the drag handler
    HudHelper attaches to the widget host while the HUD is *unlocked*: a mousedown anywhere on the
-   host also starts a widget drag. That is the positioning mode, and locking the HUD (the default
-   state, Ctrl+Shift+Alt+L) detaches the handler and leaves the controls to themselves. Blazor's
-   @@onmousedown:stopPropagation cannot help here - it runs from Blazor's document-level delegate,
-   long after the event has bubbled past the host's own native listener. *@
-<WidgetHost Owner="this">
-    <div class="record-replay @(Active ? "" : "inactive")">
+   host also starts a widget drag, and Blazor's @@onmousedown:stopPropagation cannot help - it runs
+   from Blazor's document-level delegate, long after the event has bubbled past the host's own
+   native listener. Docking is the way out: a docked widget registers no drag handler at all, so
+   the scrubber works whether the HUD is locked or not. DockSide = Free restores the old behaviour
+   (and with it the old limitation, controls only while locked). *@
+<WidgetHost Owner="this" CssClass="@HostCssClass">
+    <div class="record-replay @HostCssClass @(Active ? "" : "inactive")">
+        @if (Active && Docked)
+        {
+            @* Collapsed state has to be readable on its own or the rail is just a mystery tab. *@
+            <div class="rail">
+                @if (IsRecording)
+                {
+                    <span class="rail-dot" style="background-color: @Settings!.RecordingColor"></span>
+                    <span class="rail-text" style="color: @Settings!.RecordingColor">@FormatDuration(RecordedElapsed)</span>
+                }
+                else if (ReplayController.IsLoaded)
+                {
+                    <span class="rail-glyph" style="color: @Settings!.ReplayColor">@(ReplayController.IsPlaying ? "▶" : "‖")</span>
+                    <span class="rail-text" style="color: @Settings!.ReplayColor">@FormatDuration(DisplayPosition)</span>
+                }
+                else
+                {
+                    <span class="rail-dot idle" style="background-color: @Settings!.LabelColor"></span>
+                    <span class="rail-text" style="color: @Settings!.LabelColor">Rec / Replay</span>
+                }
+            </div>
+        }
+
+        <div class="panel">
         @if (Active)
         {
             @if (RecordingOptions.Enabled)
@@ -121,6 +145,7 @@
                 </div>
             }
         }
+        </div>
     </div>
 </WidgetHost>
 
@@ -145,6 +170,22 @@
     public override double DefaultXPercent => 50;
     public override double DefaultYPercent => 90;
     public override bool Collidable => true;
+
+    /// <summary>
+    /// Dock classes for both the widget host (which they pin to a screen edge) and the widget's own
+    /// root (which they turn into a rail plus a sliding panel). Empty while free, so the widget
+    /// renders exactly as it did before docking existed.
+    /// </summary>
+    private string HostCssClass => Settings?.DockSide switch
+    {
+        WidgetDockSide.Left => "docked dock-left",
+        WidgetDockSide.Right => "docked dock-right",
+        _ => string.Empty
+    };
+
+    /// <summary>Scale about the docked edge, so a larger scale never grows off-screen.</summary>
+    protected override string DockedTransformOrigin
+        => Settings?.DockSide == WidgetDockSide.Right ? "top right" : "top left";
 
     public RecordReplay()
     {
