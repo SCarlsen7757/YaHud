@@ -24,7 +24,7 @@ namespace R3E.Core.Replay
     /// never survive a swap or be attached twice.
     /// </para>
     /// </remarks>
-    public sealed class SharedSourceSwitch : ISharedSource, IDisposable
+    public sealed class SharedSourceSwitch : ISwitchableSharedSource, IDisposable
     {
         private readonly ILogger<SharedSourceSwitch> logger;
 

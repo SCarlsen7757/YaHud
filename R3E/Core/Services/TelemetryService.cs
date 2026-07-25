@@ -40,6 +40,21 @@ namespace R3E.Core.Services
 
             sharedSource.DataUpdated += OnRawDataUpdated;
             sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+
+            // Swapping between live telemetry and a recording replaces the whole stream, so
+            // everything accumulated downstream is stale. The swap carries no frame with it, so
+            // rather than resetting against the previous source's last frame, invalidate the tick
+            // watermark and let the next real frame take the normal reset path below - it then runs
+            // against genuine data instead of a fabricated one.
+            if (sharedSource is ISwitchableSharedSource switchable)
+            {
+                switchable.ActiveSourceChanged += OnActiveSourceChanged;
+            }
+        }
+
+        private void OnActiveSourceChanged()
+        {
+            lastTick = int.MaxValue;
         }
 
         private void SharedSource_StartLightsChanged(int startLights)
@@ -165,6 +180,10 @@ namespace R3E.Core.Services
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
+            if (sharedSource is ISwitchableSharedSource switchable)
+            {
+                switchable.ActiveSourceChanged -= OnActiveSourceChanged;
+            }
             GC.SuppressFinalize(this);
         }
     }

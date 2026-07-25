@@ -117,6 +117,18 @@ namespace R3E.Core.Recording
         /// <summary>Raised whenever any of the state below changes, so the UI can re-render.</summary>
         public event Action? StateChanged;
 
+        /// <summary>
+        /// Whether the source is currently replaying a recording rather than delivering live
+        /// telemetry. Recording a replay would write a near-duplicate of the file being played, so
+        /// frames are dropped for as long as this holds.
+        /// </summary>
+        /// <remarks>
+        /// The recorder is handed the <see cref="ISharedSource"/> registration, which resolves to
+        /// the live/replay switch rather than the live source directly - so without this guard the
+        /// recorder happily captures replayed frames.
+        /// </remarks>
+        private bool IsSourceReplaying => sharedSource is ISwitchableSharedSource { IsReplaying: true };
+
         /// <summary><see langword="true"/> while frames are being captured.</summary>
         public bool IsRecording => isRecording;
 
@@ -335,7 +347,7 @@ namespace R3E.Core.Recording
 
         private void OnRawFrameReceived(ReadOnlyMemory<byte> frame)
         {
-            if (!isRecording)
+            if (!isRecording || IsSourceReplaying)
             {
                 return;
             }
@@ -375,7 +387,7 @@ namespace R3E.Core.Recording
 
         private void OnStartLightsChanged(int value)
         {
-            if (!isRecording)
+            if (!isRecording || IsSourceReplaying)
             {
                 return;
             }
