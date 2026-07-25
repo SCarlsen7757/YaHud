@@ -157,7 +157,7 @@ public class FuelService
     
     private void OnNewLap()
     {
-        eventBus.PublishFuelLevelCritical(percentage);  // Publish
+        eventBus.InvokeFuelLevelCritical(percentage);  // Raise
     }
 }
 
@@ -170,10 +170,15 @@ public class SectorService
     
     private void OnDataUpdated()
     {
-        eventBus.PublishSectorCompleted(sectorIndex);  // Publish
+        eventBus.InvokeSectorCompleted(Data, sectorIndex);  // Raise
     }
 }
 ```
+
+> **Naming convention:** the method that raises a cross-feature event is always
+> prefixed `Invoke`, matching the event name — `SectorCompleted` is raised by
+> `InvokeSectorCompleted`. `FuelLevelCritical` and `LapFuelUsageCalculated` above
+> are illustrative; `SectorCompleted` is currently the only event on the bus.
 
 ### Feature Service Pattern
 
@@ -267,13 +272,13 @@ public class FuelService : IFuelService, IDisposable
         
         oldFuelRemaining = currentFuel;
         
-        // Publish cross-feature event
-        eventBus.PublishLapFuelUsageCalculated(fuelUsed);
+        // Raise cross-feature event
+        eventBus.InvokeLapFuelUsageCalculated(fuelUsed);
         
         // Check for critical condition
         if (Data.FuelRemainingPercentage < 10.0)
         {
-            eventBus.PublishFuelLevelCritical(Data.FuelRemainingPercentage);
+            eventBus.InvokeFuelLevelCritical(Data.FuelRemainingPercentage);
         }
     }
     
@@ -325,7 +330,8 @@ Use for domain-specific communication between features:
 
 **Current Events:**
 
-- `SectorCompleted(int sectorIndex)` - Sector completed
+- `SectorCompleted(SectorData sectorData, int sectorIndex)` - Sector completed
+  (raised via `InvokeSectorCompleted(sectorData, sectorIndex)`)
 
 **Adding New Cross-Feature Events:**
 
