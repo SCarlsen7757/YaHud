@@ -140,7 +140,7 @@ Click the ℹ️ (info) icon to view credits and third-party licenses.
 
 ## 🏗️ Architecture
 
-The project consists of three main components:
+The project consists of four components:
 
 ### R3E.YaHud
 The main Blazor web application that renders the HUD overlay.
@@ -149,12 +149,18 @@ The main Blazor web application that renders the HUD overlay.
 Core library containing:
 
 - RaceRoom shared memory API definitions
-- Telemetry data processing
+- Telemetry data processing and the cross-feature event bus
+- Feature services (fuel, radar, sector, time gap, driver, tyres)
 - Cross-platform data source interfaces
-- Unit converters (speed, temperature, angular velocity)
+- Unit converters (speed, temperature, pressure, angular velocity)
 
 ### R3E.Relay
 Windows service that forwards RaceRoom shared memory data via UDP for cross-platform support.
+
+### R3E.Tray
+System tray icon, with separate implementations per platform: Windows Forms
+`NotifyIcon` on Windows, and the freedesktop StatusNotifierItem D-Bus protocol on
+Linux.
 
 ## 🛠️ Development
 
@@ -208,21 +214,36 @@ locally.
 ### Project Structure
 
 ```
-R3E/
+YaHud/
 ├── R3E.YaHud/              # Main Blazor HUD application
 │   ├── Components/
+│   │   ├── Layout/         # App layout
 │   │   ├── Pages/          # Blazor pages
-│   │   ├── UI/             # UI components
-│   │   └── Widget/         # HUD widgets
-│   ├── Services/           # Application services
+│   │   ├── UI/             # Shared UI components and helpers
+│   │   └── Widget/         # HUD widgets — one folder each, plus Core/
+│   ├── Services/           # Application services (incl. Settings/)
 │   └── wwwroot/            # Static assets
 ├── R3E/                    # Core library
-│   └── API/                # RaceRoom API and telemetry
-├── R3E.Relay/              # UDP relay service
-└── R3E.Tray/               # Tray service
-    ├── Assets              # Contains icon for tray service
-    ├── Linux               # D-Bus StatusNotifierItem tray icon for Linux
-    └── Windows             # Windows Forms code for tray app for Windows
+│   ├── Core/
+│   │   ├── Interfaces/     # ITelemetryService, ITelemetryEventBus, ISharedSource
+│   │   ├── Services/       # TelemetryService, TelemetryEventBus, TelemetryData
+│   │   └── SharedMemory/   # SharedMemoryService (Windows), RemoteSharedMemoryService (UDP)
+│   ├── Features/           # Feature service + data class pairs (Fuel, Radar, Sector, …)
+│   ├── Converters/         # Unit converters (speed, temperature, pressure, angular)
+│   ├── Networking/         # UDP receiver
+│   ├── Extensions/         # Extension methods
+│   └── Utilities/          # Shared helpers
+├── R3E.Relay/              # UDP relay service (Windows)
+│   └── Service/            # UdpRelayService
+├── R3E.Tray/               # Tray service
+│   ├── Assets/             # Tray icon
+│   ├── Linux/              # D-Bus StatusNotifierItem tray icon for Linux
+│   └── Windows/            # Windows Forms NotifyIcon tray for Windows
+├── docs/                   # AppImage packaging and Linux D-Bus tray internals
+├── packaging/appimage/     # AppRun, desktop entry and icon for the Linux AppImage
+├── scripts/                # Developer scripts (headless tray D-Bus test)
+├── git/hooks/              # Pre-push hooks
+└── images/                 # Logo and README images
 ```
 
 ### Creating Custom Widgets
