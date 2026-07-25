@@ -651,20 +651,36 @@ gitGraph
 
 ## 🤖 GitHub Actions Workflows
 
-### 1. PR Build Validation (`pr-build.yml`)
-- **Triggers:** PRs to `main` or `develop`
-- **Purpose:** Validate code compiles successfully
-- **Runs:** Full solution build
+There are five workflows. Two are triggered by Git events; the other three are
+reusable and only run when called by those two.
 
-### 2. PR Version Preview (`pr-version-preview.yml`)
-- **Triggers:** PRs to `main` only
-- **Purpose:** Show what version will be released
-- **Posts:** Comment on PR with version details
+### Triggered workflows
 
-### 3. Build and Release (`build-release.yml`)
-- **Triggers:** Push to `main` (after PR merge)
-- **Purpose:** Create production release
-- **Produces:** GitHub release with artifacts
+#### PR Validation (`pr-validation.yml`)
+- **Triggers:** PRs to `main` or `develop` (opened, synchronize, reopened)
+- **Purpose:** Verify the solution compiles and preview the release version
+- **Jobs:**
+  - `Version Preview` — calls `calculate-version.yml`
+  - `Build Validation (windows-latest)` and `Build Validation (ubuntu-latest)` —
+    full solution build on both platforms. The Ubuntu leg matters: the Linux tray
+    code in `R3E.Tray/Linux` sits behind `#if LINUX` and is not compiled on
+    Windows, so a green Windows build proves nothing about it.
+  - `Post Version Comment` — posts or updates a version-preview comment on the PR
+
+#### Release (`release-on-merge.yml`)
+- **Triggers:** Push to `main` (after a PR merge), or manual `workflow_dispatch`
+- **Purpose:** Build all artifacts and create the GitHub release
+- **Jobs:** `Calculate Version` → `Build` → `Release` → `Release Summary`
+
+### Reusable workflows
+
+Invoked via `workflow_call` — these never run on their own:
+
+| Workflow | Purpose |
+|----------|---------|
+| `calculate-version.yml` | Runs GitVersion; outputs `semVer`, `fullSemVer`, `majorMinorPatch`, `branchName`, `preReleaseTag` |
+| `build-artifacts.yml` | Publishes R3E.Relay (Windows), YaHud (Windows and Linux) and the Linux AppImage, then uploads each as a workflow artifact |
+| `create-release.yml` | Creates the GitHub release, attaches every `*.zip` and `*.AppImage`, and generates the release notes |
 
 ## 🏷️ Pull Request Labels
 
