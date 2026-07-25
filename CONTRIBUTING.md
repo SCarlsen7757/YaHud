@@ -574,25 +574,36 @@ Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 
 ## 🛡️ Branch Protection Rules
 
+Protection is configured with **repository rulesets**, not classic branch
+protection. Neither ruleset defines bypass actors, so the rules apply to
+maintainers as well.
+
 ### Main Branch
 
-- ✅ Require pull request before merging
-- ✅ Require 1+ approvals
-- ✅ Require status checks to pass:
-  - `validate` (build validation)
-  - `version-preview` (version calculation)
-- ✅ Only allow PRs from:
-  - `develop` branch
-  - `hotfix/*` branches
-- ✅ Require branches to be up to date
+- ✅ Block branch deletion
+- ✅ Block force pushes (non-fast-forward)
 
 ### Develop Branch
 
-- ✅ Require pull request before merging
-- ✅ Require status checks to pass:
-  - `validate` (build validation)
-- ✅ Only allow PRs from:
-  - `feature/*` branches
+- ✅ Block branch deletion
+- ✅ Block force pushes (non-fast-forward)
+- ✅ Require a pull request before merging, with:
+  - 1 approving review
+  - All review conversations resolved
+  - Merge, squash and rebase all permitted
+
+### Not currently enforced
+
+The following are **not** configured, so don't rely on them:
+
+- **No required status checks on either branch.** `PR Validation` runs on every
+  PR, but a failing build does not block merging — check the result yourself
+  before merging.
+- **No PR requirement on `main`.** Direct pushes to `main` are possible, and a
+  push to `main` triggers a release build.
+- **No source-branch restrictions.** The GitFlow rules in
+  [Workflow Patterns](#-workflow-patterns) are convention, not enforcement.
+- **No linear-history or up-to-date-branch requirement.**
 
 ## GitFlow Diagram
 
