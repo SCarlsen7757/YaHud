@@ -97,6 +97,7 @@ To prevent circular dependencies between feature services, we use the **Mediator
         ▼                                     ▼
   ITelemetryEventBus                  Core Events:
   (Cross-feature mediator)            - DataUpdated
+        │                             - StartLightsChanged
         │                             - NewLap
         │                             - SessionTypeChanged
         │                             - SessionPhaseChanged
@@ -317,6 +318,9 @@ public class FuelService : IFuelService, IDisposable
 
 Use for session lifecycle events:
 - `DataUpdated` - Telemetry data refreshed (@60Hz)
+- `StartLightsChanged` - Start light state changed. Note the payload is
+  `Action<int>` (the light count), not `Action<TelemetryData>` like every other
+  core event
 - `NewLap` - Lap completed
 - `SessionTypeChanged` - Session type changed
 - `SessionPhaseChanged` - Session phase changed (Countdown, Formation, Green, etc.)
