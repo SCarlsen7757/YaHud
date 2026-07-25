@@ -505,12 +505,16 @@ All three prefixes also accept a hyphen instead of a slash (`feature-name`,
    - Creates beta version (e.g., 1.1.0-beta.1)
 
 5. When ready for release, create PR from develop to main
+   - Put "+semver: minor" (or "+semver: major") in the PR TITLE, or you
+     get a patch release — see Release Process below
+   - Label it "release"
    - Version Preview will show final release version
    - Build Validation will run
 
-6. Merge to main
-   - Automatically creates GitHub release
-   - Builds and publishes artifacts
+6. Merge to main with a merge commit (not squash)
+   - Automatically creates a DRAFT GitHub release
+   - Builds and attaches artifacts
+   - Publish the draft yourself from the Releases page
 ```
 
 ### Hotfix for Production
@@ -544,6 +548,27 @@ All three prefixes also accept a hyphen instead of a slash (`feature-name`,
 
 Releases are **built automatically** when commits land on `main`, then published
 manually — see the note on drafts below.
+
+### Cutting a Release
+
+A release is a PR from `develop` to `main`. Two steps in that process fail
+**silently** — nothing goes red, you just get the wrong result:
+
+1. **The increment lives in the PR title.** `main` defaults to a patch bump, so
+   a feature release needs `+semver: minor` in the title of the release PR.
+   This repo sets `merge_commit_message: PR_TITLE`, so GitHub copies the PR
+   title into the merge commit body, which is where GitVersion reads it — the
+   PR body and description are not read. See
+   [Choosing the Increment](#choosing-the-increment).
+2. **The release is a draft.** A green workflow does not mean the release
+   shipped; someone has to publish it.
+
+Also: label the release PR `release` so it is excluded from its own changelog,
+and merge with a **merge commit**, not a squash — squashing flattens the history
+GitVersion walks to find the version source and the marker.
+
+> The `cut-release` skill in `.claude/skills/` walks through this end to end,
+> including the back-merge to `develop` afterwards.
 
 ### What Happens on Merge to Main
 
@@ -580,8 +605,37 @@ Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 | Action | Version Change | Example |
 |--------|---------------|---------|
 | Merge feature to develop | Minor + beta tag | `1.0.0` → `1.1.0-beta.1` |
-| Merge develop to main | Minor (stable) | `1.0.0` → `1.1.0` |
 | Merge hotfix to main | Patch | `1.0.0` → `1.0.1` |
+| Merge develop to main | Patch, unless marked (see below) | `1.0.0` → `1.0.1` |
+
+### Choosing the Increment
+
+`main` is configured with `increment: Patch`, so a merge to `main` is a patch
+release by default. To ship a minor or major release instead, add a marker to
+the merge commit message (or the squashed PR title) landing on `main`:
+
+| Marker | Effect | Example |
+|--------|--------|---------|
+| `+semver: major` (or `breaking`) | Major bump | `0.2.0` → `1.0.0` |
+| `+semver: minor` (or `feature`) | Minor bump | `0.2.0` → `0.3.0` |
+| _(no marker)_ | Patch bump | `0.2.0` → `0.2.1` |
+
+**A marker can only raise the increment, never lower it below main's
+`increment:`.** That is why `main` is set to `Patch` — on `Minor` a patch
+release would be unreachable and `+semver: patch` would silently do nothing.
+The practical consequence: a `develop` → `main` release PR needs an explicit
+`+semver: minor`, while a hotfix needs no marker.
+
+For a one-off jump to a new baseline (for example cutting `1.0.0`), set
+`next-version:` in `GitVersion.yml`. It is a floor, and while it is the active
+baseline it suppresses the `+semver` markers; once a higher release tag exists
+GitVersion increments from the tag and the setting becomes a no-op.
+
+> Release tags must be plain `vMAJOR.MINOR.PATCH`. A pre-release tag on `main`
+> (like the historical `v0.1.0-614`) is not a valid version source, so
+> GitVersion ignores it and recomputes the same version on every release. This
+> is why `release-on-merge.yml` tags with `majorMinorPatch` rather than `semVer`
+> — on `main`, `semVer` still carries a numeric pre-release suffix.
 
 ### Version Tags by Branch
 
@@ -776,7 +830,7 @@ A: No. Features must go through `develop` first, then `develop` → `main`.
 A: Create a new feature branch from develop, make your fix, and PR back to develop.
 
 **Q: Can I manually set the version number?**  
-A: No. Versions are calculated by GitVersion based on Git history and tags. To set an initial version, create a Git tag.
+A: Not directly — versions are calculated by GitVersion from Git history and tags. You can steer it three ways: a `+semver:` marker in the merge commit message to change one release's increment, `next-version:` in `GitVersion.yml` to set a new baseline, or a Git tag (`v1.2.0`) to pin the version source. See [Version Numbering](#-version-numbering).
 
 **Q: What happens if I name my branch incorrectly?**  
 A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `bugfix/`, `hotfix/`.
