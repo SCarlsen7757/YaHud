@@ -1,0 +1,252 @@
+@using R3E.Core.Recording
+@using R3E.Core.Replay
+@using R3E.Data
+@inject RecordingOptions RecordingOptions
+@inject ReplayController ReplayController
+
+<div class="settings-panel settings-recordings" @onclick="() => Events.RaiseBodyClick()" @onclick:stopPropagation>
+    <div class="panel-header">
+        <h2>Recordings</h2>
+        <button class="btn dark" @onclick="Refresh">Refresh</button>
+    </div>
+
+    <div class="panel-body">
+        <p class="root-path">@root</p>
+
+        @if (loadError is not null)
+        {
+            <p class="load-error">@loadError</p>
+        }
+
+        @if (runs.Count == 0)
+        {
+            <p class="empty">
+                No recordings yet. Launch YaHud with <code>--record</code> and press Record on the
+                Record &amp; Replay widget; files appear here once the first telemetry frame arrives.
+            </p>
+        }
+
+        @foreach (var run in runs)
+        {
+            <div class="run">
+                <h3 class="run-title">@run.Name</h3>
+                <ul class="run-files">
+                    @foreach (var file in run.Files)
+                    {
+                        <li class="recording @(selected?.Path == file.Path ? "selected" : "") @(file.Header is null ? "broken" : "")"
+                            @onclick="() => Select(file)">
+                            <div class="recording-head">
+                                <span class="recording-name">@file.FileName</span>
+                                <span class="recording-size">@FormatBytes(file.SizeBytes)</span>
+                            </div>
+
+                            @if (file.Header is null)
+                            {
+                                <div class="recording-error">@file.Error</div>
+                            }
+                            else
+                            {
+                                <div class="recording-meta">
+                                    <span>@SessionName(file.Header.SessionType)</span>
+                                    <span>@TrackLabel(file.Header)</span>
+                                    <span>@file.Header.NumCarsAtStart drivers</span>
+                                    <span>@file.Header.StartUtc.ToLocalTime().ToString("g")</span>
+                                </div>
+                                <div class="recording-meta subtle">
+                                    <span>@file.Header.PlayerName</span>
+                                    <span>car @file.Header.PlayerCarModelId</span>
+                                    <span>class @file.Header.PlayerClassId</span>
+                                </div>
+                            }
+
+                            @if (selected?.Path == file.Path)
+                            {
+                                <div class="recording-detail">
+                                    @if (detailsError is not null)
+                                    {
+                                        <span class="recording-error">@detailsError</span>
+                                    }
+                                    else if (details is not null)
+                                    {
+                                        <span>@FormatDuration(details.Duration)</span>
+                                        <span>@details.TotalFrames frames</span>
+                                        <span>@details.LapCount laps</span>
+                                        <span>up to @details.MaxNumCars drivers</span>
+                                        <span>@details.ClassIds.Count classes</span>
+                                        @if (details.IndexWasRebuilt)
+                                        {
+                                            <span class="warn">index rebuilt - recording was cut short</span>
+                                        }
+                                    }
+
+                                    <button class="btn dark"
+                                            disabled="@(busy || file.Header is null)"
+                                            @onclick="() => Load(file)"
+                                            @onclick:stopPropagation>
+                                        @(busy ? "Loading…" : "Replay")
+                                    </button>
+                                </div>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <div class="panel-footer">
+        @if (ReplayController.IsLoaded)
+        {
+            <span class="loaded">Replaying @System.IO.Path.GetFileName(ReplayController.CurrentFile)</span>
+            <button class="btn dark danger-hover" disabled="@busy" @onclick="ReturnToLive">Return to Live</button>
+        }
+        else
+        {
+            <span class="loaded">Live telemetry</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [CascadingParameter] public SettingPanelEvents Events { get; set; } = default!;
+
+    private string root = string.Empty;
+    private IReadOnlyList<RecordingRunEntry> runs = [];
+    private RecordingFileEntry? selected;
+    private RecordingDetails? details;
+    private string? detailsError;
+    private string? loadError;
+    private bool busy;
+
+    protected override void OnInitialized()
+    {
+        root = RecordingOptions.ResolveDirectory();
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        runs = RecordingsCatalog.Scan(root);
+        selected = null;
+        details = null;
+        detailsError = null;
+    }
+
+    /// <summary>
+    /// Selects a row and reads its footer summary. Header metadata is already in hand from the
+    /// listing; only the selected file is opened.
+    /// </summary>
+    private void Select(RecordingFileEntry file)
+    {
+        if (selected?.Path == file.Path)
+        {
+            selected = null;
+            details = null;
+            detailsError = null;
+            return;
+        }
+
+        selected = file;
+        details = null;
+        detailsError = null;
+
+        if (file.Header is null)
+        {
+            detailsError = file.Error;
+            return;
+        }
+
+        if (!RecordingsCatalog.TryReadDetails(file.Path, out details, out detailsError))
+        {
+            details = null;
+        }
+    }
+
+    /// <summary>
+    /// Activates replay on the selected recording, then closes the overlay so the transport widget
+    /// is reachable.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ReplayController.Load"/> stops and joins the replay pump thread, so it is pushed
+    /// off the Blazor dispatcher rather than blocking the whole UI while that happens.
+    /// </remarks>
+    private async Task Load(RecordingFileEntry file)
+    {
+        if (busy || file.Header is null)
+        {
+            return;
+        }
+
+        busy = true;
+        loadError = null;
+
+        try
+        {
+            await Task.Run(() => ReplayController.Load(file.Path));
+            await OnClose.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task ReturnToLive()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+
+        try
+        {
+            await Task.Run(ReplayController.Unload);
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static string SessionName(int sessionType)
+        => Enum.IsDefined(typeof(Constant.Session), sessionType)
+            ? ((Constant.Session)sessionType).ToString()
+            : $"Session {sessionType}";
+
+    private static string TrackLabel(TelemetryRecordingHeader header)
+        => string.IsNullOrWhiteSpace(header.LayoutName) || header.LayoutName == header.TrackName
+            ? header.TrackName
+            : $"{header.TrackName} - {header.LayoutName}";
+
+    private static string FormatDuration(TimeSpan value)
+        => value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"mm\:ss");
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024d:F1} KB";
+        }
+
+        return bytes < 1024L * 1024 * 1024
+            ? $"{bytes / (1024d * 1024d):F1} MB"
+            : $"{bytes / (1024d * 1024d * 1024d):F2} GB";
+    }
+}
