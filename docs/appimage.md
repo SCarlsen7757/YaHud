@@ -174,7 +174,8 @@ chmod +x ./YaHud-v${VERSION}-x86_64.AppImage
 ./YaHud-v${VERSION}-x86_64.AppImage
 ```
 
-Then browse to <http://localhost:5019/>.
+Then browse to <http://localhost:5000/> (or the port you passed with `--web-port`;
+`AppRun` forwards all arguments to the binary).
 
 Useful inspection commands:
 

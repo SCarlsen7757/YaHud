@@ -8,9 +8,15 @@ namespace R3E.Core.SharedMemory
     // Hosted service that exposes remote shared memory via UDP
     public class RemoteSharedMemoryService : ISharedSource, IHostedService, IAsyncDisposable
     {
+        /// <summary>
+        /// UDP port used when no <c>--udp-port</c> launch argument is supplied. The relay defaults
+        /// to the same value, so both ends stay in sync out of the box.
+        /// </summary>
+        public const int DefaultUdpPort = 10101;
+
         private readonly ILogger<RemoteSharedMemoryService> logger;
         private readonly UdpReceiver receiver;
-        private readonly int port = 10101;
+        private readonly int port;
         private Task? pollTask;
         private CancellationTokenSource? receiverCts;
         private bool disposed;
@@ -21,10 +27,13 @@ namespace R3E.Core.SharedMemory
 
         public Shared Data { get; private set; }
 
-        public RemoteSharedMemoryService(ILogger<RemoteSharedMemoryService>? logger = null)
+        public RemoteSharedMemoryService(int port = DefaultUdpPort, ILoggerFactory? loggerFactory = null)
         {
-            this.logger = logger ?? NullLogger<RemoteSharedMemoryService>.Instance;
-            receiver = new UdpReceiver(port, NullLogger<UdpReceiver>.Instance);
+            this.port = port;
+            this.logger = loggerFactory?.CreateLogger<RemoteSharedMemoryService>() ?? NullLogger<RemoteSharedMemoryService>.Instance;
+            // UdpReceiver logs the port it actually bound to, which is the confirmation that
+            // --udp-port took effect, so give it a real logger rather than a null one.
+            receiver = new UdpReceiver(port, loggerFactory?.CreateLogger<UdpReceiver>() ?? NullLogger<UdpReceiver>.Instance);
             receiver.DataReceived += OnDataReceived;
             Data = new Shared();
             this.logger.LogDebug("RemoteSharedMemoryService constructed, listening on port {Port}", port);
