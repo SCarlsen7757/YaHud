@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text;
 
 namespace R3E.Core.Recording
@@ -285,7 +285,7 @@ namespace R3E.Core.Recording
         {
             if (Header.IndexOffset <= dataStart || Header.IndexOffset >= stream.Length)
             {
-                return false;
+                return DiscardFooterState();
             }
 
             try
@@ -295,7 +295,7 @@ namespace R3E.Core.Recording
                 var trailer = reader.ReadBytes(TelemetryRecordingHeader.FooterMagic.Length);
                 if (!trailer.AsSpan().SequenceEqual(TelemetryRecordingHeader.FooterMagic))
                 {
-                    return false;
+                    return DiscardFooterState();
                 }
 
                 stream.Position = Header.IndexOffset;
@@ -303,7 +303,7 @@ namespace R3E.Core.Recording
                 var entryCount = reader.ReadInt32();
                 if (entryCount < 0 || entryCount > (stream.Length - Header.IndexOffset) / 4)
                 {
-                    return false;
+                    return DiscardFooterState();
                 }
 
                 for (var i = 0; i < entryCount; i++)
@@ -315,7 +315,7 @@ namespace R3E.Core.Recording
                 var markerCount = reader.ReadInt32();
                 if (markerCount < 0 || markerCount > (stream.Length - stream.Position) / 4)
                 {
-                    return false;
+                    return DiscardFooterState();
                 }
 
                 for (var i = 0; i < markerCount; i++)
@@ -331,7 +331,7 @@ namespace R3E.Core.Recording
                 var classCount = reader.ReadInt32();
                 if (classCount < 0 || classCount > (stream.Length - stream.Position) / 4)
                 {
-                    return false;
+                    return DiscardFooterState();
                 }
 
                 classIds.Clear();
@@ -344,19 +344,35 @@ namespace R3E.Core.Recording
             }
             catch (Exception ex) when (ex is EndOfStreamException or IOException or OverflowException)
             {
-                index.Clear();
-                markers.Clear();
-                classIds.Clear();
-                if (Header.PlayerClassId != 0)
-                {
-                    classIds.Add(Header.PlayerClassId);
-                }
-
-                MaxNumCars = Header.NumCarsAtStart;
-                TotalFrames = 0;
-                Duration = TimeSpan.Zero;
-                return false;
+                return DiscardFooterState();
             }
+        }
+
+        /// <summary>
+        /// Drops anything a partially-read footer left behind and restores the header-derived
+        /// defaults, then reports failure so the caller rebuilds the index by scanning.
+        /// </summary>
+        /// <remarks>
+        /// Every footer bail routes through here. The bounds checks sit between the index, marker
+        /// and class sections, so failing a later one would otherwise leave the earlier sections
+        /// populated from a footer already known to be damaged — and <see cref="RebuildIndex"/>
+        /// clears the index and markers but not the class list, so those stale entries would
+        /// survive into a rebuilt file.
+        /// </remarks>
+        private bool DiscardFooterState()
+        {
+            index.Clear();
+            markers.Clear();
+            classIds.Clear();
+            if (Header.PlayerClassId != 0)
+            {
+                classIds.Add(Header.PlayerClassId);
+            }
+
+            MaxNumCars = Header.NumCarsAtStart;
+            TotalFrames = 0;
+            Duration = TimeSpan.Zero;
+            return false;
         }
 
         /// <summary>
