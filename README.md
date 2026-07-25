@@ -84,7 +84,9 @@ D-Bus protocol. It works out of the box on KDE Plasma, Linux Mint (Cinnamon),
 Xfce, LXQt, and Ubuntu's GNOME. On vanilla GNOME you need the
 [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/)
 to see tray icons. If no tray is available, the HUD still runs normally —
-only the icon is missing.
+only the icon is missing. See
+[How the Linux Tray Icon Works](docs/linux-tray-dbus.md) for the implementation
+details and troubleshooting steps.
 
 For Linux support, you need to run the relay service inside the same Proton instance as RaceRoom:
 
