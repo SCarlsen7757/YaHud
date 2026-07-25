@@ -1,0 +1,132 @@
+.record-replay {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5vmin;
+    min-width: 26vmin;
+    max-width: fit-content;
+    box-sizing: border-box;
+}
+
+/* Recording disabled and nothing loaded: the widget stays in the DOM so drag registration and
+   positioning keep working, but it draws nothing on the HUD. */
+.record-replay.inactive {
+    display: none;
+}
+
+.section {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 0.1vmin solid #111;
+    border-radius: 0.5vmin;
+    box-shadow: 0 0 0.5vmin rgba(0, 0, 0, 0.5);
+    padding: 0.6vmin 0.8vmin;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vmin;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5vmin;
+}
+
+.section-title {
+    font-size: clamp(0.45rem, 0.5vw, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-right: auto;
+}
+
+.transport {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 0.1vmin solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.3vmin;
+    padding: 0.2vmin 0.6vmin;
+    font-size: clamp(0.45rem, 0.55vw, 0.8rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.transport.on {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.transport:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.readout {
+    display: flex;
+    gap: 0.8vmin;
+    flex-wrap: wrap;
+}
+
+.value {
+    font-size: clamp(0.5rem, 0.7vw, 1rem);
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.file,
+.note {
+    font-size: clamp(0.4rem, 0.45vw, 0.7rem);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.timeline {
+    display: flex;
+    align-items: center;
+    gap: 0.5vmin;
+}
+
+.time {
+    font-size: clamp(0.4rem, 0.5vw, 0.75rem);
+    font-variant-numeric: tabular-nums;
+}
+
+.scrub {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 12vmin;
+    display: flex;
+    align-items: center;
+}
+
+.scrubber {
+    width: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Catch-up progress sits under the slider so a multi-second rewind reads as progress, not a
+   freeze. It is decoration only - the slider itself stays live throughout. */
+.catchup {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 0.3vmin;
+    border-radius: 0.15vmin;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.controls {
+    display: flex;
+    gap: 0.5vmin;
+}
+
+.picker {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #f1f1f1;
+    border: 0.1vmin solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.3vmin;
+    font-size: clamp(0.4rem, 0.5vw, 0.75rem);
+    padding: 0.1vmin 0.3vmin;
+    cursor: pointer;
+}

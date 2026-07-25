@@ -1,0 +1,393 @@
+@using System.Globalization
+@using Microsoft.Extensions.DependencyInjection
+@using R3E.Core.Recording
+@using R3E.Core.Replay
+@using R3E.Data
+@using R3E.YaHud.Components.Widget.Core
+@inherits HudWidgetBase<RecordReplaySettings>
+@inject RecordingOptions RecordingOptions
+@inject ReplayController ReplayController
+@inject IServiceProvider Services
+
+@* This is the first widget carrying real controls, so it is the first to meet the drag handler
+   HudHelper attaches to the widget host while the HUD is *unlocked*: a mousedown anywhere on the
+   host also starts a widget drag. That is the positioning mode, and locking the HUD (the default
+   state, Ctrl+Shift+Alt+L) detaches the handler and leaves the controls to themselves. Blazor's
+   @@onmousedown:stopPropagation cannot help here - it runs from Blazor's document-level delegate,
+   long after the event has bubbled past the host's own native listener. *@
+<WidgetHost Owner="this">
+    <div class="record-replay @(Active ? "" : "inactive")">
+        @if (Active)
+        {
+            @if (RecordingOptions.Enabled)
+            {
+                <div class="section">
+                    <div class="section-head">
+                        <span class="section-title" style="color: @Settings!.LabelColor">Record</span>
+                        <button class="transport @(IsRecording ? "on" : "")"
+                                style="color: @(IsRecording ? Settings!.RecordingColor : Settings!.LabelColor)"
+                                disabled="@ReplayController.IsLoaded"
+                                @onclick="ToggleRecording">
+                            @(IsRecording ? "Stop" : "Record")
+                        </button>
+                    </div>
+
+                    @if (ReplayController.IsLoaded)
+                    {
+                        <div class="note" style="color: @Settings!.LabelColor">Paused while replaying</div>
+                    }
+                    else
+                    {
+                        <div class="readout">
+                            <span class="value" style="color: @(IsRecording ? Settings!.RecordingColor : Settings!.LabelColor)">@FormatDuration(RecordedElapsed)</span>
+                            <span class="value" style="color: @Settings!.LabelColor">@FormatBytes(RecordedBytes)</span>
+                            @if (Settings!.ShowDroppedFrames)
+                            {
+                                <span class="value" style="color: @(RecordedDropped > 0 ? Settings!.RecordingColor : Settings!.LabelColor)">@RecordedDropped dropped</span>
+                            }
+                        </div>
+
+                        @if (Settings!.ShowFileName)
+                        {
+                            <div class="file" style="color: @Settings!.LabelColor">@(CurrentRecordingName ?? "no file yet")</div>
+                        }
+                    }
+                </div>
+            }
+
+            @if (ReplayController.IsLoaded)
+            {
+                <div class="section">
+                    <div class="section-head">
+                        <span class="section-title" style="color: @Settings!.LabelColor">Replay</span>
+                        <button class="transport" style="color: @Settings!.ReplayColor" @onclick="TogglePlay">
+                            @(ReplayController.IsPlaying ? "Pause" : "Play")
+                        </button>
+                        <button class="transport" style="color: @Settings!.LabelColor" @onclick="StepFrame">Step</button>
+                        <button class="transport" style="color: @Settings!.LabelColor" @onclick="StopReplay">Live</button>
+                    </div>
+
+                    <div class="timeline">
+                        <span class="time" style="color: @Settings!.LabelColor">@FormatDuration(DisplayPosition)</span>
+                        <div class="scrub">
+                            <input class="scrubber"
+                                   type="range"
+                                   min="0"
+                                   max="@ToInvariant(DurationSeconds)"
+                                   step="0.05"
+                                   value="@ToInvariant(SliderSeconds)"
+                                   @oninput="OnScrubInput"
+                                   @onchange="OnScrubCommit" />
+                            @if (ReplayController.IsCatchingUp)
+                            {
+                                <div class="catchup" style="background-color: @Settings!.CatchUpColor; width: @ToInvariant(ReplayController.CatchUpProgress * 100)%"></div>
+                            }
+                        </div>
+                        <span class="time" style="color: @Settings!.LabelColor">@FormatDuration(ReplayController.Duration)</span>
+                    </div>
+
+                    @if (ReplayController.IsCatchingUp)
+                    {
+                        <div class="note" style="color: @Settings!.CatchUpColor">
+                            Catching up @((ReplayController.CatchUpProgress * 100).ToString("F0", CultureInfo.InvariantCulture))%
+                        </div>
+                    }
+
+                    <div class="controls">
+                        <select class="picker" value="@ToInvariant(ReplayController.Speed)" @onchange="OnSpeedChanged">
+                            @foreach (var speed in SpeedPresets)
+                            {
+                                <option value="@ToInvariant(speed)">@(ToInvariant(speed))x</option>
+                            }
+                        </select>
+
+                        <select class="picker" value="" @onchange="OnJumpToLap">
+                            <option value="">Lap…</option>
+                            @foreach (var marker in ReplayController.LapMarkers)
+                            {
+                                <option value="@marker.Value">Lap @(marker.Value + 1)</option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (Settings!.ShowReplayReadout)
+                    {
+                        <div class="readout">
+                            <span class="value" style="color: @Settings!.LabelColor">frame @ReplayController.FrameIndex</span>
+                            <span class="value" style="color: @Settings!.LabelColor">lap @CurrentLap</span>
+                            <span class="value" style="color: @Settings!.LabelColor">@CurrentPhase</span>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</WidgetHost>
+
+@code {
+    /// <summary>Playback rates offered by the speed picker.</summary>
+    private static readonly double[] SpeedPresets = [0.1, 0.25, 0.5, 1, 2, 4, 8];
+
+    /// <summary>
+    /// How long the scrubber may sit still mid-drag before the position is committed. Dragging
+    /// itself never seeks: acting on every drag tick would fire a reset per pixel travelled on a
+    /// backward drag, each restarting playback from file start.
+    /// </summary>
+    private static readonly TimeSpan ScrubCommitDelay = TimeSpan.FromMilliseconds(150);
+
+    private TelemetryRecorder? recorder;
+    private System.Timers.Timer? scrubTimer;
+    private double? scrubPreviewSeconds;
+
+    public override string ElementId => "RecordReplayWidget";
+    public override string Name => "Record & Replay";
+    public override string Category => "Tools";
+    public override double DefaultXPercent => 50;
+    public override double DefaultYPercent => 90;
+    public override bool Collidable => true;
+
+    public RecordReplay()
+    {
+        // Displays no telemetry, so it must not subscribe to DataUpdated at 60 Hz. It re-renders
+        // off the recorder's and controller's own StateChanged events instead.
+        UseR3EData = false;
+    }
+
+    /// <summary>
+    /// Whether the widget draws anything on the HUD. It is always registered so it can be found
+    /// and positioned in the settings panel, but a user who never records never sees it.
+    /// </summary>
+    private bool Active => RecordingOptions.Enabled || ReplayController.IsLoaded;
+
+    private bool IsRecording => recorder?.IsRecording ?? false;
+    private TimeSpan RecordedElapsed => recorder?.Elapsed ?? TimeSpan.Zero;
+    private long RecordedBytes => recorder?.BytesWritten ?? 0;
+    private long RecordedDropped => recorder?.DroppedFrames ?? 0;
+
+    private string? CurrentRecordingName
+    {
+        get
+        {
+            var file = recorder?.CurrentFile;
+            return string.IsNullOrEmpty(file) ? null : System.IO.Path.GetFileName(file);
+        }
+    }
+
+    private double DurationSeconds => Math.Max(0.05, ReplayController.Duration.TotalSeconds);
+
+    /// <summary>Position shown in the readout: the drag preview while scrubbing, else the real one.</summary>
+    private TimeSpan DisplayPosition => scrubPreviewSeconds is { } preview
+        ? TimeSpan.FromSeconds(preview)
+        : ReplayController.Position;
+
+    private double SliderSeconds => scrubPreviewSeconds ?? ReplayController.Position.TotalSeconds;
+
+    private int CurrentLap => TelemetryService.Data.Raw.CompletedLaps + 1;
+
+    private string CurrentPhase
+    {
+        get
+        {
+            var phase = TelemetryService.Data.Raw.SessionPhase;
+            return Enum.IsDefined(typeof(Constant.SessionPhase), phase)
+                ? ((Constant.SessionPhase)phase).ToString()
+                : "unknown";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        // The recorder is only registered when recording is enabled, so it must be resolved
+        // optionally - a required injection would throw for every user who has not passed --record.
+        recorder = Services.GetService<TelemetryRecorder>();
+
+        if (recorder is not null)
+        {
+            recorder.StateChanged += OnSourceStateChanged;
+        }
+
+        ReplayController.StateChanged += OnSourceStateChanged;
+    }
+
+    /// <summary>
+    /// Re-renders on the Blazor dispatcher. Both events are raised from background threads - the
+    /// recorder's writer task and the replay pump - so nothing here may touch the render tree
+    /// directly, and nothing here may block: calling back into the pump synchronously would make it
+    /// join itself.
+    /// </summary>
+    private void OnSourceStateChanged()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleRecording()
+    {
+        if (recorder is null)
+        {
+            return;
+        }
+
+        if (recorder.IsRecording)
+        {
+            recorder.Stop();
+        }
+        else
+        {
+            recorder.Start();
+        }
+    }
+
+    private void TogglePlay()
+    {
+        if (ReplayController.IsPlaying)
+        {
+            ReplayController.Pause();
+        }
+        else
+        {
+            ReplayController.Play();
+        }
+    }
+
+    private void StepFrame() => ReplayController.Step();
+
+    private void StopReplay() => ReplayController.Unload();
+
+    /// <summary>
+    /// Records the drag position without seeking. The scrubber is therefore never hard-locked, even
+    /// mid-catch-up.
+    /// </summary>
+    private void OnScrubInput(ChangeEventArgs e)
+    {
+        if (!TryReadSeconds(e, out var seconds))
+        {
+            return;
+        }
+
+        scrubPreviewSeconds = seconds;
+        RestartScrubTimer();
+    }
+
+    /// <summary>Commits the drag on release. The pump supersedes any in-flight seek by itself.</summary>
+    private void OnScrubCommit(ChangeEventArgs e)
+    {
+        if (TryReadSeconds(e, out var seconds))
+        {
+            scrubPreviewSeconds = seconds;
+        }
+
+        CommitScrub();
+    }
+
+    private void OnSpeedChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var speed))
+        {
+            ReplayController.Speed = speed;
+        }
+    }
+
+    private void OnJumpToLap(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var lap))
+        {
+            ReplayController.JumpToLap(lap);
+        }
+    }
+
+    private static bool TryReadSeconds(ChangeEventArgs e, out double seconds)
+        => double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds);
+
+    /// <summary>
+    /// Restarts the stillness timer, so a drag that stops without a release event still commits.
+    /// </summary>
+    private void RestartScrubTimer()
+    {
+        scrubTimer ??= CreateScrubTimer();
+        scrubTimer.Stop();
+        scrubTimer.Start();
+    }
+
+    private System.Timers.Timer CreateScrubTimer()
+    {
+        var timer = new System.Timers.Timer(ScrubCommitDelay.TotalMilliseconds) { AutoReset = false };
+        timer.Elapsed += (_, _) =>
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            // Routed through the dispatcher rather than seeking straight from the timer thread, so
+            // every seek this widget issues is raised from the same place.
+            _ = InvokeAsync(() =>
+            {
+                CommitScrub();
+                StateHasChanged();
+            });
+        };
+
+        return timer;
+    }
+
+    private void CommitScrub()
+    {
+        scrubTimer?.Stop();
+
+        if (scrubPreviewSeconds is not { } seconds)
+        {
+            return;
+        }
+
+        scrubPreviewSeconds = null;
+        ReplayController.Seek(TimeSpan.FromSeconds(seconds));
+    }
+
+    /// <summary>Nothing to show: this widget renders no telemetry.</summary>
+    protected override void UpdateWithTestData() { }
+
+    private static string ToInvariant(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private static string FormatDuration(TimeSpan value)
+        => value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"mm\:ss");
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024d:F1} KB";
+        }
+
+        return bytes < 1024L * 1024 * 1024
+            ? $"{bytes / (1024d * 1024d):F1} MB"
+            : $"{bytes / (1024d * 1024d * 1024d):F2} GB";
+    }
+
+    public override void Dispose()
+    {
+        if (recorder is not null)
+        {
+            recorder.StateChanged -= OnSourceStateChanged;
+        }
+
+        ReplayController.StateChanged -= OnSourceStateChanged;
+
+        scrubTimer?.Stop();
+        scrubTimer?.Dispose();
+        scrubTimer = null;
+
+        base.Dispose();
+    }
+}

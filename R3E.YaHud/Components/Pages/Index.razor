@@ -58,6 +58,9 @@
     <R3E.YaHud.Components.Widget.Radar.Radar />
     <R3E.YaHud.Components.Widget.TvTower.TvTower/>
     <R3E.YaHud.Components.Widget.TireBrakeInfo.TireBrakeInfo />
+    @* Listed unconditionally so it is always registered and therefore always present in the
+       settings panel; it gates its own markup on the recording/replay flags. *@
+    <R3E.YaHud.Components.Widget.RecordReplay.RecordReplay />
 </div>
 
 @if (showSettings)
