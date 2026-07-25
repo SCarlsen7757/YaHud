@@ -1,4 +1,6 @@
 using R3E.Data;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace R3E.Core.Recording
 {
@@ -154,20 +156,118 @@ namespace R3E.Core.Recording
         public DateTime StartUtc => new(StartUtcTicks, DateTimeKind.Utc);
 
         /// <summary>
+        /// Absolute byte offset at which <see cref="IndexOffset"/> was last written by
+        /// <see cref="Write"/>. The writer patches that eight-byte slot on a clean close, and the
+        /// slot cannot be at a constant offset because the version string in front of it is
+        /// length-prefixed.
+        /// </summary>
+        internal long IndexOffsetPosition { get; private set; }
+
+        // Offsets into the raw frame, resolved once. Mirrors the pattern in SharedMemoryService:
+        // the layout is owned by Sector3, so it is read from the compiled struct rather than
+        // hardcoded.
+        private static readonly int versionMajorOffset = OffsetOf(nameof(Shared.VersionMajor));
+        private static readonly int versionMinorOffset = OffsetOf(nameof(Shared.VersionMinor));
+        private static readonly int trackNameOffset = OffsetOf(nameof(Shared.TrackName));
+        private static readonly int layoutNameOffset = OffsetOf(nameof(Shared.LayoutName));
+        private static readonly int trackIdOffset = OffsetOf(nameof(Shared.TrackId));
+        private static readonly int layoutIdOffset = OffsetOf(nameof(Shared.LayoutId));
+        private static readonly int sessionTypeOffset = OffsetOf(nameof(Shared.SessionType));
+        private static readonly int sessionPhaseOffset = OffsetOf(nameof(Shared.SessionPhase));
+        private static readonly int playerNameOffset = OffsetOf(nameof(Shared.PlayerName));
+        private static readonly int vehicleInfoOffset = OffsetOf(nameof(Shared.VehicleInfo));
+
+        private static readonly int carNameOffset =
+            vehicleInfoOffset + (int)Marshal.OffsetOf<DriverInfo>(nameof(DriverInfo.Name));
+        private static readonly int carModelIdOffset =
+            vehicleInfoOffset + (int)Marshal.OffsetOf<DriverInfo>(nameof(DriverInfo.ModelId));
+        private static readonly int carClassIdOffset =
+            vehicleInfoOffset + (int)Marshal.OffsetOf<DriverInfo>(nameof(DriverInfo.ClassId));
+        private static readonly int carClassPerfIndexOffset =
+            vehicleInfoOffset + (int)Marshal.OffsetOf<DriverInfo>(nameof(DriverInfo.ClassPerformanceIndex));
+
+        /// <summary>Length of the fixed <c>byte[]</c> string fields in <see cref="Shared"/>.</summary>
+        private const int SharedStringLength = 64;
+
+        private static int OffsetOf(string field) => (int)Marshal.OffsetOf<Shared>(field);
+
+        /// <summary>
         /// Populates the layout and metadata fields from a full-size raw frame.
         /// </summary>
         /// <param name="fullFrame">A full-size raw <see cref="Shared"/> frame.</param>
         /// <param name="yaHudVersion">Version string of the running build.</param>
         /// <returns>A header ready to be written.</returns>
-        /// <remarks>Implemented by agent B1.</remarks>
+        /// <exception cref="ArgumentException"><paramref name="fullFrame"/> is not a full-size frame.</exception>
         public static TelemetryRecordingHeader FromFirstFrame(ReadOnlySpan<byte> fullFrame, string yaHudVersion)
-            => throw new NotImplementedException("Implemented by agent B1");
+        {
+            if (fullFrame.Length < FrameTruncation.SizeOfShared)
+            {
+                throw new ArgumentException(
+                    $"Expected a full frame of {FrameTruncation.SizeOfShared} bytes but got {fullFrame.Length}.",
+                    nameof(fullFrame));
+            }
+
+            return new TelemetryRecordingHeader
+            {
+                FormatVersion = CurrentFormatVersion,
+                Flags = 0,
+                SizeOfShared = FrameTruncation.SizeOfShared,
+                AllDriversOffset = FrameTruncation.NumCarsOffset,
+                DriverDataSize = FrameTruncation.DriverDataSize,
+                R3EVersionMajor = ReadInt(fullFrame, versionMajorOffset),
+                R3EVersionMinor = ReadInt(fullFrame, versionMinorOffset),
+                YaHudVersion = yaHudVersion ?? string.Empty,
+                StartUtcTicks = DateTime.UtcNow.Ticks,
+                IndexOffset = 0,
+                SessionType = ReadInt(fullFrame, sessionTypeOffset),
+                SessionPhaseAtStart = ReadInt(fullFrame, sessionPhaseOffset),
+                TrackId = ReadInt(fullFrame, trackIdOffset),
+                LayoutId = ReadInt(fullFrame, layoutIdOffset),
+                TrackName = ReadString(fullFrame, trackNameOffset),
+                LayoutName = ReadString(fullFrame, layoutNameOffset),
+                PlayerName = ReadString(fullFrame, playerNameOffset),
+                PlayerCarModelId = ReadInt(fullFrame, carModelIdOffset),
+                PlayerCarName = ReadString(fullFrame, carNameOffset),
+                PlayerClassId = ReadInt(fullFrame, carClassIdOffset),
+                PlayerClassPerfIndex = ReadInt(fullFrame, carClassPerfIndexOffset),
+                NumCarsAtStart = FrameTruncation.ReadNumCars(fullFrame),
+            };
+        }
 
         /// <summary>Writes the header at the current position of <paramref name="writer"/>.</summary>
         /// <param name="writer">A little-endian binary writer positioned at the start of the file.</param>
-        /// <remarks>Implemented by agent B1.</remarks>
         public void Write(BinaryWriter writer)
-            => throw new NotImplementedException("Implemented by agent B1");
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+
+            writer.Write(Magic);
+            writer.Write(FormatVersion);
+            writer.Write(Flags);
+            writer.Write(SizeOfShared);
+            writer.Write(AllDriversOffset);
+            writer.Write(DriverDataSize);
+            writer.Write(R3EVersionMajor);
+            writer.Write(R3EVersionMinor);
+            writer.Write(YaHudVersion);
+            writer.Write(StartUtcTicks);
+
+            writer.Flush();
+            IndexOffsetPosition = writer.BaseStream.Position;
+            writer.Write(IndexOffset);
+
+            writer.Write(SessionType);
+            writer.Write(SessionPhaseAtStart);
+            writer.Write(TrackId);
+            writer.Write(LayoutId);
+            writer.Write(TrackName);
+            writer.Write(LayoutName);
+            writer.Write(PlayerName);
+            writer.Write(PlayerCarModelId);
+            writer.Write(PlayerCarName);
+            writer.Write(PlayerClassId);
+            writer.Write(PlayerClassPerfIndex);
+            writer.Write(NumCarsAtStart);
+        }
 
         /// <summary>Reads and validates a header.</summary>
         /// <param name="reader">A little-endian binary reader positioned at the start of the file.</param>
@@ -175,9 +275,81 @@ namespace R3E.Core.Recording
         /// <exception cref="InvalidDataException">
         /// The magic, format version or <see cref="SizeOfShared"/> does not match this build.
         /// </exception>
-        /// <remarks>Implemented by agent B1.</remarks>
         public static TelemetryRecordingHeader Read(BinaryReader reader)
-            => throw new NotImplementedException("Implemented by agent B1");
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+
+            var magic = reader.ReadBytes(Magic.Length);
+            if (magic.Length != Magic.Length || !magic.AsSpan().SequenceEqual(Magic))
+            {
+                throw new InvalidDataException(
+                    "Not a YaHud telemetry recording: the file does not start with the \"YHTL\" magic.");
+            }
+
+            var header = new TelemetryRecordingHeader
+            {
+                FormatVersion = reader.ReadUInt16(),
+                Flags = reader.ReadUInt16(),
+            };
+
+            if (header.FormatVersion == 0 || header.FormatVersion > CurrentFormatVersion)
+            {
+                throw new InvalidDataException(
+                    $"Recording format version {header.FormatVersion} is not supported by this build " +
+                    $"(it understands up to version {CurrentFormatVersion}).");
+            }
+
+            header.SizeOfShared = reader.ReadInt32();
+            header.AllDriversOffset = reader.ReadInt32();
+            header.DriverDataSize = reader.ReadInt32();
+
+            // The version guard. Shared mirrors a layout owned by Sector3; if it has changed since the
+            // recording was made, every frame in the file would misparse into plausible-looking
+            // garbage. Refuse loudly rather than render nonsense.
+            if (header.SizeOfShared != FrameTruncation.SizeOfShared
+                || header.AllDriversOffset != FrameTruncation.NumCarsOffset
+                || header.DriverDataSize != FrameTruncation.DriverDataSize)
+            {
+                throw new InvalidDataException(
+                    "This recording was captured against a different RaceRoom shared-memory layout and " +
+                    "cannot be replayed by this build of YaHud. " +
+                    $"Recording: sizeofShared={header.SizeOfShared}, allDriversOffset={header.AllDriversOffset}, " +
+                    $"driverDataSize={header.DriverDataSize}. " +
+                    $"This build: sizeofShared={FrameTruncation.SizeOfShared}, " +
+                    $"allDriversOffset={FrameTruncation.NumCarsOffset}, " +
+                    $"driverDataSize={FrameTruncation.DriverDataSize}.");
+            }
+
+            header.R3EVersionMajor = reader.ReadInt32();
+            header.R3EVersionMinor = reader.ReadInt32();
+            header.YaHudVersion = reader.ReadString();
+            header.StartUtcTicks = reader.ReadInt64();
+
+            reader.BaseStream.Flush();
+            header.IndexOffsetPosition = reader.BaseStream.Position;
+            header.IndexOffset = reader.ReadInt64();
+
+            header.SessionType = reader.ReadInt32();
+            header.SessionPhaseAtStart = reader.ReadInt32();
+            header.TrackId = reader.ReadInt32();
+            header.LayoutId = reader.ReadInt32();
+            header.TrackName = reader.ReadString();
+            header.LayoutName = reader.ReadString();
+            header.PlayerName = reader.ReadString();
+            header.PlayerCarModelId = reader.ReadInt32();
+            header.PlayerCarName = reader.ReadString();
+            header.PlayerClassId = reader.ReadInt32();
+            header.PlayerClassPerfIndex = reader.ReadInt32();
+            header.NumCarsAtStart = reader.ReadInt32();
+
+            if (header.StartUtcTicks < 0 || header.StartUtcTicks > DateTime.MaxValue.Ticks)
+            {
+                throw new InvalidDataException(
+                    $"Recording header carries an implausible start timestamp ({header.StartUtcTicks} ticks).");
+            }
+
+            return header;
+        }
 
         /// <summary>
         /// Reads only the header of a recording, without loading the index or decoding any block.
@@ -185,8 +357,37 @@ namespace R3E.Core.Recording
         /// </summary>
         /// <param name="path">Path to a <c>.yhtl</c> file.</param>
         /// <returns>The parsed header.</returns>
-        /// <remarks>Implemented by agent B1.</remarks>
         public static TelemetryRecordingHeader ReadFrom(string path)
-            => throw new NotImplementedException("Implemented by agent B1");
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+
+            using var stream = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            try
+            {
+                return Read(reader);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new InvalidDataException(
+                    $"\"{path}\" is truncated before the end of the recording header.", ex);
+            }
+        }
+
+        private static int ReadInt(ReadOnlySpan<byte> frame, int offset)
+            => BitConverter.ToInt32(frame[offset..]);
+
+        private static string ReadString(ReadOnlySpan<byte> frame, int offset)
+        {
+            var field = frame.Slice(offset, SharedStringLength);
+            var end = field.IndexOf((byte)0);
+            if (end < 0)
+            {
+                end = field.Length;
+            }
+
+            return Encoding.UTF8.GetString(field[..end]);
+        }
     }
 }
