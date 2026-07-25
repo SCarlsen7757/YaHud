@@ -1,4 +1,39 @@
-﻿# Code Review Instructions
+﻿# Pull Request Instructions
+
+## Labels are required
+
+**Every pull request must carry at least one label.** Add them when you open the
+PR — do not leave it for a reviewer.
+
+This is not bookkeeping: `.github/release.yml` groups the auto-generated release
+notes by PR label, and `.github/workflows/create-release.yml` consumes that
+grouping. An unlabelled PR silently falls through to the `*` catch-all and shows
+up under "🔍 Other Changes" in the published release notes.
+
+Pick labels that describe the change, using as many as genuinely apply:
+
+| Label | Use for |
+|-------|---------|
+| `enhancement` | New feature or improvement |
+| `widget` | New HUD widget, or changes to an existing one |
+| `bug` | Fixes broken behaviour |
+| `documentation` | README, docs/, CONTRIBUTING, or comment-only changes |
+| `packaging` | AppImage, archives, release artifacts |
+| `refactor` | Internal restructuring, no behaviour change |
+| `chore` | Maintenance with no behaviour change: cleanup, tooling, config |
+| `ci` | GitHub Actions workflows, build, or versioning setup |
+| `dependencies` / `.NET` | Dependency bumps, runtime or target framework upgrades |
+| `windows` / `linux` | Changes specific to one OS |
+
+Release-note categories are matched **top to bottom in `.github/release.yml` and
+the first match wins**, so a PR labelled both `enhancement` and `documentation`
+is listed under "🚀 Features". Label for what the change *is* first; add the
+supporting labels after.
+
+Keep `.github/release.yml` in mind when adding a new label to the repository — a
+label that appears in no category lands in "🔍 Other Changes".
+
+# Code Review Instructions
 
 When reviewing code, check for:
 
