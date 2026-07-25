@@ -505,12 +505,16 @@ All three prefixes also accept a hyphen instead of a slash (`feature-name`,
    - Creates beta version (e.g., 1.1.0-beta.1)
 
 5. When ready for release, create PR from develop to main
+   - Put "+semver: minor" (or "+semver: major") in the PR TITLE, or you
+     get a patch release — see Release Process below
+   - Label it "release"
    - Version Preview will show final release version
    - Build Validation will run
 
-6. Merge to main
-   - Automatically creates GitHub release
-   - Builds and publishes artifacts
+6. Merge to main with a merge commit (not squash)
+   - Automatically creates a DRAFT GitHub release
+   - Builds and attaches artifacts
+   - Publish the draft yourself from the Releases page
 ```
 
 ### Hotfix for Production
@@ -544,6 +548,27 @@ All three prefixes also accept a hyphen instead of a slash (`feature-name`,
 
 Releases are **built automatically** when commits land on `main`, then published
 manually — see the note on drafts below.
+
+### Cutting a Release
+
+A release is a PR from `develop` to `main`. Two steps in that process fail
+**silently** — nothing goes red, you just get the wrong result:
+
+1. **The increment lives in the PR title.** `main` defaults to a patch bump, so
+   a feature release needs `+semver: minor` in the title of the release PR.
+   This repo sets `merge_commit_message: PR_TITLE`, so GitHub copies the PR
+   title into the merge commit body, which is where GitVersion reads it — the
+   PR body and description are not read. See
+   [Choosing the Increment](#choosing-the-increment).
+2. **The release is a draft.** A green workflow does not mean the release
+   shipped; someone has to publish it.
+
+Also: label the release PR `release` so it is excluded from its own changelog,
+and merge with a **merge commit**, not a squash — squashing flattens the history
+GitVersion walks to find the version source and the marker.
+
+> The `cut-release` skill in `.claude/skills/` walks through this end to end,
+> including the back-merge to `develop` afterwards.
 
 ### What Happens on Merge to Main
 
