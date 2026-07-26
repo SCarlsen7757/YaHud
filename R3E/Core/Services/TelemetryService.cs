@@ -14,6 +14,9 @@ namespace R3E.Core.Services
         public event Action<int>? StartLightsChanged;
         public event Action<TelemetryData>? NewLap;
         public event Action<TelemetryData>? SessionTypeChanged;
+
+        public event Action<TelemetryData>? TelemetryReset;
+
         public event Action<TelemetryData>? SessionPhaseChanged;
         public event Action<TelemetryData>? CarPositionChanged;
         public event Action<TelemetryData>? TrackChanged;
@@ -37,6 +40,21 @@ namespace R3E.Core.Services
 
             sharedSource.DataUpdated += OnRawDataUpdated;
             sharedSource.StartLightsChanged += SharedSource_StartLightsChanged;
+
+            // Swapping between live telemetry and a recording replaces the whole stream, so
+            // everything accumulated downstream is stale. The swap carries no frame with it, so
+            // rather than resetting against the previous source's last frame, invalidate the tick
+            // watermark and let the next real frame take the normal reset path below - it then runs
+            // against genuine data instead of a fabricated one.
+            if (sharedSource is ISwitchableSharedSource switchable)
+            {
+                switchable.ActiveSourceChanged += OnActiveSourceChanged;
+            }
+        }
+
+        private void OnActiveSourceChanged()
+        {
+            lastTick = int.MaxValue;
         }
 
         private void SharedSource_StartLightsChanged(int startLights)
@@ -50,12 +68,36 @@ namespace R3E.Core.Services
 
             var tick = raw.Player.GameSimulationTicks;
             var sessionType = (Constant.Session)raw.SessionType;
-            if (sessionType != lastSessionType || tick < lastTick)
+            var sessionTypeChanged = sessionType != lastSessionType;
+
+            // Ticks going backwards means the sim restarted, RaceRoom entered its own replay, or a
+            // rewound telemetry stream is being fed in. Everything accumulated downstream is stale,
+            // which is exactly what a session change means too - hence one reset signal for both.
+            if (sessionTypeChanged || tick < lastTick)
             {
                 lastSessionType = sessionType;
                 lastLapNumber = -1;
-                logger.LogInformation("Session changed: {SessionType}", lastSessionType);
-                SessionTypeChanged?.Invoke(Data);
+
+                // This service's own edge-detection state has to go as well, or the events that
+                // re-establish derived data never fire again when the underlying value happens to
+                // be unchanged across the reset - leaving PlayerStartPosition and RollingStart
+                // stuck at whatever the previous session left behind.
+                this.sessionPhase = Constant.SessionPhase.Unavailable;
+                this.trackId = 0;
+                this.carId = 0;
+
+                // Seeded from the current frame rather than zeroed: a reset is not a position
+                // change, so clearing it would fire a spurious CarPositionChanged on this frame.
+                playerPosition = raw.Position;
+
+                logger.LogInformation("Telemetry reset. Session: {SessionType}", lastSessionType);
+                TelemetryReset?.Invoke(Data);
+
+                if (sessionTypeChanged)
+                {
+                    logger.LogInformation("Session changed: {SessionType}", lastSessionType);
+                    SessionTypeChanged?.Invoke(Data);
+                }
             }
             lastTick = tick;
 
@@ -138,6 +180,10 @@ namespace R3E.Core.Services
             disposed = true;
             sharedSource.DataUpdated -= OnRawDataUpdated;
             sharedSource.StartLightsChanged -= SharedSource_StartLightsChanged;
+            if (sharedSource is ISwitchableSharedSource switchable)
+            {
+                switchable.ActiveSourceChanged -= OnActiveSourceChanged;
+            }
             GC.SuppressFinalize(this);
         }
     }

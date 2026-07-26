@@ -28,6 +28,24 @@ namespace R3E.YaHud.Components.Widget.Core
 
         public double Scale { get; set; } = 1.0;
 
+        /// <summary>
+        /// Whether this widget is pinned in place by its own CSS rather than positioned from
+        /// <see cref="XPercent"/>/<see cref="YPercent"/>. Settings classes that expose a dock
+        /// setting override this; everything else stays free.
+        /// </summary>
+        /// <remarks>
+        /// It lives on the settings rather than on the widget so it can flip at runtime from a
+        /// single settings change, and so <see cref="IsPositionSettingVisible"/> can be used as a
+        /// <see cref="SettingTypeAttribute.VisibilityPredicateName"/> without any widget plumbing.
+        /// </remarks>
+        public virtual bool Docked => false;
+
+        /// <summary>
+        /// Visibility predicate for settings that only mean something when the widget can be moved.
+        /// Scale is deliberately not covered: a docked widget still scales.
+        /// </summary>
+        public bool IsPositionSettingVisible() => !Docked;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
 

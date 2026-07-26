@@ -11,6 +11,16 @@
     </div>
 
     <div class="panel-body">
+        <div class="category-container">
+            <h3 class="category-title">Telemetry Recordings</h3>
+            <ul class="category-widgets">
+                <li class="widget-item @(SettingsContext.RecordingsSelected ? "selected" : "")" @onclick="() => SettingsContext.OpenRecordings!()">
+                    <div class="select-effect"></div>
+                    <h4 class="widget-name">Browse Recordings</h4>
+                </li>
+            </ul>
+        </div>
+
         @foreach (var group in WidgetsByCategory)
         {
             <SettingsCategory Name="@group.Key" Widgets="@group.AsEnumerable()" />
@@ -28,6 +38,9 @@
 
     [CascadingParameter]
     public SettingPanelEvents Events { get; set; } = default!;
+
+    [CascadingParameter]
+    public SettingsContext SettingsContext { get; set; } = null!;
 
     private IEnumerable<IGrouping<string, IWidget>> WidgetsByCategory => Widgets.GroupBy(w => w.Category);
 }

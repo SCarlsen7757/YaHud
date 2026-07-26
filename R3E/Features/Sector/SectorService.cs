@@ -27,10 +27,10 @@ namespace R3E.Features.Sector
 
             // Subscribe to core telemetry events
             telemetry.DataUpdated += OnDataUpdated;
-            telemetry.SessionTypeChanged += OnSessionChanged;
+            telemetry.TelemetryReset += OnTelemetryReset;
         }
 
-        private void OnSessionChanged(TelemetryData data)
+        private void OnTelemetryReset(TelemetryData data)
         {
             lastSectorIndex = -1;
         }
@@ -68,7 +68,7 @@ namespace R3E.Features.Sector
         public void Dispose()
         {
             telemetry.DataUpdated -= OnDataUpdated;
-            telemetry.SessionTypeChanged -= OnSessionChanged;
+            telemetry.TelemetryReset -= OnTelemetryReset;
             GC.SuppressFinalize(this);
         }
     }
