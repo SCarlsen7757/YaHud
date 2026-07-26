@@ -506,6 +506,68 @@ window.HudHelper = (function () {
             } catch (e) {
                 console.warn('HudHelper.clearWidgetSettings: localStorage error', e);
             }
+        },
+
+        // The replay scrubber's live-drag handling lives here, entirely client-side. A Blazor Server
+        // round trip per native 'input' event (fired on every pixel of a drag) queues over SignalR;
+        // under any circuit load those can back up and keep delivering stale positions for seconds
+        // after release. Worse, a slider whose `value` is bound reactively in Razor gets that
+        // attribute re-rendered on every server-side tick (e.g. a still-playing replay advancing the
+        // position ~10x/second) - fighting the user's own drag regardless of direction. So the input
+        // is left uncontrolled from Blazor's side: dragging, the live label, and the thumb position
+        // are all handled here, and only the final 'change' (one event, on release) reaches C#.
+        formatScrubberDuration: function (totalSeconds) {
+            if (!isFinite(totalSeconds) || totalSeconds < 0) {
+                totalSeconds = 0;
+            }
+
+            const total = Math.floor(totalSeconds);
+            const hours = Math.floor(total / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const seconds = total % 60;
+            const pad = (n) => n.toString().padStart(2, '0');
+
+            return hours >= 1 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
+        },
+
+        bindScrubber: function (inputId, labelId) {
+            const input = document.getElementById(inputId);
+            if (!input || input.dataset.scrubberBound === '1') {
+                return;
+            }
+
+            input.dataset.scrubberBound = '1';
+            input.dataset.dragging = '0';
+
+            const updateLabel = () => {
+                const label = document.getElementById(labelId);
+                if (label) {
+                    label.textContent = HudHelper.formatScrubberDuration(parseFloat(input.value));
+                }
+            };
+
+            input.addEventListener('pointerdown', () => { input.dataset.dragging = '1'; });
+            input.addEventListener('input', updateLabel);
+
+            // A drag that ends outside the input (mouse released elsewhere, or a touch cancelled)
+            // still has to clear the flag, or the slider would stop following playback forever.
+            const clearDragging = () => { input.dataset.dragging = '0'; };
+            input.addEventListener('change', clearDragging);
+            window.addEventListener('pointerup', clearDragging, { passive: true });
+        },
+
+        setScrubberValueIfIdle: function (inputId, seconds, labelId) {
+            const input = document.getElementById(inputId);
+            if (!input || input.dataset.dragging === '1') {
+                return;
+            }
+
+            input.value = seconds;
+
+            const label = document.getElementById(labelId);
+            if (label) {
+                label.textContent = HudHelper.formatScrubberDuration(seconds);
+            }
         }
     };
 })();

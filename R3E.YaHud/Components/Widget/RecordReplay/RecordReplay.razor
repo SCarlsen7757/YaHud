@@ -30,7 +30,7 @@
                 else if (ReplayController.IsLoaded)
                 {
                     <span class="rail-glyph" style="color: @Settings!.ReplayColor">@(ReplayController.IsPlaying ? "▶" : "‖")</span>
-                    <span class="rail-text" style="color: @Settings!.ReplayColor">@FormatDuration(DisplayPosition)</span>
+                    <span class="rail-text" style="color: @Settings!.ReplayColor">@FormatDuration(ReplayController.Position)</span>
                 }
                 else
                 {
@@ -92,15 +92,18 @@
                     </div>
 
                     <div class="timeline">
-                        <span class="time" style="color: @Settings!.LabelColor">@FormatDuration(DisplayPosition)</span>
+                        @* Deliberately no reactive @FormatDuration(...) binding here: JS
+                           (HudHelper.bindScrubber) owns this label's text and the input's value
+                           exclusively after the first render, so a live-playing position never
+                           fights a user's in-progress drag. See the remarks on OnScrubCommit. *@
+                        <span id="@ScrubberLabelElementId" class="time" style="color: @Settings!.LabelColor"></span>
                         <div class="scrub">
-                            <input class="scrubber"
+                            <input id="@ScrubberElementId"
+                                   class="scrubber"
                                    type="range"
                                    min="0"
                                    max="@ToInvariant(DurationSeconds)"
                                    step="0.05"
-                                   value="@ToInvariant(SliderSeconds)"
-                                   @oninput="OnScrubInput"
                                    @onchange="OnScrubCommit" />
                             @if (ReplayController.IsCatchingUp)
                             {
@@ -153,18 +156,11 @@
     /// <summary>Playback rates offered by the speed picker.</summary>
     private static readonly double[] SpeedPresets = [0.1, 0.25, 0.5, 1, 2, 4, 8];
 
-    /// <summary>
-    /// How long the scrubber may sit still mid-drag before the position is committed. Dragging
-    /// itself never seeks: acting on every drag tick would fire a reset per pixel travelled on a
-    /// backward drag, each restarting playback from file start.
-    /// </summary>
-    private static readonly TimeSpan ScrubCommitDelay = TimeSpan.FromMilliseconds(150);
-
     private TelemetryRecorder? recorder;
-    private System.Timers.Timer? scrubTimer;
-    private double? scrubPreviewSeconds;
 
     public override string ElementId => "RecordReplayWidget";
+    private string ScrubberElementId => $"{ElementId}-scrubber";
+    private string ScrubberLabelElementId => $"{ElementId}-scrub-time";
     public override string Name => "Record & Replay";
     public override string Category => "Tools";
     public override double DefaultXPercent => 50;
@@ -215,13 +211,6 @@
     }
 
     private double DurationSeconds => Math.Max(0.05, ReplayController.Duration.TotalSeconds);
-
-    /// <summary>Position shown in the readout: the drag preview while scrubbing, else the real one.</summary>
-    private TimeSpan DisplayPosition => scrubPreviewSeconds is { } preview
-        ? TimeSpan.FromSeconds(preview)
-        : ReplayController.Position;
-
-    private double SliderSeconds => scrubPreviewSeconds ?? ReplayController.Position.TotalSeconds;
 
     private int CurrentLap => TelemetryService.Data.Raw.CompletedLaps + 1;
 
@@ -302,29 +291,36 @@
     private void StopReplay() => ReplayController.Unload();
 
     /// <summary>
-    /// Records the drag position without seeking. The scrubber is therefore never hard-locked, even
-    /// mid-catch-up.
+    /// Commits the drag on release - the only point this widget ever seeks from. The pump
+    /// supersedes any in-flight seek by itself.
     /// </summary>
-    private void OnScrubInput(ChangeEventArgs e)
-    {
-        if (!TryReadSeconds(e, out var seconds))
-        {
-            return;
-        }
-
-        scrubPreviewSeconds = seconds;
-        RestartScrubTimer();
-    }
-
-    /// <summary>Commits the drag on release. The pump supersedes any in-flight seek by itself.</summary>
+    /// <remarks>
+    /// <para>
+    /// There is deliberately no <c>@@oninput</c> handler reaching into C#. A native range input
+    /// fires <c>input</c> on every pixel of a drag; over a Blazor Server circuit each one is a
+    /// SignalR round trip, and under any circuit load (the replay pump's own frequent re-renders,
+    /// for instance) those can queue and keep arriving well after release. A previous version used
+    /// <c>@@oninput</c> to drive a live preview and a commit-on-stillness timer - both of which kept
+    /// being re-triggered by that backlog long after the user let go, each stale commit forcing a
+    /// fresh rewind-to-start before the previous catch-up could finish. That read as the replay
+    /// resetting to the start over and over.
+    /// </para>
+    /// <para>
+    /// The live preview during the drag itself (the scrubber's own thumb position, and the
+    /// adjacent time label) is now owned entirely by <c>HudHelper.bindScrubber</c> in JS - see
+    /// <see cref="OnAfterRenderAsync"/>. That also closes a second, related fight: with the input's
+    /// <c>value</c> bound reactively in Razor, a still-playing replay's position kept getting
+    /// re-rendered into the DOM every ~100ms, yanking the slider back to the live position mid-drag
+    /// regardless of which direction the user dragged. JS now only pushes a new value while the
+    /// user is not actively holding the slider.
+    /// </para>
+    /// </remarks>
     private void OnScrubCommit(ChangeEventArgs e)
     {
         if (TryReadSeconds(e, out var seconds))
         {
-            scrubPreviewSeconds = seconds;
+            ReplayController.Seek(TimeSpan.FromSeconds(seconds));
         }
-
-        CommitScrub();
     }
 
     private void OnSpeedChanged(ChangeEventArgs e)
@@ -347,48 +343,22 @@
         => double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds);
 
     /// <summary>
-    /// Restarts the stillness timer, so a drag that stops without a release event still commits.
+    /// Binds the scrubber's live-drag preview once, then pushes the current position into it every
+    /// render - JS applies the push only while the user is not actively dragging (see the remarks on
+    /// <see cref="OnScrubCommit"/>).
     /// </summary>
-    private void RestartScrubTimer()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        scrubTimer ??= CreateScrubTimer();
-        scrubTimer.Stop();
-        scrubTimer.Start();
-    }
+        await base.OnAfterRenderAsync(firstRender);
 
-    private System.Timers.Timer CreateScrubTimer()
-    {
-        var timer = new System.Timers.Timer(ScrubCommitDelay.TotalMilliseconds) { AutoReset = false };
-        timer.Elapsed += (_, _) =>
-        {
-            if (disposed)
-            {
-                return;
-            }
-
-            // Routed through the dispatcher rather than seeking straight from the timer thread, so
-            // every seek this widget issues is raised from the same place.
-            _ = InvokeAsync(() =>
-            {
-                CommitScrub();
-                StateHasChanged();
-            });
-        };
-
-        return timer;
-    }
-
-    private void CommitScrub()
-    {
-        scrubTimer?.Stop();
-
-        if (scrubPreviewSeconds is not { } seconds)
+        if (!ReplayController.IsLoaded)
         {
             return;
         }
 
-        scrubPreviewSeconds = null;
-        ReplayController.Seek(TimeSpan.FromSeconds(seconds));
+        await JS.InvokeVoidAsync("HudHelper.bindScrubber", ScrubberElementId, ScrubberLabelElementId);
+        await JS.InvokeVoidAsync(
+            "HudHelper.setScrubberValueIfIdle", ScrubberElementId, ReplayController.Position.TotalSeconds, ScrubberLabelElementId);
     }
 
     /// <summary>Nothing to show: this widget renders no telemetry.</summary>
@@ -424,10 +394,6 @@
         }
 
         ReplayController.StateChanged -= OnSourceStateChanged;
-
-        scrubTimer?.Stop();
-        scrubTimer?.Dispose();
-        scrubTimer = null;
 
         base.Dispose();
     }

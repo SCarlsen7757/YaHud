@@ -457,9 +457,24 @@ namespace R3E.Core.Replay
                     }
 
                     Interlocked.Increment(ref frames);
-                    Interlocked.Exchange(ref positionTicks, source.Position.Ticks);
-                    UpdateCatchUpProgress(source.Position);
+                    var landed = source.Position;
+                    Interlocked.Exchange(ref positionTicks, landed.Ticks);
+                    UpdateCatchUpProgress(landed);
                     MaybeNotify(ref lastNotify);
+
+                    // Frame timestamps are discrete and rarely coincide exactly with an arbitrary
+                    // seek target, so the frame that finally reaches it typically overshoots by a
+                    // few milliseconds. Snap the target onto wherever we actually landed in this same
+                    // step - deferring the snap to case 3 on the next iteration would leave a window
+                    // where the top-of-loop check reads target < position and mistakes our own
+                    // overshoot for a brand new backward seek, rewinding to file start and repeating
+                    // this forever (the target is unchanged, so it overshoots the same way every
+                    // time).
+                    if (landed.Ticks >= target.Ticks)
+                    {
+                        Interlocked.CompareExchange(ref targetTicks, landed.Ticks, target.Ticks);
+                    }
+
                     continue;
                 }
 
