@@ -1,10 +1,7 @@
-# Release workflow: builds artifacts and creates release on merge to main
+# Historical release workflow: manual invocation only; YaHUD is discontinued
 name: Release
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

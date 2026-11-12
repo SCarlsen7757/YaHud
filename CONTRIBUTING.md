@@ -1,5 +1,7 @@
 # Contributing to YaHud
 
+> **Discontinued:** YaHUD is archived and no longer maintained. This repository no longer accepts contributions or support requests. The development and release procedures below are historical reference for anyone maintaining a fork. See the [README](README.md) for the reason development ended.
+
 This document describes the code style guidelines, branching strategy, pull request workflow, and release process for the YaHud project.
 
 ## 🎨 Code Style Guidelines

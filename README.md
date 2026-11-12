@@ -4,6 +4,14 @@
 
 # YaHud - Yet Another HUD for RaceRoom Racing Experience
 
+> **Discontinued - no longer maintained**
+>
+> YaHUD was started after OtterHUD was discontinued, with the goal of building a RaceRoom HUD in C# using Blazor for the frontend. RaceRoom has since improved its built-in HUD enough to meet the needs that motivated this project, so development of YaHUD has ended.
+>
+> This repository is archived for reference. No further features, fixes, compatibility updates, or support are planned. Existing source code and releases remain available, and you are welcome to fork the project under its GPL-3.0 license.
+
+The documentation below is retained as historical reference. The final source includes work that was not published in the existing releases.
+
 A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experience, built with Blazor and .NET 10.
 
 ![YaHud Logo](./images/logo512x512.png)
@@ -15,7 +23,7 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 - **Real-Time Telemetry**: Live data from RaceRoom's shared memory API
 - **Record & Replay**: Capture telemetry to a file and replay it through the HUD with the game closed
 - **Modern UI**: Clean, responsive interface built with Blazor
-- **Multiple Widgets**: Clock, MoTec-style display, user inputs, and more (with more coming!)
+- **Multiple Widgets**: Clock, MoTec-style display, user inputs, and more
 - **Settings Panel**: Comprehensive configuration interface for all widgets
 - **Locked/Unlocked Modes**: Lock HUD to prevent accidental repositioning during races
 
@@ -24,7 +32,6 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 - **Clock**: Display current time
 - **MoTec**: Racing telemetry display
 - **User Inputs**: Visualize throttle, brake, and clutch inputs
-- *(More widgets planned for future releases)*
 
 ## 🚀 Getting Started
 
@@ -421,22 +428,16 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Development has ended and this repository no longer accepts pull requests. You may fork the code under the GPL-3.0 license. See [CONTRIBUTING.md](CONTRIBUTING.md) for historical development guidance.
 
 ## 🐛 Known Issues
 
-- Widgets are still in development
+- Some widgets remain unfinished
 - Linux support requires running the relay service on Windows
 
 ## 📮 Support
 
-If you encounter any issues or have questions, please [open an issue](../../issues) on GitHub.
+Support has ended. Existing [issues](../../issues) are preserved as historical records and are not being worked on.
 
 ## ⚡ Performance Notes
 
