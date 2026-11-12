@@ -59,6 +59,10 @@ that happens to touch both does not need either.
 
 Base branch is `develop` (see CONTRIBUTING.md); only release PRs target `main`.
 
+> Cutting a release (`develop` → `main`) has extra requirements that fail
+> silently — the version increment goes in the PR title, and the resulting
+> release is a draft. Use the `cut-release` skill for those, not this one.
+
 ```bash
 gh pr create --base develop \
   --title "..." \

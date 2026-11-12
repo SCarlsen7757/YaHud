@@ -23,7 +23,7 @@ jobs:
     needs: version
     uses: ./.github/workflows/build-artifacts.yml
     with:
-      version: ${{ needs.version.outputs.semVer }}
+      version: ${{ needs.version.outputs.majorMinorPatch }}
 
   # Step 3: Create release with artifacts
   release:
@@ -31,7 +31,7 @@ jobs:
     needs: [version, build]
     uses: ./.github/workflows/create-release.yml
     with:
-      version: ${{ needs.version.outputs.semVer }}
+      version: ${{ needs.version.outputs.majorMinorPatch }}
       draft: true
       prerelease: false
     permissions:
@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "### Release Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** v${{ needs.version.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ needs.version.outputs.majorMinorPatch }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Artifacts Built:**" >> $GITHUB_STEP_SUMMARY
           echo "- R3E.Relay (Windows x64)" >> $GITHUB_STEP_SUMMARY
