@@ -155,6 +155,13 @@ window.HudHelper = (function () {
         const dotnetHelper = entry.dotNetRef;
 
         function onMouseDown(e) {
+            // A docked widget is placed by its own CSS, so left-drag must not move it. Bailing out
+            // before anything else is exactly what leaves its controls usable while the HUD is
+            // unlocked: no drag starts, no window listeners are added, and the slider or button
+            // under the pointer gets the gesture to itself. Right-button scaling still applies -
+            // it is the same listener, but it is not what fights the controls.
+            if (entry.draggable === false && e.button !== 2) return;
+
             // only left button
             if (!entry.isScaling && e.button == 0) {
                 el.style.transformOrigin = "top left";
@@ -330,7 +337,10 @@ window.HudHelper = (function () {
     }
 
     return {
-        registerTransformable: function (elementId, dotnetHelper, locked, collidable) {
+        // draggable defaults to true so every existing caller keeps its drag handler. Docked widgets
+        // pass false: they are placed by their own CSS and must not start a widget drag, which is
+        // what lets their controls work while the HUD is unlocked.
+        registerTransformable: function (elementId, dotnetHelper, locked, collidable, draggable = true) {
             const el = document.getElementById(elementId);
             if (!el) {
                 console.warn('HudHelper.registerTransformable: element not found', elementId);
@@ -339,11 +349,15 @@ window.HudHelper = (function () {
             // if already registered, update dotnetRef and locked state
             let entry = registry[elementId];
             if (!entry) {
-                entry = { el: el, dotNetRef: dotnetHelper, isDragging: false, isScaling: false, handlersAttached: false, raf: null, id: elementId, collidable: !!collidable };
+                entry = { el: el, dotNetRef: dotnetHelper, isDragging: false, isScaling: false, handlersAttached: false, raf: null, id: elementId, collidable: !!collidable, draggable: draggable !== false };
                 registry[elementId] = entry;
             } else {
+                entry.el = el;
                 entry.dotNetRef = dotnetHelper;
                 entry.collidable = !!collidable;
+                // Read live by the mousedown handler, so flipping the dock setting at runtime takes
+                // effect without re-attaching anything.
+                entry.draggable = draggable !== false;
             }
 
             // ensure consistent transform origin so scaling doesn't shift element unexpectedly
@@ -354,13 +368,13 @@ window.HudHelper = (function () {
         },
 
         enableTransformation: function (elementId) {
-            const el = document.getElementById(elementId);
             const entry = registry[elementId];
-            entry.el = el;
             if (!entry) {
                 console.warn('HudHelper.enableTransformation: element not registered', elementId);
                 return;
             }
+            const el = document.getElementById(elementId);
+            if (el) entry.el = el;
             attachHandlers(entry);
         },
 
@@ -396,6 +410,21 @@ window.HudHelper = (function () {
                 el.style.left = (xPercent / 100 * window.innerWidth) - (el.offsetWidth / 2) + "px";
                 el.style.top = (yPercent / 100 * window.innerHeight) - (el.offsetHeight / 2) + "px";
 
+        },
+
+        // Hands placement back to the stylesheet: drops the inline position setPosition (or a drag)
+        // left behind, and anchors scaling to the docked edge so a scale above 1 grows inwards
+        // instead of pushing the widget off-screen.
+        dockElement: function (elementId, transformOrigin) {
+            const el = document.getElementById(elementId);
+            if (!el) {
+                console.warn('HudHelper.dockElement: element not found', elementId);
+                return;
+            }
+            el.style.position = '';
+            el.style.left = '';
+            el.style.top = '';
+            el.style.transformOrigin = transformOrigin || 'top left';
         },
 
         setScale: function (elementId, scale) {
@@ -476,6 +505,68 @@ window.HudHelper = (function () {
                 localStorage.removeItem(elementId);
             } catch (e) {
                 console.warn('HudHelper.clearWidgetSettings: localStorage error', e);
+            }
+        },
+
+        // The replay scrubber's live-drag handling lives here, entirely client-side. A Blazor Server
+        // round trip per native 'input' event (fired on every pixel of a drag) queues over SignalR;
+        // under any circuit load those can back up and keep delivering stale positions for seconds
+        // after release. Worse, a slider whose `value` is bound reactively in Razor gets that
+        // attribute re-rendered on every server-side tick (e.g. a still-playing replay advancing the
+        // position ~10x/second) - fighting the user's own drag regardless of direction. So the input
+        // is left uncontrolled from Blazor's side: dragging, the live label, and the thumb position
+        // are all handled here, and only the final 'change' (one event, on release) reaches C#.
+        formatScrubberDuration: function (totalSeconds) {
+            if (!isFinite(totalSeconds) || totalSeconds < 0) {
+                totalSeconds = 0;
+            }
+
+            const total = Math.floor(totalSeconds);
+            const hours = Math.floor(total / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const seconds = total % 60;
+            const pad = (n) => n.toString().padStart(2, '0');
+
+            return hours >= 1 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
+        },
+
+        bindScrubber: function (inputId, labelId) {
+            const input = document.getElementById(inputId);
+            if (!input || input.dataset.scrubberBound === '1') {
+                return;
+            }
+
+            input.dataset.scrubberBound = '1';
+            input.dataset.dragging = '0';
+
+            const updateLabel = () => {
+                const label = document.getElementById(labelId);
+                if (label) {
+                    label.textContent = HudHelper.formatScrubberDuration(parseFloat(input.value));
+                }
+            };
+
+            input.addEventListener('pointerdown', () => { input.dataset.dragging = '1'; });
+            input.addEventListener('input', updateLabel);
+
+            // A drag that ends outside the input (mouse released elsewhere, or a touch cancelled)
+            // still has to clear the flag, or the slider would stop following playback forever.
+            const clearDragging = () => { input.dataset.dragging = '0'; };
+            input.addEventListener('change', clearDragging);
+            window.addEventListener('pointerup', clearDragging, { passive: true });
+        },
+
+        setScrubberValueIfIdle: function (inputId, seconds, labelId) {
+            const input = document.getElementById(inputId);
+            if (!input || input.dataset.dragging === '1') {
+                return;
+            }
+
+            input.value = seconds;
+
+            const label = document.getElementById(labelId);
+            if (label) {
+                label.textContent = HudHelper.formatScrubberDuration(seconds);
             }
         }
     };

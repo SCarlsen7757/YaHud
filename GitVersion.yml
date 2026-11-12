@@ -1,9 +1,29 @@
 mode: ContinuousDelivery
+
+# Baseline for the next release, needed exactly once to escape the old
+# `v0.1.0-<commit count>` tags: those are pre-release tags, so GitVersion never
+# accepted them as a version source and every release recomputed 0.1.0 forever.
+# The next release ships as 0.2.0 and tags `v0.2.0`, which is a real version
+# source; from then on GitVersion increments from the tag and this line is a
+# no-op floor that can be deleted. It also suppresses the +semver markers below
+# while it is the active baseline.
+next-version: 0.2.0
+
+# Choosing the increment for a release: put one of these in the merge commit
+# message (or the squashed PR title) landing on main. From a 0.2.0 baseline:
+#   +semver: major   (or "breaking")  -> 1.0.0
+#   +semver: minor   (or "feature")   -> 0.3.0
+#   no marker                         -> 0.2.1
+# A marker can only raise the increment above main's `increment:`, never lower
+# it, which is why main is Patch: it keeps all three outcomes reachable. With
+# main on Minor a patch release is impossible — "+semver: patch" is a no-op.
+# So a develop -> main release needs an explicit "+semver: minor"; a hotfix
+# merge needs nothing.
 branches:
   main:
     regex: ^main$
     label: ""
-    increment: Minor
+    increment: Patch
     track-merge-target: false
     is-main-branch: true
   develop:

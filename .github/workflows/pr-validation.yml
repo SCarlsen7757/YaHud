@@ -40,10 +40,10 @@ jobs:
           dotnet-version: "10.x.x"
 
       - name: Restore dependencies
-        run: dotnet restore R3E.sln
+        run: dotnet restore R3E.slnx
 
       - name: Build Solution
-        run: dotnet build R3E.sln --configuration Release --no-restore
+        run: dotnet build R3E.slnx --configuration Release --no-restore
 
       - name: Build Summary
         shell: bash
@@ -65,7 +65,7 @@ jobs:
           script: |
             const output = `### Version Preview
 
-            This PR will create release: **v${{ needs.version.outputs.semVer }}**
+            Calculated version (informational): **v${{ needs.version.outputs.semVer }}**
 
             | Property | Value |
             |----------|-------|
@@ -77,10 +77,7 @@ jobs:
             ### Build Status
             All projects compiled successfully.
 
-            **What happens when merged:**
-            1. A GitHub release will be created with tag \`v${{ needs.version.outputs.semVer }}\`
-            2. Build artifacts will be attached (Windows & Linux)
-            3. Release notes will be auto-generated
+            YaHUD is discontinued. Merging does not automatically create or publish a release.
             `;
 
             // Find existing comment

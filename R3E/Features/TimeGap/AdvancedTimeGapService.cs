@@ -22,16 +22,16 @@ namespace R3E.Features.TimeGap
             this.telemetryService = telemetryService;
 
             this.telemetryService.DataUpdated += OnDataUpdated;
-            this.telemetryService.SessionTypeChanged += OnSessionTypeChanged;
+            this.telemetryService.TelemetryReset += OnTelemetryReset;
 
             this.logger.LogInformation("TimeGapService initialized");
         }
 
-        private void OnSessionTypeChanged(TelemetryData data)
+        private void OnTelemetryReset(TelemetryData data)
         {
             lock (@lock)
             {
-                logger.LogInformation("New Session. Clearing Car Histories.");
+                logger.LogInformation("Telemetry reset. Clearing Car Histories.");
                 carHistories.Clear();
 
                 if (data.Raw.LayoutLength > 0)
@@ -162,7 +162,7 @@ namespace R3E.Features.TimeGap
         public void Dispose()
         {
             telemetryService.DataUpdated -= OnDataUpdated;
-            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
+            telemetryService.TelemetryReset -= OnTelemetryReset;
             GC.SuppressFinalize(this);
         }
     }

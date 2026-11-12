@@ -1,0 +1,49 @@
+# Groups auto-generated release notes by PR label.
+# Consumed by the generateReleaseNotes call in .github/workflows/create-release.yml.
+#
+# Categories are matched top to bottom and the FIRST match wins, so a PR labelled
+# both `documentation` and `packaging` lands under Documentation. Order accordingly.
+# Any PR whose labels match nothing falls through to the `*` catch-all.
+changelog:
+  exclude:
+    labels:
+      # The develop -> main release PR would otherwise duplicate every entry.
+      - release
+      - duplicate
+      - wontfix
+      - question
+  categories:
+    - title: 🚀 Features
+      labels:
+        - enhancement
+        - widget
+
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+
+    - title: 📚 Documentation
+      labels:
+        - documentation
+
+    - title: 📦 Packaging & Distribution
+      labels:
+        - packaging
+
+    - title: ♻️ Refactoring
+      labels:
+        - refactor
+
+    - title: 🧹 Maintenance
+      labels:
+        - chore
+        - ci
+
+    - title: ⬆️ Dependencies & Runtime
+      labels:
+        - dependencies
+        - .NET
+
+    - title: 🔍 Other Changes
+      labels:
+        - "*"

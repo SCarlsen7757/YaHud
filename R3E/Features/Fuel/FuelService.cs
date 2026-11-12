@@ -38,6 +38,20 @@ namespace R3E.Features.Fuel
             // Subscribe to events
             telemetry.NewLap += OnNewLap;
             telemetry.SessionPhaseChanged += OnSessionPhaseChanged;
+            telemetry.TelemetryReset += OnTelemetryReset;
+        }
+
+        /// <summary>
+        /// Re-seeds the fuel baseline whenever accumulated state becomes invalid (session restart,
+        /// RaceRoom replay, rewound stream). Without this <see cref="oldFuelRemaining"/> survives
+        /// from the previous session and the first lap afterwards reports nonsense consumption -
+        /// frequently negative, once the tank has been refilled.
+        /// </summary>
+        private void OnTelemetryReset(TelemetryData data)
+        {
+            oldFuelRemaining = data.Raw.FuelLeft;
+            Data.LastLapFuelUsage = 0;
+            logger.LogInformation("Fuel tracking reset: {FuelLeft:F2}L", oldFuelRemaining);
         }
 
         private void OnSessionPhaseChanged(TelemetryData data)
@@ -67,6 +81,7 @@ namespace R3E.Features.Fuel
 
             telemetry.NewLap -= OnNewLap;
             telemetry.SessionPhaseChanged -= OnSessionPhaseChanged;
+            telemetry.TelemetryReset -= OnTelemetryReset;
 
             GC.SuppressFinalize(this);
         }

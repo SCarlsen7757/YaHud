@@ -23,17 +23,19 @@ namespace R3E.Features.TimeGap
             this.telemetryService = telemetryService;
 
             this.telemetryService.DataUpdated += OnDataUpdated;
-            this.telemetryService.SessionTypeChanged += OnSessionTypeChanged;
+            this.telemetryService.TelemetryReset += OnTelemetryReset;
 
             this.logger.LogInformation("SimpleTimeGapService initialized");
         }
 
-        private void OnSessionTypeChanged(TelemetryData data)
+        private void OnTelemetryReset(TelemetryData data)
         {
+            currentData = null;
+
             if (data.Raw.LayoutLength > 0)
             {
                 trackLength = data.Raw.LayoutLength;
-                logger.LogInformation("Session changed. Track length: {TrackLength:F1}m", trackLength);
+                logger.LogInformation("Telemetry reset. Track length: {TrackLength:F1}m", trackLength);
             }
         }
 
@@ -96,7 +98,7 @@ namespace R3E.Features.TimeGap
         public void Dispose()
         {
             telemetryService.DataUpdated -= OnDataUpdated;
-            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
+            telemetryService.TelemetryReset -= OnTelemetryReset;
             GC.SuppressFinalize(this);
         }
     }

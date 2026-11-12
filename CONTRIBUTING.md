@@ -1,5 +1,7 @@
 # Contributing to YaHud
 
+> **Discontinued:** YaHUD is archived and no longer maintained. This repository no longer accepts contributions or support requests. The development and release procedures below are historical reference for anyone maintaining a fork. See the [README](README.md) for the reason development ended.
+
 This document describes the code style guidelines, branching strategy, pull request workflow, and release process for the YaHud project.
 
 ## 🎨 Code Style Guidelines
@@ -97,6 +99,7 @@ To prevent circular dependencies between feature services, we use the **Mediator
         ▼                                     ▼
   ITelemetryEventBus                  Core Events:
   (Cross-feature mediator)            - DataUpdated
+        │                             - StartLightsChanged
         │                             - NewLap
         │                             - SessionTypeChanged
         │                             - SessionPhaseChanged
@@ -157,7 +160,7 @@ public class FuelService
     
     private void OnNewLap()
     {
-        eventBus.PublishFuelLevelCritical(percentage);  // Publish
+        eventBus.InvokeFuelLevelCritical(percentage);  // Raise
     }
 }
 
@@ -170,10 +173,15 @@ public class SectorService
     
     private void OnDataUpdated()
     {
-        eventBus.PublishSectorCompleted(sectorIndex);  // Publish
+        eventBus.InvokeSectorCompleted(Data, sectorIndex);  // Raise
     }
 }
 ```
+
+> **Naming convention:** the method that raises a cross-feature event is always
+> prefixed `Invoke`, matching the event name — `SectorCompleted` is raised by
+> `InvokeSectorCompleted`. `FuelLevelCritical` and `LapFuelUsageCalculated` above
+> are illustrative; `SectorCompleted` is currently the only event on the bus.
 
 ### Feature Service Pattern
 
@@ -255,6 +263,16 @@ public class FuelService : IFuelService, IDisposable
         // Subscribe to events
         telemetry.NewLap += OnNewLap;
         telemetry.SessionPhaseChanged += OnSessionPhaseChanged;
+        telemetry.TelemetryReset += OnTelemetryReset;
+    }
+    
+    // Re-seed accumulated state whenever it becomes invalid. Without this,
+    // oldFuelRemaining survives a session restart or a replay rewind and the
+    // next lap reports nonsense consumption - often negative, after a refuel.
+    private void OnTelemetryReset(TelemetryData data)
+    {
+        oldFuelRemaining = data.Raw.FuelLeft;
+        Data.LastLapFuelUsage = 0;
     }
     
     private void OnNewLap(TelemetryData data)
@@ -267,13 +285,13 @@ public class FuelService : IFuelService, IDisposable
         
         oldFuelRemaining = currentFuel;
         
-        // Publish cross-feature event
-        eventBus.PublishLapFuelUsageCalculated(fuelUsed);
+        // Raise cross-feature event
+        eventBus.InvokeLapFuelUsageCalculated(fuelUsed);
         
         // Check for critical condition
         if (Data.FuelRemainingPercentage < 10.0)
         {
-            eventBus.PublishFuelLevelCritical(Data.FuelRemainingPercentage);
+            eventBus.InvokeFuelLevelCritical(Data.FuelRemainingPercentage);
         }
     }
     
@@ -281,6 +299,7 @@ public class FuelService : IFuelService, IDisposable
     {
         telemetry.NewLap -= OnNewLap;
         telemetry.SessionPhaseChanged -= OnSessionPhaseChanged;
+        telemetry.TelemetryReset -= OnTelemetryReset;
         GC.SuppressFinalize(this);
     }
 }
@@ -289,6 +308,9 @@ public class FuelService : IFuelService, IDisposable
 **Service Class Rules:**
 - ✅ Depend on `ITelemetryService` and `ITelemetryEventBus`
 - ✅ Subscribe to events in constructor
+- ✅ Reset accumulated state on `TelemetryReset` (see
+  [Core Events](#core-events-from-itelemetryservice)) — widgets have the same
+  hook as `protected override void OnTelemetryReset()`
 - ✅ Create data class instance **once** (store reference)
 - ✅ Update only mutable data fields (not entire object)
 - ✅ Publish cross-feature events via `ITelemetryEventBus`
@@ -312,8 +334,17 @@ public class FuelService : IFuelService, IDisposable
 
 Use for session lifecycle events:
 - `DataUpdated` - Telemetry data refreshed (@60Hz)
+- `StartLightsChanged` - Start light state changed. Note the payload is
+  `Action<int>` (the light count), not `Action<TelemetryData>` like every other
+  core event
 - `NewLap` - Lap completed
-- `SessionTypeChanged` - Session type changed
+- `TelemetryReset` - **Accumulated state must be discarded.** Raised when the
+  session type changed *or* simulation ticks went backwards (a session restart,
+  RaceRoom's own replay mode, or a replay rewind). Raised before the other
+  per-frame events for that frame. **Any service holding state across frames
+  should reset on this**, not on `SessionTypeChanged`
+- `SessionTypeChanged` - Session type genuinely changed (Practice → Qualify →
+  Race). Nothing else. Use it only when you care about the session *kind*
 - `SessionPhaseChanged` - Session phase changed (Countdown, Formation, Green, etc.)
 - `CarPositionChanged` - Player position changed
 - `TrackChanged` - Track changed
@@ -325,7 +356,8 @@ Use for domain-specific communication between features:
 
 **Current Events:**
 
-- `SectorCompleted(int sectorIndex)` - Sector completed
+- `SectorCompleted(SectorData sectorData, int sectorIndex)` - Sector completed
+  (raised via `InvokeSectorCompleted(sectorData, sectorIndex)`)
 
 **Adding New Cross-Feature Events:**
 
@@ -441,6 +473,29 @@ public class FuelData
 - ✅ Cache-friendly (same instance)
 - ✅ Always reflects current data
 
+## 🐛 Reproducing Widget Bugs
+
+**A telemetry recording is the preferred way to reproduce a widget bug.** Most
+widget logic is time-dependent — fuel projection, sector deltas, time gaps,
+radar, lap transitions — so a screenshot and a description rarely reproduce
+anything, and test mode only renders static values.
+
+```bash
+# Capture: writes one .yhtl file per session into a timestamped run folder
+YaHud.exe --record-autostart
+
+# Reproduce: replays through the full pipeline, with RaceRoom closed
+YaHud.exe --replay="...\2026-07-25_19-04-spa\03-race.yhtl"
+```
+
+Attach the relevant `.yhtl` file to the issue, and it becomes reproducible on
+any machine — including yours, as often as you need while fixing it. Recording
+is also the practical way to develop a widget without launching the game.
+
+See [Telemetry Recording and Replay](docs/telemetry-recording.md) for the
+options, the file format and the limitations (notably: recordings are tied to
+the exact `Shared` layout, and start lights are only captured on Windows).
+
 ## 🌳 Branching Strategy
 
 We use **GitFlow** with automated versioning via GitVersion. All version numbers are calculated automatically based on branch names and Git history.
@@ -452,7 +507,11 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
 | `main` | `main` | Production releases | `1.0.0` |
 | `develop` | `develop` | Integration/staging branch | `1.1.0-beta.1` |
 | `feature/*` | `feature/name` or `features/name` | New features or improvements | `1.1.0-alpha.1` |
+| `bugfix/*` | `bugfix/name` or `bugfixes/name` | Non-critical bug fixes | `1.0.1` |
 | `hotfix/*` | `hotfix/name` or `hotfixes/name` | Critical production bug fixes | `1.0.1` |
+
+All three prefixes also accept a hyphen instead of a slash (`feature-name`,
+`bugfix-name`, `hotfix-name`), per the regexes in `GitVersion.yml`.
 
 ### Branch Naming Examples
 
@@ -491,12 +550,16 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
    - Creates beta version (e.g., 1.1.0-beta.1)
 
 5. When ready for release, create PR from develop to main
+   - Put "+semver: minor" (or "+semver: major") in the PR TITLE, or you
+     get a patch release — see Release Process below
+   - Label it "release"
    - Version Preview will show final release version
    - Build Validation will run
 
-6. Merge to main
-   - Automatically creates GitHub release
-   - Builds and publishes artifacts
+6. Merge to main with a merge commit (not squash)
+   - Automatically creates a DRAFT GitHub release
+   - Builds and attaches artifacts
+   - Publish the draft yourself from the Releases page
 ```
 
 ### Hotfix for Production
@@ -528,24 +591,55 @@ We use **GitFlow** with automated versioning via GitVersion. All version numbers
 
 ## 📦 Release Process
 
-Releases are **fully automated** when PRs are merged to `main`.
+Releases are **built automatically** when commits land on `main`, then published
+manually — see the note on drafts below.
+
+### Cutting a Release
+
+A release is a PR from `develop` to `main`. Two steps in that process fail
+**silently** — nothing goes red, you just get the wrong result:
+
+1. **The increment lives in the PR title.** `main` defaults to a patch bump, so
+   a feature release needs `+semver: minor` in the title of the release PR.
+   This repo sets `merge_commit_message: PR_TITLE`, so GitHub copies the PR
+   title into the merge commit body, which is where GitVersion reads it — the
+   PR body and description are not read. See
+   [Choosing the Increment](#choosing-the-increment).
+2. **The release is a draft.** A green workflow does not mean the release
+   shipped; someone has to publish it.
+
+Also: label the release PR `release` so it is excluded from its own changelog,
+and merge with a **merge commit**, not a squash — squashing flattens the history
+GitVersion walks to find the version source and the marker.
+
+> The `cut-release` skill in `.claude/skills/` walks through this end to end,
+> including the back-merge to `develop` afterwards.
 
 ### What Happens on Merge to Main
 
 1. **Version Calculation** - GitVersion determines the version number
 2. **Build** - All projects are built for Windows and Linux
-3. **Package** - Creates ZIP archives of the artifacts
-4. **Release** - Creates GitHub release with:
+3. **Package** - Creates ZIP archives, plus the Linux AppImage
+4. **Release** - Creates a GitHub release with:
    - Auto-generated release notes
    - Tagged version (e.g., `v1.0.0`)
    - Build artifacts attached
+
+> **The release is created as a draft.** `release-on-merge.yml` calls
+> `create-release.yml` with `draft: true`, so the release and its tag are not
+> public until you review and publish them from the Releases page.
 
 ### Artifacts Published
 
 Each release includes:
 - `R3E.Relay-win-x64-v{version}.zip` - Windows relay service
 - `R3E.YaHud-win-x64-v{version}.zip` - Windows HUD application
-- `R3E.YaHud-linux-x64-v{version}.zip` - Linux HUD application
+- `R3E.YaHud-linux-x64-v{version}.zip` - Linux HUD application (plain binary)
+- `YaHud-v{version}-x86_64.AppImage` - Linux HUD application (AppImage, recommended)
+
+The AppImage is assembled by CI rather than produced by a single `dotnet publish`
+— see [How the YaHud AppImage Is Built](docs/appimage.md) for the AppDir layout,
+the pinned `appimagetool`/runtime versions and how to build one locally.
 
 ## 🏷️ Version Numbering
 
@@ -556,37 +650,78 @@ Versions follow [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 | Action | Version Change | Example |
 |--------|---------------|---------|
 | Merge feature to develop | Minor + beta tag | `1.0.0` → `1.1.0-beta.1` |
-| Merge develop to main | Minor (stable) | `1.0.0` → `1.1.0` |
 | Merge hotfix to main | Patch | `1.0.0` → `1.0.1` |
+| Merge develop to main | Patch, unless marked (see below) | `1.0.0` → `1.0.1` |
+
+### Choosing the Increment
+
+`main` is configured with `increment: Patch`, so a merge to `main` is a patch
+release by default. To ship a minor or major release instead, add a marker to
+the merge commit message (or the squashed PR title) landing on `main`:
+
+| Marker | Effect | Example |
+|--------|--------|---------|
+| `+semver: major` (or `breaking`) | Major bump | `0.2.0` → `1.0.0` |
+| `+semver: minor` (or `feature`) | Minor bump | `0.2.0` → `0.3.0` |
+| _(no marker)_ | Patch bump | `0.2.0` → `0.2.1` |
+
+**A marker can only raise the increment, never lower it below main's
+`increment:`.** That is why `main` is set to `Patch` — on `Minor` a patch
+release would be unreachable and `+semver: patch` would silently do nothing.
+The practical consequence: a `develop` → `main` release PR needs an explicit
+`+semver: minor`, while a hotfix needs no marker.
+
+For a one-off jump to a new baseline (for example cutting `1.0.0`), set
+`next-version:` in `GitVersion.yml`. It is a floor, and while it is the active
+baseline it suppresses the `+semver` markers; once a higher release tag exists
+GitVersion increments from the tag and the setting becomes a no-op.
+
+> Release tags must be plain `vMAJOR.MINOR.PATCH`. A pre-release tag on `main`
+> (like the historical `v0.1.0-614`) is not a valid version source, so
+> GitVersion ignores it and recomputes the same version on every release. This
+> is why `release-on-merge.yml` tags with `majorMinorPatch` rather than `semVer`
+> — on `main`, `semVer` still carries a numeric pre-release suffix.
 
 ### Version Tags by Branch
 
 - **`main`**: No pre-release tag (stable: `1.0.0`)
 - **`develop`**: Beta tag (`1.1.0-beta.1`)
 - **`feature/*`**: Alpha tag (`1.1.0-alpha.1`)
+- **`bugfix/*`**: No pre-release tag (`1.0.1`)
 - **`hotfix/*`**: No pre-release tag (`1.0.1`)
 
 ## 🛡️ Branch Protection Rules
 
+Protection is configured with **repository rulesets**, not classic branch
+protection. Neither ruleset defines bypass actors, so the rules apply to
+maintainers as well.
+
 ### Main Branch
 
-- ✅ Require pull request before merging
-- ✅ Require 1+ approvals
-- ✅ Require status checks to pass:
-  - `validate` (build validation)
-  - `version-preview` (version calculation)
-- ✅ Only allow PRs from:
-  - `develop` branch
-  - `hotfix/*` branches
-- ✅ Require branches to be up to date
+- ✅ Block branch deletion
+- ✅ Block force pushes (non-fast-forward)
 
 ### Develop Branch
 
-- ✅ Require pull request before merging
-- ✅ Require status checks to pass:
-  - `validate` (build validation)
-- ✅ Only allow PRs from:
-  - `feature/*` branches
+- ✅ Block branch deletion
+- ✅ Block force pushes (non-fast-forward)
+- ✅ Require a pull request before merging, with:
+  - 1 approving review
+  - All review conversations resolved
+  - Merge, squash and rebase all permitted
+
+### Not currently enforced
+
+The following are **not** configured, so don't rely on them:
+
+- **No required status checks on either branch.** `PR Validation` runs on every
+  PR, but a failing build does not block merging — check the result yourself
+  before merging.
+- **No PR requirement on `main`.** Direct pushes to `main` are possible, and a
+  push to `main` triggers a release build.
+- **No source-branch restrictions.** The GitFlow rules in
+  [Workflow Patterns](#-workflow-patterns) are convention, not enforcement.
+- **No linear-history or up-to-date-branch requirement.**
 
 ## GitFlow Diagram
 
@@ -620,20 +755,73 @@ gitGraph
 
 ## 🤖 GitHub Actions Workflows
 
-### 1. PR Build Validation (`pr-build.yml`)
-- **Triggers:** PRs to `main` or `develop`
-- **Purpose:** Validate code compiles successfully
-- **Runs:** Full solution build
+There are five workflows. Two are triggered by Git events; the other three are
+reusable and only run when called by those two.
 
-### 2. PR Version Preview (`pr-version-preview.yml`)
-- **Triggers:** PRs to `main` only
-- **Purpose:** Show what version will be released
-- **Posts:** Comment on PR with version details
+### Triggered workflows
 
-### 3. Build and Release (`build-release.yml`)
-- **Triggers:** Push to `main` (after PR merge)
-- **Purpose:** Create production release
-- **Produces:** GitHub release with artifacts
+#### PR Validation (`pr-validation.yml`)
+- **Triggers:** PRs to `main` or `develop` (opened, synchronize, reopened)
+- **Purpose:** Verify the solution compiles and preview the release version
+- **Jobs:**
+  - `Version Preview` — calls `calculate-version.yml`
+  - `Build Validation (windows-latest)` and `Build Validation (ubuntu-latest)` —
+    full solution build on both platforms. The Ubuntu leg matters: the Linux tray
+    code in `R3E.Tray/Linux` sits behind `#if LINUX` and is not compiled on
+    Windows, so a green Windows build proves nothing about it.
+  - `Post Version Comment` — posts or updates a version-preview comment on the PR
+
+#### Release (`release-on-merge.yml`)
+- **Triggers:** Push to `main` (after a PR merge), or manual `workflow_dispatch`
+- **Purpose:** Build all artifacts and create the GitHub release
+- **Jobs:** `Calculate Version` → `Build` → `Release` → `Release Summary`
+
+### Reusable workflows
+
+Invoked via `workflow_call` — these never run on their own:
+
+| Workflow | Purpose |
+|----------|---------|
+| `calculate-version.yml` | Runs GitVersion; outputs `semVer`, `fullSemVer`, `majorMinorPatch`, `branchName`, `preReleaseTag` |
+| `build-artifacts.yml` | Publishes R3E.Relay (Windows), YaHud (Windows and Linux) and the Linux AppImage, then uploads each as a workflow artifact |
+| `create-release.yml` | Creates the GitHub release, attaches every `*.zip` and `*.AppImage`, and generates the release notes |
+
+## 🏷️ Pull Request Labels
+
+Every PR should carry at least one **type** label. Labels are not decorative —
+[`.github/release.yml`](.github/release.yml) uses them to group the
+auto-generated release notes, so an unlabelled PR ends up under *Other Changes*.
+
+### Type labels (pick one)
+
+| Label | Use for |
+|-------|---------|
+| `enhancement` | New user-facing functionality |
+| `widget` | New HUD widget, or changes to an existing one (usually with `enhancement`) |
+| `bug` | Fixing broken behaviour |
+| `documentation` | README, CONTRIBUTING, or `docs/` changes |
+| `refactor` | Restructuring working code with no behaviour change |
+| `chore` | Housekeeping: cleanup, tooling, config, dead-code removal |
+| `ci` | GitHub Actions workflows, build, or versioning setup |
+| `packaging` | Distribution: AppImage, archives, release artifacts |
+| `dependencies` | Dependency bumps (Dependabot applies this automatically) |
+| `.NET` | Runtime, SDK, or target framework upgrades |
+| `release` | The `develop` → `main` release PR (excluded from release notes) |
+
+`chore` vs `refactor`: if you moved or rewrote production code, it's `refactor`;
+if you deleted something unused or touched only tooling and config, it's `chore`.
+
+### Platform labels (add when relevant)
+
+`linux` and `windows` mark changes that only affect one platform — for example
+the D-Bus tray code or the WinForms `NotifyIcon`. Add them alongside a type
+label, never instead of one.
+
+### Ordering caveat
+
+Release-note categories are matched top to bottom and **the first match wins**.
+A PR labelled both `documentation` and `packaging` appears under Documentation.
+If you add or reorder labels, update `.github/release.yml` to match.
 
 ## 📝 Commit Message Guidelines
 
@@ -687,10 +875,10 @@ A: No. Features must go through `develop` first, then `develop` → `main`.
 A: Create a new feature branch from develop, make your fix, and PR back to develop.
 
 **Q: Can I manually set the version number?**  
-A: No. Versions are calculated by GitVersion based on Git history and tags. To set an initial version, create a Git tag.
+A: Not directly — versions are calculated by GitVersion from Git history and tags. You can steer it three ways: a `+semver:` marker in the merge commit message to change one release's increment, `next-version:` in `GitVersion.yml` to set a new baseline, or a Git tag (`v1.2.0`) to pin the version source. See [Version Numbering](#-version-numbering).
 
 **Q: What happens if I name my branch incorrectly?**  
-A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `hotfix/`.
+A: GitVersion won't recognize it and will use default versioning. Always use the correct prefixes: `feature/`, `bugfix/`, `hotfix/`.
 
 **Q: Should I create a new data instance on every telemetry update?**  
 A: No! Create data instances **once** and reuse them. Only update mutable fields as needed. Recreating objects @ 60Hz causes excessive GC pressure.
