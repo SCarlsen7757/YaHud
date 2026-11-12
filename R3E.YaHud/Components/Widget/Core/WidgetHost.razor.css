@@ -5,3 +5,30 @@
     pointer-events: auto;
     box-sizing: border-box;
 }
+
+/* Docked widgets are pinned to a screen edge by these rules instead of by the inline left/top
+   HudHelper.setPosition writes for free widgets - HudHelper.dockElement clears that inline
+   placement so these can take effect. They register no drag handler, which is what keeps their
+   controls usable while the HUD is unlocked.
+
+   Vertical centring is left to the widget's own content (a translateY(-50%) on the inner box)
+   rather than done here, because the host's transform belongs to HudHelper.setScale. Scaling about
+   the top edge keeps the content centred on the 50% line at any scale. */
+.widget-host.docked {
+    position: fixed;
+    top: 50%;
+    /* A docked host is sized to its expanded content even while collapsed, so it must not sit there
+       as an invisible strip swallowing clicks along the screen edge. The parts that should take the
+       pointer opt back in. */
+    pointer-events: none;
+}
+
+.widget-host.dock-left {
+    left: 0;
+    right: auto;
+}
+
+.widget-host.dock-right {
+    right: 0;
+    left: auto;
+}

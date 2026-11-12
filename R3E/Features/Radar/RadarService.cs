@@ -27,16 +27,16 @@ namespace R3E.Features.Radar
             RadarData = new RadarData(telemetryService.Data);
 
             telemetryService.DataUpdated += OnDataUpdated;
-            telemetryService.SessionTypeChanged += OnSessionTypeChanged;
+            telemetryService.TelemetryReset += OnTelemetryReset;
 
             logger.LogInformation("RadarService initialized");
         }
 
-        private void OnSessionTypeChanged(TelemetryData data)
+        private void OnTelemetryReset(TelemetryData data)
         {
             lock (sync)
             {
-                logger.LogInformation("RadarService: session changed - clearing radar state.");
+                logger.LogInformation("RadarService: telemetry reset - clearing radar state.");
                 RadarData.DriverStates = new Dictionary<int, RadarDriverSnapshot>();
                 RadarData.ClosestDistance = null;
 
@@ -156,7 +156,7 @@ namespace R3E.Features.Radar
         public void Dispose()
         {
             telemetryService.DataUpdated -= OnDataUpdated;
-            telemetryService.SessionTypeChanged -= OnSessionTypeChanged;
+            telemetryService.TelemetryReset -= OnTelemetryReset;
             GC.SuppressFinalize(this);
         }
 

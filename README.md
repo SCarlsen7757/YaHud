@@ -13,6 +13,7 @@ A modern, customizable HUD (Heads-Up Display) overlay for RaceRoom Racing Experi
 - **Cross-Platform Support**: Native Windows support with Linux compatibility via relay service
 - **Customizable Widgets**: Drag-and-drop widget positioning with persistent settings
 - **Real-Time Telemetry**: Live data from RaceRoom's shared memory API
+- **Record & Replay**: Capture telemetry to a file and replay it through the HUD with the game closed
 - **Modern UI**: Clean, responsive interface built with Blazor
 - **Multiple Widgets**: Clock, MoTec-style display, user inputs, and more (with more coming!)
 - **Settings Panel**: Comprehensive configuration interface for all widgets
@@ -71,6 +72,11 @@ Both executables accept launch arguments; run either with `--help` for the full 
 | `--udp-port=<port>` | YaHud, R3ERelay | `10101` | Telemetry UDP port — **must match on both** |
 | `--udp-host=<ip>` | R3ERelay | `127.0.0.1` | IP address the relay sends telemetry to |
 | `--force-udp` | YaHud | off | Receive telemetry over UDP from the relay instead of reading shared memory directly (Windows only — it is already the default elsewhere) |
+| `--record` | YaHud | off | Make telemetry recording available (stays inert until started) |
+| `--record-autostart` | YaHud | off | Begin recording at launch. Implies `--record` |
+| `--recording-dir=<dir>` | YaHud | `<LocalApplicationData>/YaHud/recordings` | Folder recordings are written to |
+| `--recording-block-seconds=<n>` | YaHud | `3` | Compression block duration (1–60) |
+| `--replay=<file>` | YaHud | off | Start in replay mode on a `.yhtl` recording instead of reading live telemetry |
 
 Examples:
 
@@ -84,6 +90,10 @@ R3ERelay.exe --udp-port=10200
 
 # Run the relay on the gaming PC and the HUD on another machine
 R3ERelay.exe --udp-port=10200 --udp-host=192.168.1.50
+
+# Record telemetry to a file, then play it back later without the game running
+YaHud.exe --record-autostart
+YaHud.exe --replay="C:\Users\me\AppData\Local\YaHud\recordings\2026-07-25_19-04-spa\03-race.yhtl"
 ```
 
 YaHud also reads these values from the `appsettings.json` next to its executable,
@@ -93,7 +103,14 @@ argument always wins over the file:
 ```json
 "YaHud": {
   "WebPort": 5000,
-  "Udp": { "Port": 10101, "ForceUdp": false }
+  "Udp": { "Port": 10101, "ForceUdp": false },
+  "Recording": {
+    "Enabled": false,
+    "AutoStart": false,
+    "Directory": null,
+    "BlockSeconds": 3
+  },
+  "Replay": { "File": null }
 }
 ```
 
@@ -162,6 +179,25 @@ above) or the plain binary from `R3E.YaHud-linux-x64-v{version}.zip`:
 The relay service forwards RaceRoom's shared memory data over UDP, allowing the HUD to run natively on Linux.
 
 > **Tip**: You can create a shell script to automate starting the relay service with the correct Proton environment.
+
+#### Recording and replay
+
+YaHud can record raw telemetry to a `.yhtl` file and play it back through the
+full pipeline later, with the game closed. Replay runs inside YaHud itself —
+there is no separate application.
+
+```bash
+# Record: one file per session, in a timestamped run folder
+YaHud.exe --record-autostart
+
+# Replay: drive the HUD from a recording instead of live telemetry
+YaHud.exe --replay="...\2026-07-25_19-04-spa\03-race.yhtl"
+```
+
+Recording is opt-in and off by default. It is the preferred way to reproduce a
+widget bug, and it makes widget development possible without launching RaceRoom.
+See [Telemetry Recording and Replay](docs/telemetry-recording.md) for the file
+format, seek semantics and limitations.
 
 ## 🎯 Usage
 
@@ -274,7 +310,9 @@ YaHud/
 │   ├── Core/
 │   │   ├── Interfaces/     # ITelemetryService, ITelemetryEventBus, ISharedSource
 │   │   ├── Services/       # TelemetryService, TelemetryEventBus, TelemetryData
-│   │   └── SharedMemory/   # SharedMemoryService (Windows), RemoteSharedMemoryService (UDP)
+│   │   ├── SharedMemory/   # SharedMemoryService (Windows), RemoteSharedMemoryService (UDP)
+│   │   ├── Recording/      # .yhtl telemetry recorder, writer, reader, frame truncation
+│   │   └── Replay/         # In-process replay: FileSharedSource, SharedSourceSwitch, ReplayController
 │   ├── Features/           # Feature service + data class pairs (Fuel, Radar, Sector, …)
 │   ├── Converters/         # Unit converters (speed, temperature, pressure, angular)
 │   ├── Networking/         # UDP receiver
@@ -286,7 +324,7 @@ YaHud/
 │   ├── Assets/             # Tray icon
 │   ├── Linux/              # D-Bus StatusNotifierItem tray icon for Linux
 │   └── Windows/            # Windows Forms NotifyIcon tray for Windows
-├── docs/                   # AppImage packaging and Linux D-Bus tray internals
+├── docs/                   # AppImage packaging, Linux D-Bus tray internals, telemetry recording
 ├── packaging/appimage/     # AppRun, desktop entry and icon for the Linux AppImage
 ├── scripts/                # Developer scripts (headless tray D-Bus test)
 ├── git/hooks/              # Pre-push hooks

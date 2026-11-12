@@ -12,7 +12,10 @@
                 <SettingsMasterPanel OnClose="OnClose" Widgets="Widgets" />
             </CascadingValue>
 
-            @if (SettingsContext.SelectedWidget is not null) {
+            @if (SettingsContext.RecordingsSelected) {
+                <SettingsRecordingsPanel OnClose="OnClose" />
+            }
+            else if (SettingsContext.SelectedWidget is not null) {
                 <SettingsDetailPanel Widget="SettingsContext.SelectedWidget" />
             }
         </CascadingValue>
@@ -30,7 +33,15 @@
 
     private void OpenDetailsForWidget(IWidget widget)
     {
+        SettingsContext.RecordingsSelected = false;
         SettingsContext.SelectedWidget = widget;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OpenRecordings()
+    {
+        SettingsContext.SelectedWidget = null;
+        SettingsContext.RecordingsSelected = true;
         InvokeAsync(StateHasChanged);
     }
 
@@ -40,7 +51,8 @@
 
         SettingsContext = new()
             {
-                OpenDetails = OpenDetailsForWidget
+                OpenDetails = OpenDetailsForWidget,
+                OpenRecordings = OpenRecordings
             };
     }
 

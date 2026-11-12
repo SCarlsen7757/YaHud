@@ -50,6 +50,8 @@ namespace R3E.Core.SharedMemory
 
         public event Action<Shared>? DataUpdated;
 
+        public event Action<ReadOnlyMemory<byte>>? RawFrameReceived;
+
         public event Action<int>? StartLightsChanged;
 
         public Shared Data => data;
@@ -159,6 +161,10 @@ namespace R3E.Core.SharedMemory
                         {
                             noUpdate = 0;
                             lastSimTicks = simTicks;
+
+                            // Raise the raw tap before marshalling so a throwing downstream handler
+                            // cannot lose the frame for a recorder.
+                            RawFrameReceived?.Invoke(readBuffer.AsMemory(0, bytesRead));
 
                             if (SharedMarshaller.TryMarshalShared(readBuffer, out var newData))
                             {

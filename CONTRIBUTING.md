@@ -261,6 +261,16 @@ public class FuelService : IFuelService, IDisposable
         // Subscribe to events
         telemetry.NewLap += OnNewLap;
         telemetry.SessionPhaseChanged += OnSessionPhaseChanged;
+        telemetry.TelemetryReset += OnTelemetryReset;
+    }
+    
+    // Re-seed accumulated state whenever it becomes invalid. Without this,
+    // oldFuelRemaining survives a session restart or a replay rewind and the
+    // next lap reports nonsense consumption - often negative, after a refuel.
+    private void OnTelemetryReset(TelemetryData data)
+    {
+        oldFuelRemaining = data.Raw.FuelLeft;
+        Data.LastLapFuelUsage = 0;
     }
     
     private void OnNewLap(TelemetryData data)
@@ -287,6 +297,7 @@ public class FuelService : IFuelService, IDisposable
     {
         telemetry.NewLap -= OnNewLap;
         telemetry.SessionPhaseChanged -= OnSessionPhaseChanged;
+        telemetry.TelemetryReset -= OnTelemetryReset;
         GC.SuppressFinalize(this);
     }
 }
@@ -295,6 +306,9 @@ public class FuelService : IFuelService, IDisposable
 **Service Class Rules:**
 - ✅ Depend on `ITelemetryService` and `ITelemetryEventBus`
 - ✅ Subscribe to events in constructor
+- ✅ Reset accumulated state on `TelemetryReset` (see
+  [Core Events](#core-events-from-itelemetryservice)) — widgets have the same
+  hook as `protected override void OnTelemetryReset()`
 - ✅ Create data class instance **once** (store reference)
 - ✅ Update only mutable data fields (not entire object)
 - ✅ Publish cross-feature events via `ITelemetryEventBus`
@@ -322,7 +336,13 @@ Use for session lifecycle events:
   `Action<int>` (the light count), not `Action<TelemetryData>` like every other
   core event
 - `NewLap` - Lap completed
-- `SessionTypeChanged` - Session type changed
+- `TelemetryReset` - **Accumulated state must be discarded.** Raised when the
+  session type changed *or* simulation ticks went backwards (a session restart,
+  RaceRoom's own replay mode, or a replay rewind). Raised before the other
+  per-frame events for that frame. **Any service holding state across frames
+  should reset on this**, not on `SessionTypeChanged`
+- `SessionTypeChanged` - Session type genuinely changed (Practice → Qualify →
+  Race). Nothing else. Use it only when you care about the session *kind*
 - `SessionPhaseChanged` - Session phase changed (Countdown, Formation, Green, etc.)
 - `CarPositionChanged` - Player position changed
 - `TrackChanged` - Track changed
@@ -450,6 +470,29 @@ public class FuelData
 - ✅ Minimal GC pressure
 - ✅ Cache-friendly (same instance)
 - ✅ Always reflects current data
+
+## 🐛 Reproducing Widget Bugs
+
+**A telemetry recording is the preferred way to reproduce a widget bug.** Most
+widget logic is time-dependent — fuel projection, sector deltas, time gaps,
+radar, lap transitions — so a screenshot and a description rarely reproduce
+anything, and test mode only renders static values.
+
+```bash
+# Capture: writes one .yhtl file per session into a timestamped run folder
+YaHud.exe --record-autostart
+
+# Reproduce: replays through the full pipeline, with RaceRoom closed
+YaHud.exe --replay="...\2026-07-25_19-04-spa\03-race.yhtl"
+```
+
+Attach the relevant `.yhtl` file to the issue, and it becomes reproducible on
+any machine — including yours, as often as you need while fixing it. Recording
+is also the practical way to develop a widget without launching the game.
+
+See [Telemetry Recording and Replay](docs/telemetry-recording.md) for the
+options, the file format and the limitations (notably: recordings are tied to
+the exact `Shared` layout, and start lights are only captured on Windows).
 
 ## 🌳 Branching Strategy
 

@@ -23,6 +23,8 @@ namespace R3E.Core.SharedMemory
 
         public event Action<Shared>? DataUpdated;
 
+        public event Action<ReadOnlyMemory<byte>>? RawFrameReceived;
+
         public event Action<int>? StartLightsChanged;
 
         public Shared Data { get; private set; }
@@ -47,6 +49,10 @@ namespace R3E.Core.SharedMemory
                 logger.LogDebug("Received UDP packet of unexpected size {Size} from {Endpoint}", bytes.Length, ep);
                 return;
             }
+
+            // Raise the raw tap before marshalling so a throwing downstream handler cannot lose the
+            // frame for a recorder.
+            RawFrameReceived?.Invoke(bytes.AsMemory());
 
             if (SharedMarshaller.TryMarshalShared(bytes, out var newData))
             {

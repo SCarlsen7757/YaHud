@@ -11,7 +11,12 @@
     {
         <div id="@MenuId" class="widget-menu">
             <ul>
-                <li class="menu-item" @onclick="() => { Widget.ResetPosition(); ToggleMenu(); }">Reset Position</li>
+                @* A docked widget is placed by its own CSS, so there is no position to reset.
+                   Scale still applies. *@
+                @if (!Widget.Docked)
+                {
+                    <li class="menu-item" @onclick="() => { Widget.ResetPosition(); ToggleMenu(); }">Reset Position</li>
+                }
                 <li class="menu-item" @onclick="() => { Widget.ResetScale(); ToggleMenu(); }">Reset Scale</li>
             </ul>
         </div>
